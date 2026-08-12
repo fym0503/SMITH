@@ -12,7 +12,7 @@ Build a distributable source archive and wheel:
 python -m build --sdist --wheel
 ```
 
-## Smoke Test Without External Data
+## Run Without External Data
 
 Generate a synthetic AnnData file:
 
@@ -20,7 +20,7 @@ Generate a synthetic AnnData file:
 python scripts/make_smoke_h5ad.py --output data/smoke/smoke_panel.h5ad
 ```
 
-Run SMITH for a short CPU smoke test:
+Run a short SMITH example on CPU:
 
 ```bash
 python scripts/main.py \
