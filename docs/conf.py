@@ -19,7 +19,7 @@ extensions = [
 source_suffix = {".md": "markdown"}
 html_theme = "furo"
 html_title = "SMITH"
-master_doc = "docs/source/index" if os.environ.get("READTHEDOCS") else "index"
+master_doc = "source/index" if os.environ.get("READTHEDOCS") else "index"
 root_doc = master_doc
 exclude_patterns = [
     "_build/**",
