@@ -1,0 +1,11 @@
+gene_symbol	gene_id	transcript_id	sequence_length	property_probe_count	odt_initial_probe_count	odt_feasible_property_only	oligominer_candidate_probe_count	oligominer_specific_probe_count	probedealer_initial_probe_count	probedealer_final_probe_count	paintshop_on_target_mean	paintshop_off_target_mean	paintshop_off_target_max	pass_property	pass_specificity	pass_deployment	pass_transcript	overall_pass	recommended_action	reason
+Actb	ENSMUSG00000029580	ENSMUST00000100497	1920	3076	11271	True	31	1	58	32				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Gad1	ENSMUSG00000070880	ENSMUST00000094934	3355	5454	19881	True	61	0	104	90				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Aqp4	ENSMUSG00000024411	ENSMUST00000079081	5054	5956	30075	True	85	2	148	148				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Aldoc	ENSMUSG00000017390	ENSMUST00000017534	2786	5318	16467	True	58	24	88	88				True	True	True	False	True	keep_with_caution	passed hard gates, but PaintSHOP transcript quality is weaker
+Mbp	ENSMUSG00000041607	ENSMUST00000047865	2492	4231	14703	True	38	0	78	78				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Mobp	ENSMUSG00000032517	ENSMUST00000068698	1536	2423	8967	True	26	17	48	48				True	True	True	False	True	keep_with_caution	passed hard gates, but PaintSHOP transcript quality is weaker
+Slc17a7	ENSMUSG00000070570	ENSMUST00000085374	2915	6227	17241	True	49	0	91	83				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Pcp4	ENSMUSG00000090223	ENSMUST00000061739	641	1175	3597	True	11	4	20	13				True	False	False	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Snap25	ENSMUSG00000027273	ENSMUST00000110098	1014	1735	5790	True	21	3	31	29				True	False	True	False	False	drop_specificity	oligominer_specific_probe_count below threshold
+Gfap	ENSMUSG00000020932	ENSMUST00000067444	2648	6393	15639	True	54	32	85	85				True	True	True	False	True	keep_with_caution	passed hard gates, but PaintSHOP transcript quality is weaker

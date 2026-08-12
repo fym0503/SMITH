@@ -1,0 +1,19 @@
+id: 04_inhouse_disease
+order: 4
+title: Disease-aware human brain transfer audit
+manuscript_section: SMITH Supports Disease-Aware Panel Design in a Human Neurodegeneration Atlas
+figure: Figure 5
+runtime: Less than 5 seconds on CPU
+data_access: Bundled de-identified aggregate robustness metrics; raw in-house data are restricted.
+summary: Recomputes the multi-seed transfer robustness summary without exposing participant-level data.
+claim: Spatial-reference transfer changes panel rankings consistently across disease cohorts and seeds.
+inputs:
+  - path: fixtures/inhouse_transfer_summary.csv
+    sha256: 2adf61357af7215d93ea48be992817fa74cb4daac942c02a26649034ad568f20
+outputs: [summary.json]
+full_workflow:
+  availability: controlled_access
+  data_ids: [htapp_313_scrna, htapp_313_merfish]
+  source_scripts:
+    - /workspace/fanyimin/smith_inhouse_transfer_corrected_20260730/scripts/summarize_inhouse_multiseed.py
+  note: Public users can recompute aggregate statistics but cannot regenerate participant-level panels without authorized data access.

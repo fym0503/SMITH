@@ -1,0 +1,5 @@
+id: paintshop_export
+backend: paintshop
+stage: probe_generation
+description: PaintSHOP export backend for transcript-aware probe tables.
+

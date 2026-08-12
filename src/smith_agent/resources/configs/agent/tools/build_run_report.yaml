@@ -1,0 +1,19 @@
+name: build_run_report
+description: Build a markdown and HTML report with selected panel genes, evaluation metrics, and figures.
+domain: report
+input_schema:
+  manifest_path:
+    type: string
+  evaluation_csv:
+    type: string
+  train_adata_file:
+    type: string
+  test_adata_file:
+    type: string
+outputs:
+  - report_markdown
+  - report_html
+  - report_pdf
+  - report_summary_json
+metadata:
+  handler: build_run_report

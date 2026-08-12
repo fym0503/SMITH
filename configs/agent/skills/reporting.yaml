@@ -1,0 +1,11 @@
+id: reporting
+description: Build the final decision trace and deliverable manifest for the current run.
+use_when:
+  - Results need to be packaged for user review or manuscript support.
+recommended_tools:
+  - build_decision_trace
+  - export_manifest
+produces:
+  - decision_trace.tsv
+  - deliverable_manifest.json
+

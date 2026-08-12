@@ -1,0 +1,14 @@
+id: smith_st_processed
+path: data/smith/ST_dataset_processed.h5ad
+description: Packaged spatial reference data distributed with the SMITH core workspace.
+species: homo_sapiens
+tissue: brain
+modality: spatial
+tasks:
+- transfer
+- panel_selection
+aliases:
+- st_processed
+metadata:
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/ST_dataset_processed.h5ad

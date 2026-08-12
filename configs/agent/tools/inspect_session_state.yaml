@@ -1,0 +1,7 @@
+name: inspect_session_state
+description: Inspect the current session state, memory, and active registry choices.
+domain: session
+outputs:
+  - session_state
+metadata:
+  handler: inspect_session_state

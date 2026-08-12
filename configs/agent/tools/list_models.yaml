@@ -1,0 +1,8 @@
+name: list_models
+description: List registered models.
+domain: registry
+outputs:
+  - models
+metadata:
+  handler: list_models
+

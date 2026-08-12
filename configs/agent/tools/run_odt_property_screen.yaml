@@ -1,0 +1,13 @@
+name: run_odt_property_screen
+description: Run the ODT or SCRINSHOT property-only feasibility screen on a gene list.
+domain: feasibility
+input_schema:
+  genes:
+    type: array
+  species:
+    type: string
+outputs:
+  - odt_summary_tsv
+metadata:
+  handler: run_odt_property_screen
+

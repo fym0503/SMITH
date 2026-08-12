@@ -1,0 +1,17 @@
+id: starmap_deep_brain
+path: data/ribomap/deep_brain_starmap.h5ad
+description: Deep-brain STARmap spatial transcriptome reference for cross-modality
+  RIBOMap panel design.
+species: mus_musculus
+tissue: brain
+modality: STARmap
+tasks:
+- classification
+- region
+- transfer
+aliases:
+- deep_brain_starmap
+metadata:
+  figure_context: ribomap
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/deep_brain_starmap.h5ad

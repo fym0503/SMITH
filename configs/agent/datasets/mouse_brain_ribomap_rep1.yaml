@@ -1,0 +1,16 @@
+id: mouse_brain_ribomap_rep1
+path: data/ribomap/mouse_brain_ribomap_rep1.h5ad
+description: Mouse brain RIBOMap replicate 1 spatial translatome reference.
+species: mus_musculus
+tissue: brain
+modality: RIBOMap
+tasks:
+- classification
+- region
+- transfer
+aliases:
+- ribomap_rep1
+metadata:
+  figure_context: ribomap
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_ribomap_rep1.h5ad

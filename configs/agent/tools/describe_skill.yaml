@@ -1,0 +1,11 @@
+name: describe_skill
+description: Return one skill definition by id or alias.
+domain: registry
+input_schema:
+  skill_id:
+    type: string
+outputs:
+  - skill
+metadata:
+  handler: describe_skill
+

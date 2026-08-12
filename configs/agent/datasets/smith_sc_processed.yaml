@@ -1,0 +1,14 @@
+id: smith_sc_processed
+path: data/smith/SC_dataset_processed.h5ad
+description: Packaged single-cell reference data distributed with the SMITH core workspace.
+species: homo_sapiens
+tissue: brain
+modality: scRNA-seq
+tasks:
+- classification
+- regression
+aliases:
+- sc_processed
+metadata:
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/SC_dataset_processed.h5ad

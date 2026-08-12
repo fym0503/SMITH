@@ -1,0 +1,14 @@
+name: search_smith_agent
+description: Search SMITH-Agent registries, docs, configs, sessions, outputs, and feasibility modules.
+domain: search
+input_schema:
+  query:
+    type: string
+  scopes:
+    type: array
+  limit:
+    type: integer
+outputs:
+  - search_results
+metadata:
+  handler: search_smith_agent

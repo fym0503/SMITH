@@ -1,0 +1,15 @@
+id: panel_selection
+description: Run SMITH-centered optimization under task, budget, and feasibility constraints.
+use_when:
+  - A filtered candidate pool is available for panel optimization.
+recommended_tools:
+  - run_smith_selection
+  - aggregate_reference_panel_ranks
+requires:
+  - feasibility_table.tsv
+produces:
+  - selected_panel.tsv
+  - smith_run_manifest.json
+next_skills:
+  - baseline_comparison
+  - probe_generation

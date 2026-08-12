@@ -1,0 +1,17 @@
+name: run_three_backend_feasibility
+description: Build a three-backend feasibility summary from ODT, OligoMiner, and ProbeDealer outputs.
+domain: feasibility
+input_schema:
+  manifest_tsv:
+    type: string
+  odt_summary_tsv:
+    type: string
+  oligominer_summary_tsv:
+    type: string
+  probedealer_summary_tsv:
+    type: string
+outputs:
+  - integration_summary_tsv
+  - passing_targets_json
+metadata:
+  handler: run_three_backend_feasibility

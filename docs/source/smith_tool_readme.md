@@ -1,0 +1,8 @@
+# _SMITH_ Enables Versatile and Transferable Panel Selection in Imaging-based Spatial Profiling
+Imaging-based spatial profiling technologies enable simultaneous measurement of molecular signatures and spatial locations at cellular resolution, but require pre-selection of target gene panels, a critical bottleneck determining experimental success and downstream biological interpretation. Existing computational methods for panel selection exhibit key limitations including restricted flexibility from single-objective optimization, inadequate utilization of existing spatial datasets, and insufficient validation across complex biological contexts and modalities. To address these limitations, we developed SMITH, a versatile and transferable deep learning framework for optimizing target panel selection in imaging-based spatial profiling. SMITH employs end-to-end multi-task Pareto optimization to simultaneously balance multiple biologically relevant objectives while incorporating transfer learning to leverage existing massive spatial transcriptomics datasets. We validated SMITH across diverse technologies from established commercial platforms (MERFISH on mouse brain atlases) to emerging spatial molecule profiling methods (transcription factor activity profiling in \cele embryogenesis), with real-world clinical dataset validation on human neurodegenerative disease atlas. SMITH consistently outperformed existing methods while demonstrating practical utility in real-world experimental design, establishing an efficient solution for optimizing spatial profiling experiments.
+
+
+# Installation
+The requirements of SMITH can be installed by:  
+`pip install -r requirements.txt`  
+then use `pip install -e .` or directly import the code.

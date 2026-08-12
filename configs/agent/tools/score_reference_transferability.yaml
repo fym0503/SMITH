@@ -1,0 +1,34 @@
+name: score_reference_transferability
+description: Score candidate reference datasets against a query AnnData object using metadata, gene-space overlap, label compatibility, modality compatibility, disease context, and spatial support.
+domain: retrieval
+input_schema:
+  request:
+    type: object
+    properties:
+      dataset_path:
+        type: string
+      dataset_id:
+        type: string
+      species:
+        type: string
+      tissue:
+        type: string
+      modality:
+        type: string
+      tasks:
+        type: array
+      objective:
+        type: string
+      include_query_dataset:
+        type: boolean
+      score_weights:
+        type: object
+  candidate_dataset_ids:
+    type: array
+outputs:
+  - reference_candidates.tsv
+  - reference_score_matrix.tsv
+  - reference_score_matrix.png
+  - reference_selection.json
+metadata:
+  handler: score_reference_transferability

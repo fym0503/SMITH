@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smith-panel-design"
+version = "0.1.0"
+description = "Agentic and transferable target panel design for imaging-based spatial molecular profiling."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  {name = "Yimin Fan"},
+]
+dependencies = [
+  "anndata",
+  "biopython",
+  "h5py",
+  "numpy",
+  "pandas",
+  "prompt-toolkit>=3.0",
+  "pyyaml",
+  "requests",
+  "rich>=13.0",
+  "scikit-learn",
+  "scipy",
+  "torch",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+scanpy = [
+  "scanpy",
+]
+cellxgene = [
+  "cellxgene-census>=1.17",
+  "tiledbsoma>=1.15.3",
+]
+docs = [
+  "furo>=2024.1.29",
+  "linkify-it-py>=2.0",
+  "myst-parser>=2.0",
+  "sphinx>=7.0",
+  "sphinx-copybutton>=0.5",
+  "sphinx-design>=0.5",
+]
+
+[project.scripts]
+smith-cli = "smith_agent.cli:main"
+smith-agent = "smith_agent.cli:main"
+smith-repro = "smith.reproducibility.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["smith", "smith.*", "smith_agent", "smith_agent.*"]
+
+[tool.setuptools.package-data]
+"smith.reproducibility.resources" = [
+  "README.md",
+  "manifests/*.yaml",
+  "fixtures/*.csv",
+  "fixtures/*.tsv",
+]
+"smith_agent.resources" = [
+  "requirements.txt",
+  "configs/agent/*.yaml",
+  "configs/agent/*/*.yaml",
+  "scripts/*.py",
+  "scripts/README.md",
+  "scripts/agent_examples/*.py",
+  "manifests/*",
+]

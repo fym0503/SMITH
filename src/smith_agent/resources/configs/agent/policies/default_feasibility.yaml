@@ -1,0 +1,13 @@
+id: default_feasibility
+description: Default hard constraints used for early feasibility screening.
+parameters:
+  min_property_probes: 20
+  min_specific_probes: 10
+  min_deployment_probes: 20
+  min_paintshop_on_target_mean: 95.0
+  max_paintshop_off_target_mean: 10.0
+  max_paintshop_off_target_max: 100.0
+  require_transcript_gate: false
+aliases:
+  - strict_feasibility
+

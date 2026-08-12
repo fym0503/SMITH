@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-reproducibility.txt
+          python -m pip install -e .
+      - name: Verify tutorial inputs
+        run: smith-repro check
+      - name: Run tests and chapter tutorials
+        run: python -m pytest -q tests
+      - name: Build documentation
+        run: sphinx-build -W -b html -c docs docs/source docs/_build/html
+      - name: Build wheel
+        run: python -m pip install build && python -m build --wheel

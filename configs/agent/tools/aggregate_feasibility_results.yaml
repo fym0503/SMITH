@@ -1,0 +1,20 @@
+name: aggregate_feasibility_results
+description: Merge backend summaries into a single feasibility table and apply default hard constraints.
+domain: feasibility
+input_schema:
+  manifest_tsv:
+    type: string
+  odt_summary_tsv:
+    type: string
+  oligominer_summary_tsv:
+    type: string
+  probedealer_summary_tsv:
+    type: string
+  paintshop_rna_probe_tsv:
+    type: string
+outputs:
+  - feasibility_table.tsv
+  - passing_targets.json
+metadata:
+  handler: aggregate_feasibility_results
+

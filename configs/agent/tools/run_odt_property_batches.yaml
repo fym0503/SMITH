@@ -1,0 +1,14 @@
+name: run_odt_property_batches
+description: Run the ODT or SCRINSHOT property-only feasibility screen in parallel batches from a manifest file.
+domain: feasibility
+input_schema:
+  manifest_tsv:
+    type: string
+  species:
+    type: string
+  batch_size:
+    type: integer
+outputs:
+  - odt_summary_tsv
+metadata:
+  handler: run_odt_property_batches

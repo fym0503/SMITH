@@ -1,0 +1,11 @@
+name: set_active_dataset
+description: Set the active dataset for the current session.
+domain: session
+input_schema:
+  dataset_id:
+    type: string
+outputs:
+  - active_dataset_id
+metadata:
+  handler: set_active_dataset
+

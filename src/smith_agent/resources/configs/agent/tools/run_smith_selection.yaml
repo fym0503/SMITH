@@ -1,0 +1,19 @@
+name: run_smith_selection
+description: Build or execute a SMITH selection run against the integrated SMITH workspace.
+domain: optimization
+input_schema:
+  adata_file:
+    type: string
+  tasks:
+    type: string
+  task_name:
+    type: string
+  panel_size:
+    type: integer
+  execute:
+    type: boolean
+outputs:
+  - smith_run_manifest.json
+metadata:
+  handler: run_smith_selection
+

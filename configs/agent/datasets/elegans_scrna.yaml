@@ -1,0 +1,18 @@
+id: elegans_scrna
+path: data/elegans/elegans_scrna.h5ad
+description: C. elegans single-cell RNA-seq reference used for cross-modality regulatory
+  activity transfer.
+species: caenorhabditis_elegans
+tissue: embryo
+modality: scRNA-seq
+tasks:
+- classification
+- regression
+- temporal
+aliases:
+- elegans_sc
+- elegans_scrna_reference
+metadata:
+  figure_context: regulatory_activity
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_scrna.h5ad

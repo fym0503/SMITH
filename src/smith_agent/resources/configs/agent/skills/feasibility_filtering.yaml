@@ -1,0 +1,17 @@
+id: feasibility_filtering
+description: Run multi-backend feasibility screening and prune the candidate pool before optimization.
+use_when:
+  - The panel must satisfy assay feasibility constraints.
+recommended_tools:
+  - run_probedealer_screen_light
+  - aggregate_feasibility_results
+  - apply_feasibility_policy
+requires:
+  - candidate_gene_pool.tsv
+produces:
+  - feasibility_table.tsv
+  - passing_targets.json
+  - filter_decisions.tsv
+next_skills:
+  - panel_selection
+

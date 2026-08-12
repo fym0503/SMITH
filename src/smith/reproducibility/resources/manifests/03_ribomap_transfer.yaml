@@ -1,0 +1,20 @@
+id: 03_ribomap_transfer
+order: 3
+title: Cross-study and cross-modality RIBOMap transfer
+manuscript_section: SMITH Transfers Panel Design to Spatial Translatome Profiling
+figure: Figure 4
+runtime: Less than 5 seconds on CPU
+data_access: Bundled aggregate metrics from five-seed RIBOMap and STARmap transfer evaluation.
+summary: Recomputes SMITH accuracy summaries for RIBOMap-to-RIBOMap and STARmap-to-RIBOMap transfer.
+claim: Transcriptomic and translatomic references provide distinct but useful priors for translatome panel design.
+inputs:
+  - path: fixtures/ribomap_benchmark_methods_summary.csv
+    sha256: ea91769109a2aa473707f1adacc7c2471f80b969daf721cfcc31df2781544e4e
+outputs: [summary.json]
+full_workflow:
+  availability: public_data_external_download
+  data_ids: [mouse_brain_ribomap_rep1, mouse_brain_ribomap_rep2, mouse_brain_starmap_rep2, ribomap_deep_brain, starmap_deep_brain]
+  source_scripts:
+    - /workspace/fanyimin/SMITH_unified/code/workflows/run_ribomap_cross_study.py
+    - /workspace/fanyimin/SMITH_unified/code/workflows/run_starmap_to_ribomap_baselines.py
+    - /workspace/fanyimin/SMITH_unified/code/workflows/make_ribo_figure_panels.py

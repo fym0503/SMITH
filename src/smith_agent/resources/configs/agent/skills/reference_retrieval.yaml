@@ -1,0 +1,26 @@
+id: reference_retrieval
+description: Rank compatible source/reference datasets for transfer-aware panel design without target-data leakage.
+use_when:
+  - The user asks for transfer-aware panel selection.
+  - The user asks for public atlas retrieval before designing an imaging-based spatial transcriptomics panel.
+workflow:
+  - query_cellxgene_metadata with query_role=panel_design_source for prospective MERFISH/Xenium/CosMx/MERSCOPE/seqFISH/osmFISH panel design
+  - resolve_dataset_context
+  - score_reference_transferability
+  - materialize_cellxgene_dataset
+recommended_tools:
+  - query_cellxgene_metadata
+  - resolve_dataset_context
+  - score_reference_transferability
+  - materialize_cellxgene_dataset
+produces:
+  - cellxgene_reference_candidates.tsv
+  - cellxgene_reference_candidates.json
+  - reference_candidates.tsv
+  - reference_score_matrix.tsv
+  - reference_score_matrix.png
+  - reference_selection.json
+  - cellxgene_materialization.json
+  - cellxgene_subset.h5ad
+next_skills:
+  - candidate_gene_assembly

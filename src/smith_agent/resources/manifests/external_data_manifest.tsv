@@ -1,0 +1,18 @@
+id	package_path	original_local_path	notes
+smith_sc_processed	data/smith/SC_dataset_processed.h5ad	/workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/SC_dataset_processed.h5ad	Original core SC example data; not packaged.
+smith_st_processed	data/smith/ST_dataset_processed.h5ad	/workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/ST_dataset_processed.h5ad	Original core ST example data; not packaged.
+htapp_313_scrna	data/htapp/HTAPP-313-SMP-932/scrna.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_htapp/data/samples/HTAPP-313-SMP-932/scrna.h5ad	HTAPP-MBC scRNA sample; not packaged.
+htapp_313_merfish	data/htapp/HTAPP-313-SMP-932/merfish_1.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_htapp/data/samples/HTAPP-313-SMP-932/merfish_1.h5ad	HTAPP-MBC MERFISH sample; not packaged.
+elegans_scrna	data/elegans/elegans_scrna.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_scrna.h5ad	C. elegans scRNA reference; not packaged.
+elegans_tf_activity	data/elegans/elegans_tf.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_tf.h5ad	C. elegans TF activity atlas; not packaged.
+elegans_mirna_activity	data/elegans/elegans_mirna.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_mirna.h5ad	C. elegans miRNA activity atlas; not packaged.
+mouse_brain_ribomap_rep1	data/ribomap/mouse_brain_ribomap_rep1.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_ribomap_rep1.h5ad	Mouse brain RIBOMap rep1; not packaged.
+mouse_brain_ribomap_rep2	data/ribomap/mouse_brain_ribomap_rep2.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_ribomap_rep2.h5ad	Mouse brain RIBOMap rep2; not packaged.
+mouse_brain_starmap_rep2	data/ribomap/mouse_brain_starmap_rep2.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_starmap_rep2.h5ad	Mouse brain STARmap rep2; not packaged.
+ribomap_deep_brain	data/ribomap/deep_brain_ribomap.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/deep_brain_ribomap.h5ad	Deep brain RIBOMap reference; not packaged.
+starmap_deep_brain	data/ribomap/deep_brain_starmap.h5ad	/workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/deep_brain_starmap.h5ad	Deep brain STARmap reference; not packaged.
+repro_elegans_metrics	reproducibility/fixtures/elegans_five_run_results_summary.csv	/workspace/fanyimin/SMITH_unified/outputs/analysis/elegans_five_run_results_summary.csv	Publishable derived tutorial table; bundled and checksum-pinned.
+repro_ribomap_metrics	reproducibility/fixtures/ribomap_benchmark_methods_summary.csv	/workspace/fanyimin/SMITH_unified/outputs/analysis/benchmark_significance_all/benchmark_methods_summary_current_best.csv	Publishable derived tutorial table; bundled and checksum-pinned.
+repro_inhouse_aggregate	reproducibility/fixtures/inhouse_transfer_summary.csv	/workspace/fanyimin/smith_inhouse_transfer_corrected_20260730/qc/multiseed_rank_robustness/summary_metrics.csv	De-identified aggregate example table; no participant-level data.
+repro_agent_metrics	reproducibility/fixtures/agent_multi_reference_metrics.tsv	/workspace/fanyimin/smith-agent/outputs/liver_merfish_benchmark/formal_multi_visium_smith_5seed_panels/multi_seed_panel_size_metrics.tsv	Publishable derived tutorial table; bundled and checksum-pinned.
+repro_agent_feasibility	reproducibility/fixtures/agent_feasibility_demo.tsv	/workspace/fanyimin/smith-agent/outputs/feasibility_demo_10/integration/integration_summary.tsv	Compact feasibility example; bundled and checksum-pinned.

@@ -1,0 +1,14 @@
+id: task_intake
+description: Normalize a user request into a structured panel-design request.
+use_when:
+  - A new panel design request enters the system.
+workflow:
+  - resolve_dataset_context
+recommended_tools:
+  - resolve_dataset_context
+produces:
+  - request.json
+  - context_summary.json
+next_skills:
+  - reference_retrieval
+

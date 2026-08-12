@@ -1,0 +1,8 @@
+name: list_datasets
+description: List registered datasets.
+domain: registry
+outputs:
+  - datasets
+metadata:
+  handler: list_datasets
+

@@ -1,0 +1,14 @@
+name: run_probedealer_screen_light
+description: Run the local lightweight ProbeDealer wrapper on transcript FASTA inputs.
+domain: feasibility
+input_schema:
+  transcript_fasta:
+    type: string
+  output_dir:
+    type: string
+outputs:
+  - probedealer_summary.tsv
+  - final_probes.fa
+metadata:
+  handler: run_probedealer_screen_light
+

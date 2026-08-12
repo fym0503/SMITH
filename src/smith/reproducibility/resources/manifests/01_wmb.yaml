@@ -1,0 +1,19 @@
+id: 01_wmb
+order: 1
+title: Whole mouse brain multi-objective panel selection
+manuscript_section: SMITH Balances Multiple Objectives in Whole Mouse Brain MERFISH Panel Design
+figure: Figure 2
+runtime: About 10 seconds on CPU
+data_access: Bundled deterministic synthetic AnnData; full WMB data are external.
+summary: Runs the complete SMITH training and panel-export path with all five supported objectives.
+claim: A shared stochastic gate can produce a fixed-size target ranking under multiple biological objectives.
+inputs: []
+outputs:
+  - example_panel.h5ad
+  - selection/epoch_0.csv
+  - summary.json
+full_workflow:
+  availability: external_data_required
+  data_ids: [smith_sc_processed, smith_st_processed]
+  source_roots: [/workspace/fanyimin/SMITH_unified]
+  note: Full multi-donor WMB benchmarks and baseline comparisons are not part of the default example.

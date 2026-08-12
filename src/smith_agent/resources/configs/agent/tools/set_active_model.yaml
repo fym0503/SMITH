@@ -1,0 +1,11 @@
+name: set_active_model
+description: Set the active model for the current session.
+domain: session
+input_schema:
+  model_id:
+    type: string
+outputs:
+  - active_model_id
+metadata:
+  handler: set_active_model
+

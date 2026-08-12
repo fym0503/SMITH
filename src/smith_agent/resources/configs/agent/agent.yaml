@@ -1,0 +1,26 @@
+reports_root: reports
+sessions_root: sessions
+outputs_root: outputs
+env_file: .env
+skills_dir: configs/agent/skills
+tools_dir: configs/agent/tools
+datasets_dir: configs/agent/datasets
+models_dir: configs/agent/models
+baselines_dir: configs/agent/baselines
+feasibility_backends_dir: configs/agent/feasibility_backends
+probe_backends_dir: configs/agent/probe_backends
+policies_dir: configs/agent/policies
+max_turn_loops: 8
+
+external_roots:
+  smith_unified_root: .
+
+llm:
+  enabled: true
+  provider: openai
+  model: ""
+  base_url: https://api.babelark.com/v1
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.2
+  timeout_seconds: 120
+  planner_step_tool_limit: 2

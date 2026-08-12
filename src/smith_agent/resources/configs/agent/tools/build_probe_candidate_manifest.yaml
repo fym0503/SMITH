@@ -1,0 +1,19 @@
+name: build_probe_candidate_manifest
+description: Convert a selected gene panel or gene list into transcript-level manifest and FASTA inputs for probe-design backends.
+domain: bridge
+input_schema:
+  panel_path:
+    type: string
+  genes:
+    type: array
+  species:
+    type: string
+  panel_size:
+    type: integer
+outputs:
+  - manifest_tsv
+  - transcript_fasta
+  - paintshop_fasta
+  - paintshop_gtf
+metadata:
+  handler: build_probe_candidate_manifest

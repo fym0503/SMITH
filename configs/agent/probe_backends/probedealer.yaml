@@ -1,0 +1,5 @@
+id: probedealer_export
+backend: probedealer
+stage: probe_generation
+description: ProbeDealer export backend for assay-oriented final payloads.
+

@@ -1,0 +1,16 @@
+id: htapp_313_merfish
+path: data/htapp/HTAPP-313-SMP-932/merfish_1.h5ad
+description: HTAPP human tumor MERFISH spatial reference sample.
+species: homo_sapiens
+tissue: tumor
+modality: MERFISH
+tasks:
+- transfer
+- spatial
+aliases:
+- htapp_merfish
+metadata:
+  figure_context: human_disease
+  sample_id: HTAPP-313-SMP-932
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_htapp/data/samples/HTAPP-313-SMP-932/merfish_1.h5ad

@@ -1,0 +1,12 @@
+id: probe_generation
+description: Export final probes only for the targets that passed filtering and were selected for the final panel.
+use_when:
+  - A final panel is ready for assay-oriented export.
+recommended_tools:
+  - run_probedealer_screen_light
+produces:
+  - final_probe_table.tsv
+  - final_probe_sequences.fasta
+next_skills:
+  - reporting
+

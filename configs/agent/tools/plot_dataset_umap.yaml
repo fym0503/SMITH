@@ -1,0 +1,17 @@
+name: plot_dataset_umap
+description: Render a UMAP plot from an AnnData file, optionally colored by an obs column.
+domain: plotting
+input_schema:
+  dataset_path:
+    type: string
+  dataset_id:
+    type: string
+  color:
+    type: string
+  basis:
+    type: string
+outputs:
+  - umap_png
+metadata:
+  handler: plot_dataset_umap
+

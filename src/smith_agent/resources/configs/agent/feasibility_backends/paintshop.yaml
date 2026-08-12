@@ -1,0 +1,5 @@
+id: paintshop
+backend: paintshop
+stage: feasibility
+description: PaintSHOP transcript-aware probe scoring backend.
+

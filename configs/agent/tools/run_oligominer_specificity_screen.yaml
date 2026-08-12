@@ -1,0 +1,19 @@
+name: run_oligominer_specificity_screen
+description: Run OligoMiner specificity screening on a multi-transcript FASTA file.
+domain: feasibility
+input_schema:
+  transcript_fasta:
+    type: string
+  species:
+    type: string
+    default: mus_musculus
+    enum:
+      - homo_sapiens
+      - mus_musculus
+  temperature_c:
+    type: integer
+    default: 42
+outputs:
+  - oligominer_summary_tsv
+metadata:
+  handler: run_oligominer_specificity_screen

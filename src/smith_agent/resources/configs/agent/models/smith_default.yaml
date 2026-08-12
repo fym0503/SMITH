@@ -1,0 +1,12 @@
+id: smith_default
+backend: smith
+entrypoint: scripts/main.py
+description: Default SMITH training and ranking entrypoint from this clean package.
+capabilities:
+  - panel_selection
+  - transfer_learning
+  - multitask_optimization
+aliases:
+  - smith
+metadata:
+  python_executable: python

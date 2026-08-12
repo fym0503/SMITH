@@ -1,0 +1,17 @@
+id: mouse_brain_starmap_rep2
+path: data/ribomap/mouse_brain_starmap_rep2.h5ad
+description: Mouse brain STARmap spatial transcriptome reference used for cross-modality
+  RIBOMap panel design.
+species: mus_musculus
+tissue: brain
+modality: STARmap
+tasks:
+- classification
+- region
+- transfer
+aliases:
+- starmap_rep2
+metadata:
+  figure_context: ribomap
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_starmap_rep2.h5ad

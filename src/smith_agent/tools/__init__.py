@@ -1,0 +1,2 @@
+"""Default smith-agent tools."""
+

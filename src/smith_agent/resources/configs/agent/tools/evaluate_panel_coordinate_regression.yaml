@@ -1,0 +1,23 @@
+name: evaluate_panel_coordinate_regression
+description: Evaluate a selected panel on a spatial dataset by fitting a coordinate regression model on a held-out cell split.
+domain: evaluation
+input_schema:
+  adata_file:
+    type: string
+  panel_path:
+    type: string
+  panel_size:
+    type: integer
+  test_size:
+    type: number
+  seed:
+    type: integer
+  alpha:
+    type: number
+  output_dir:
+    type: string
+outputs:
+  - coordinate_regression_result.json
+  - coordinate_regression_summary.tsv
+metadata:
+  handler: evaluate_panel_coordinate_regression

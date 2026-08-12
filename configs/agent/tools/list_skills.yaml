@@ -1,0 +1,8 @@
+name: list_skills
+description: List available skill definitions.
+domain: registry
+outputs:
+  - skills
+metadata:
+  handler: list_skills
+

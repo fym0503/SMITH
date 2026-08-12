@@ -1,0 +1,18 @@
+include README.md
+include requirements.txt
+include pyproject.toml
+include requirements-reproducibility.txt
+include Makefile
+recursive-include configs *.yaml
+recursive-include scripts *.py *.md
+recursive-include docs *.md *.txt
+recursive-include manifests *
+recursive-include tests *.py
+recursive-include data .gitkeep README.md
+recursive-include outputs .gitkeep
+recursive-include reproducibility *.yaml *.csv *.tsv *.md
+recursive-include src/smith_agent/resources *
+
+
+prune src/smith_agent/resources/__pycache__
+global-exclude ._* .DS_Store *.py[cod]

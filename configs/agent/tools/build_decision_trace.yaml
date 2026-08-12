@@ -1,0 +1,13 @@
+name: build_decision_trace
+description: Merge panel selections with feasibility results into a gene-level decision trace.
+domain: report
+input_schema:
+  selected_panel_tsv:
+    type: string
+  feasibility_table_tsv:
+    type: string
+outputs:
+  - decision_trace.tsv
+metadata:
+  handler: build_decision_trace
+

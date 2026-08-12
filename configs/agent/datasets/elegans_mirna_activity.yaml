@@ -1,0 +1,17 @@
+id: elegans_mirna_activity
+path: data/elegans/elegans_mirna.h5ad
+description: C. elegans miRNA promoter activity atlas used for regulatory activity
+  panel-design validation.
+species: caenorhabditis_elegans
+tissue: embryo
+modality: miRNA activity
+tasks:
+- classification
+- regression
+- temporal
+aliases:
+- elegans_mirna
+metadata:
+  figure_context: regulatory_activity
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_mirna.h5ad

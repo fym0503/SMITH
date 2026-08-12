@@ -1,0 +1,10 @@
+id: baseline_comparison
+description: Compare SMITH outputs against configured baseline methods.
+use_when:
+  - The user asks for baseline benchmarking or manuscript-ready comparisons.
+produces:
+  - baseline_summary.tsv
+  - panel_comparison.tsv
+next_skills:
+  - reporting
+

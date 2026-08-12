@@ -1,0 +1,11 @@
+name: apply_feasibility_policy
+description: Re-apply hard feasibility constraints to an existing merged feasibility table.
+domain: feasibility
+input_schema:
+  feasibility_table_tsv:
+    type: string
+outputs:
+  - filter_decisions.tsv
+metadata:
+  handler: apply_feasibility_policy
+

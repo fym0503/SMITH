@@ -1,0 +1,11 @@
+name: plot_evaluation_summary
+description: Render a summary plot from a cross-dataset evaluation CSV.
+domain: plotting
+input_schema:
+  evaluation_csv:
+    type: string
+outputs:
+  - evaluation_summary_png
+metadata:
+  handler: plot_evaluation_summary
+

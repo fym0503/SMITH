@@ -1,0 +1,23 @@
+name: run_probedealer_backend_screen
+description: Run the SMITH-Agent ProbeDealer backend on a multi-transcript FASTA file.
+domain: feasibility
+input_schema:
+  transcript_fasta:
+    type: string
+  species:
+    type: string
+    default: mus_musculus
+    enum:
+      - homo_sapiens
+      - mus_musculus
+  use_transcriptome_reference:
+    type: boolean
+    default: true
+  use_full_mouse_reference:
+    type: boolean
+    default: true
+    deprecated: true
+outputs:
+  - probedealer_summary_tsv
+metadata:
+  handler: run_probedealer_backend_screen

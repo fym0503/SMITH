@@ -1,0 +1,55 @@
+name: materialize_cellxgene_dataset
+description: Materialize a selected CELLxGENE dataset or subset into a local AnnData h5ad file using generic organism, tissue, disease, assay, cell-type, gene, and cell-count filters.
+domain: retrieval
+input_schema:
+  dataset_id:
+    type: string
+  organism:
+    type: string
+  species:
+    type: string
+  census_version:
+    type: string
+  tissue:
+    type: string
+  tissue_general:
+    type: string
+  disease:
+    type: string
+  cell_type:
+    type: string
+  assay:
+    type: string
+  suspension_type:
+    type: string
+  is_primary_data:
+    type: boolean
+  gene_symbols:
+    type: array
+  max_cells:
+    type: integer
+  seed:
+    type: integer
+  output_h5ad:
+    type: string
+  output_dir:
+    type: string
+  extra_obs_filter:
+    type: string
+  extra_var_filter:
+    type: string
+  download_source:
+    type: boolean
+  source:
+    type: string
+  discover_asset_id:
+    type: string
+  discover_filetype:
+    type: string
+  source_h5ad:
+    type: string
+outputs:
+  - cellxgene_materialization.json
+  - cellxgene_subset.h5ad
+metadata:
+  handler: materialize_cellxgene_dataset

@@ -1,0 +1,5 @@
+id: probedealer
+backend: probedealer
+stage: feasibility
+description: ProbeDealer multiplex-oriented screening backend.
+

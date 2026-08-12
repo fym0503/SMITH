@@ -1,0 +1,72 @@
+name: query_cellxgene_metadata
+description: Query the CELLxGENE Discover dataset index and rank candidate references with generic metadata filters. For prospective imaging-ST panel design, set query.query_role to panel_design_source so the query is constrained to scRNA-seq source references and target spatial assays are excluded.
+domain: retrieval
+input_schema:
+  query:
+    type: object
+    properties:
+      query_role:
+        type: string
+      dataset_role:
+        type: string
+      reference_role:
+        type: string
+      intended_use:
+        type: string
+      panel_design_source:
+        type: boolean
+      target_assay_family:
+        type: string
+      target_data_policy:
+        type: string
+      collection_id:
+        type: string
+      collection_ids:
+        type: array
+      exclude_dataset_id:
+        type: string
+      exclude_dataset_ids:
+        type: array
+      organism:
+        type: string
+      species:
+        type: string
+      tissue:
+        type: string
+      tissues:
+        type: array
+      disease:
+        type: string
+      diseases:
+        type: array
+      assay_family:
+        type: string
+      assay_families:
+        type: array
+      exclude_assay_family:
+        type: string
+      exclude_assay_families:
+        type: array
+      include_assays:
+        type: array
+      exclude_assays:
+        type: array
+      tissue_mode:
+        type: string
+      min_cells:
+        type: integer
+      primary_only:
+        type: boolean
+      materializable_only:
+        type: boolean
+      census_version:
+        type: string
+  max_results:
+    type: integer
+  output_dir:
+    type: string
+outputs:
+  - cellxgene_reference_candidates.tsv
+  - cellxgene_reference_candidates.json
+metadata:
+  handler: query_cellxgene_metadata

@@ -1,0 +1,11 @@
+name: export_manifest
+description: Export the current session state and artifacts as a deliverable manifest.
+domain: report
+input_schema:
+  output_json:
+    type: string
+outputs:
+  - deliverable_manifest.json
+metadata:
+  handler: export_manifest
+

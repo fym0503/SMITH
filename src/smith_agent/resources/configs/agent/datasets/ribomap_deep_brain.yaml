@@ -1,0 +1,16 @@
+id: ribomap_deep_brain
+path: data/ribomap/deep_brain_ribomap.h5ad
+description: Deep-brain RIBOMap spatial translatome reference for same-modality transfer.
+species: mus_musculus
+tissue: brain
+modality: RIBOMap
+tasks:
+- classification
+- region
+- transfer
+aliases:
+- deep_brain_ribomap
+metadata:
+  figure_context: ribomap
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/deep_brain_ribomap.h5ad

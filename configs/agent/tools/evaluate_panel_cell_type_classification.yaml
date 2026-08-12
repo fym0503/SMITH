@@ -1,0 +1,28 @@
+name: evaluate_panel_cell_type_classification
+description: Evaluate a selected panel on an AnnData cell-type label by fitting a held-out linear classifier.
+domain: evaluation
+input_schema:
+  adata_file:
+    type: string
+  panel_path:
+    type: string
+  panel_size:
+    type: integer
+  label_column:
+    type: string
+  test_size:
+    type: number
+  seed:
+    type: integer
+  max_iter:
+    type: integer
+  class_weight:
+    type: string
+  output_dir:
+    type: string
+outputs:
+  - cell_type_classification_result.json
+  - cell_type_classification_summary.tsv
+  - cell_type_classification_report.tsv
+metadata:
+  handler: evaluate_panel_cell_type_classification

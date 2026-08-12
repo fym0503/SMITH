@@ -1,0 +1,19 @@
+id: 02_regulatory_activity
+order: 2
+title: Developmental regulatory activity panels
+manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
+figure: Figure 3
+runtime: Less than 5 seconds on CPU
+data_access: Bundled aggregate metrics derived from five-run TF and miRNA evaluations.
+summary: Recomputes the best SMITH cell-identity and developmental-time summary for each assay and panel size.
+claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
+inputs:
+  - path: fixtures/elegans_five_run_results_summary.csv
+    sha256: 0a6f4d3fbc75057b58f5dcd9271dbf0f426ba93f4b97274d59fdc0d6b152d01d
+outputs: [summary.json]
+full_workflow:
+  availability: public_data_external_download
+  data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity]
+  source_scripts:
+    - /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/run_elegans_smith_multitask.py
+    - /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/scripts/evaluate_elegans_split_metrics.py

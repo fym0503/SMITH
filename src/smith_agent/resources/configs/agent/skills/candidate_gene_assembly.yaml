@@ -1,0 +1,11 @@
+id: candidate_gene_assembly
+description: Assemble the optimization-ready candidate gene pool from user priors and data-derived sources.
+use_when:
+  - A candidate gene space must be built before filtering or optimization.
+recommended_tools:
+  - resolve_dataset_context
+produces:
+  - candidate_gene_pool.tsv
+next_skills:
+  - feasibility_filtering
+

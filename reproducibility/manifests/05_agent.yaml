@@ -1,0 +1,21 @@
+id: 05_agent
+order: 5
+title: Multi-reference ranking and probe feasibility
+manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay Design
+figure: Figure 6
+runtime: Less than 5 seconds on CPU
+data_access: Bundled aggregate MERFISH metrics and a ten-gene feasibility example.
+summary: Recomputes multi-reference accuracy summaries and feasibility pass rates.
+claim: Reference aggregation and probe-level checks can be recorded as explicit, auditable stages after panel selection.
+inputs:
+  - path: fixtures/agent_multi_reference_metrics.tsv
+    sha256: 113eb3ca6329a3aaadb9c0612b1cf25a8c8da87a0778dc5d687f7161558912ab
+  - path: fixtures/agent_feasibility_demo.tsv
+    sha256: fc8fb6b32aea6a219de6e2da3bc501268eb39883b0ef1bf2520e8f31f1979fe7
+outputs: [summary.json]
+full_workflow:
+  availability: mixed_public_and_external_tools
+  source_scripts:
+    - scripts/agent_examples/formal_liver_merfish_multi_visium_smith.py
+    - scripts/agent_examples/run_top128_feasibility_filtering.py
+  note: Full probe screening additionally requires ODT, BLAST indexes, and backend-specific reference assets.

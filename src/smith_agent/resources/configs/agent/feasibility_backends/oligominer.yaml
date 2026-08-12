@@ -1,0 +1,5 @@
+id: oligominer
+backend: oligominer
+stage: feasibility
+description: OligoMiner specificity screening backend.
+

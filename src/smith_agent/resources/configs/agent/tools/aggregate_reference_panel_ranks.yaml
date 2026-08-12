@@ -1,0 +1,40 @@
+name: aggregate_reference_panel_ranks
+description: Rank genes from one scRNA source and multiple spatial-context AnnData references, then aggregate source and reference ranks into an integrated candidate panel. This is a lightweight pilot before formal multi-dataset SMITH training.
+domain: panel_selection
+input_schema:
+  source_adata_file:
+    type: string
+  source_rank_file:
+    type: string
+  reference_adata_files:
+    type: array
+  reference_ids:
+    type: array
+  panel_size:
+    type: integer
+  source_weight:
+    type: number
+  reference_weight:
+    type: number
+  max_cells:
+    type: integer
+  seed:
+    type: integer
+  min_detection_rate:
+    type: number
+  min_reference_support:
+    type: integer
+  gene_universe:
+    type: string
+  exclude_gene_patterns:
+    type: array
+  output_dir:
+    type: string
+outputs:
+  - source_gene_rank.tsv
+  - reference_*_gene_rank.tsv
+  - integrated_panel_rank.tsv
+  - integrated_top_<panel_size>_panel.tsv
+  - rank_aggregation_comparison.json
+metadata:
+  handler: aggregate_reference_panel_ranks

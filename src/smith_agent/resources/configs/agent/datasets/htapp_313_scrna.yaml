@@ -1,0 +1,16 @@
+id: htapp_313_scrna
+path: data/htapp/HTAPP-313-SMP-932/scrna.h5ad
+description: HTAPP human tumor single-cell RNA-seq reference sample.
+species: homo_sapiens
+tissue: tumor
+modality: scRNA-seq
+tasks:
+- classification
+- transfer
+aliases:
+- htapp_scrna
+metadata:
+  figure_context: human_disease
+  sample_id: HTAPP-313-SMP-932
+  data_status: external_not_packaged
+  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_htapp/data/samples/HTAPP-313-SMP-932/scrna.h5ad
