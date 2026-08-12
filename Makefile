@@ -12,7 +12,7 @@ repro-run:
 	done
 
 docs:
-	sphinx-build -W -b html -c docs docs/source docs/_build/html
+	sphinx-build -W -b html docs/source docs/_build/html
 
 wheel:
 	python -m build --wheel
