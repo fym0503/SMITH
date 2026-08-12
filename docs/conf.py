@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -16,8 +17,9 @@ extensions = [
     "sphinx_design",
 ]
 source_suffix = {".md": "markdown"}
-master_doc = "index"
-exclude_patterns = ["_build"]
 html_theme = "furo"
 html_title = "SMITH"
+master_doc = "docs/source/index" if os.environ.get("READTHEDOCS") else "index"
+root_doc = master_doc
+exclude_patterns = ["_build"]
 myst_enable_extensions = ["colon_fence", "deflist"]
