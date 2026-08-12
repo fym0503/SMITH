@@ -21,5 +21,17 @@ html_theme = "furo"
 html_title = "SMITH"
 master_doc = "docs/source/index" if os.environ.get("READTHEDOCS") else "index"
 root_doc = master_doc
-exclude_patterns = ["_build"]
+exclude_patterns = [
+    "_build/**",
+    ".pytest_cache/**",
+    "build/**",
+    "data/**",
+    "manifests/**",
+    "outputs/**",
+    "reproducibility/**",
+    "scripts/**",
+    "src/**",
+    "tests/**",
+    "README.md",
+]
 myst_enable_extensions = ["colon_fence", "deflist"]
