@@ -17,12 +17,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-reproducibility.txt
-          python -m pip install -e .
+          python -m pip install -e '.[docs,notebooks]'
       - name: Verify tutorial inputs
         run: smith-repro check
       - name: Run tests and chapter tutorials
-        run: python -m pytest -q tests
+        run: |
+          python -m pytest -q tests
+          python scripts/build_tutorial_notebooks.py --execute
       - name: Build documentation
-        run: sphinx-build -W -b html -c docs docs/source docs/_build/html
+        run: sphinx-build -W -b html docs/source docs/_build/html
       - name: Build wheel
         run: python -m pip install build && python -m build --wheel

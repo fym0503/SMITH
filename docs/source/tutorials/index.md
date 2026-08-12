@@ -1,25 +1,22 @@
-# Paper Examples
+# Notebook Tutorials
 
-The examples follow the five main Results sections rather than the internal module layout. Each example runs one representative analysis and writes a machine-readable `summary.json`.
+The tutorials are executable Jupyter notebooks organized by the five main Results sections. Each notebook validates its pinned inputs, runs a representative analysis, displays tables and figures, and states which parts of the manuscript require additional data or compute.
 
-Start by checking every pinned input:
-
-```bash
-smith-repro check
-```
-
-Run a single chapter:
+The repository keeps editable source notebooks and executed documentation copies under `docs/source/tutorials/notebooks/`. To run them locally:
 
 ```bash
-smith-repro run 03_ribomap_transfer
+python -m pip install -e '.[notebooks]'
+jupyter lab docs/source/tutorials/notebooks
 ```
 
-Outputs are written under `outputs/reproducibility/<case>/` by default. The compact fixtures are derived tables, not raw biological data. See the reproducibility matrix before interpreting an example output as a complete figure reproduction.
+The executed notebooks shown on this site are regenerated from the source notebooks by `scripts/build_tutorial_notebooks.py`. Compact fixtures are derived tables or deterministic synthetic inputs, not substitutes for restricted raw data.
 
-| Example | Manuscript analysis |
-|---|---|
-| `01_wmb` | Multi-objective panel selection |
-| `02_regulatory_activity` | TF and miRNA activity preservation |
-| `03_ribomap_transfer` | RIBOMap and STARmap transfer |
-| `04_inhouse_disease` | Human disease transfer robustness |
-| `05_agent` | Multi-reference ranking and probe feasibility |
+```{toctree}
+:maxdepth: 1
+
+notebooks/wmb_section/01_SMITH_WMB_Panel_Selection_executed
+notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed
+notebooks/ribomap_section/03_SMITH_RIBOMap_Transfer_executed
+notebooks/disease_section/04_SMITH_InHouse_Disease_Transfer_executed
+notebooks/agent_section/05_SMITH_Agent_Evaluation_executed
+```

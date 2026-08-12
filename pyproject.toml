@@ -41,10 +41,18 @@ cellxgene = [
 docs = [
   "furo>=2024.1.29",
   "linkify-it-py>=2.0",
+  "myst-nb>=1.0",
   "myst-parser>=2.0",
   "sphinx>=7.0",
   "sphinx-copybutton>=0.5",
   "sphinx-design>=0.5",
+]
+notebooks = [
+  "ipykernel>=6.29",
+  "jupyterlab>=4.0",
+  "matplotlib>=3.8",
+  "nbclient>=0.10",
+  "nbformat>=5.10",
 ]
 
 [project.scripts]

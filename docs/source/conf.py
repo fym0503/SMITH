@@ -11,14 +11,21 @@ author = "Yimin Fan"
 release = "0.1.0"
 
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinx_copybutton",
     "sphinx_design",
 ]
-source_suffix = {".md": "markdown"}
 master_doc = "index"
 root_doc = "index"
-exclude_patterns = ["_build/**"]
+exclude_patterns = [
+    "_build/**",
+    "tutorials/0*.md",
+    "**/*_source.ipynb",
+    "**/.ipynb_checkpoints",
+]
 html_theme = "furo"
 html_title = "SMITH"
 myst_enable_extensions = ["colon_fence", "deflist"]
+nb_execution_mode = "off"
+nb_merge_streams = True
+nb_output_stderr = "remove"

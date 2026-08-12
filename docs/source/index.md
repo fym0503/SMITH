@@ -16,11 +16,6 @@ quickstart
 :caption: Paper examples
 
 tutorials/index
-tutorials/01_wmb
-tutorials/02_regulatory_activity
-tutorials/03_ribomap_transfer
-tutorials/04_inhouse_disease
-tutorials/05_agent
 ```
 
 ```{toctree}

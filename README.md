@@ -130,7 +130,18 @@ Start the interactive agent shell:
 smith-cli --config configs/agent/agent.yaml shell
 ```
 
-## Quick Smoke Test
+## Notebook Tutorials
+
+The paper-oriented examples are executable Jupyter notebooks grouped by manuscript Results section. Editable and pre-executed notebooks live under `docs/source/tutorials/notebooks/` and are published in the [online tutorials](https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html).
+
+```bash
+python -m pip install -e '.[notebooks]'
+jupyter lab docs/source/tutorials/notebooks
+```
+
+Use `python scripts/build_tutorial_notebooks.py --execute` to regenerate every documented notebook and its figures.
+
+## Run Without External Data
 
 The package includes a synthetic AnnData generator so the optimizer can be tested without downloading manuscript-scale datasets:
 
