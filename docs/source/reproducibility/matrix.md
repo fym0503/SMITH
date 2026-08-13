@@ -1,20 +1,10 @@
-# Reproducibility Matrix
+# Reproducibility matrix
 
-The matrix prevents three different claims from being conflated: code-path verification, representative analysis reproduction and full-paper regeneration.
-
-| Results section | Example | Bundled input | Representative output | Full-paper status |
+| Figure | Public tutorial | Starting input | Newly generated outputs | Boundary |
 |---|---|---|---|---|
-| WMB benchmark | Source-availability record | None; original WMB code/data are unavailable | No fabricated Figure 2 output | Original WMB workflow and data must be supplied |
-| Regulatory activity | Real-output notebook | Completed TF/miRNA five-run metrics | SMITH vs baseline identity/time comparison | Public atlas download and training required |
-| RIBOMap transfer | Real-output notebook | Completed RIBOMap/STARmap benchmark metrics | Transfer accuracy comparison | Public spatial objects and pathway workflow required |
-| Human disease atlas | Real-output notebook | Real de-identified per-seed robustness metrics | Recomputed aggregate transfer audit | Controlled-access raw data required |
-| SMITH-Agent | Real-output notebook | Real five-seed MERFISH metrics and 12,160-gene gate summary | Reference/feasibility comparison | External references and probe backends required |
+| Figure 2 | Whole mouse brain | Unavailable | None | Source and data unavailable |
+| Figure 3 | Regulatory activity | C. elegans train/test H5AD | SMITH ranking, panel, identity/time metrics | Tutorial runs one real split |
+| Figure 4 | RIBOMap transfer | RIBOMap source/target H5AD | Shared-gene H5AD, SMITH/baseline panels, metrics | Manuscript adds directions/baselines/seeds |
+| Figure 6 | SMITH-Agent | liver snRNA, MERFISH, spatial references | source/reference rankings, integrated panel, MERFISH metrics | Probe backends are separate |
 
-Every input fixture is SHA-256 pinned. Run `smith-repro check` before analysis. Every output includes the case id, manuscript section, figure and claim so that artifacts remain interpretable after they are moved.
-
-## What the examples do not claim
-
-- They do not reproduce every panel of every main and supplementary figure.
-- Aggregate examples do not rerun target selection from raw H5AD files.
-- The human-disease example does not make restricted human data public.
-- The WMB page is not evidence that manuscript-scale Figure 2 has been repeated; its source boundary is explicit because the original code/data are unavailable.
+The public package intentionally omits the controlled in-house disease chapter. Reference output tables under `reproducibility/reference_outputs/` are optional comparisons and are never workflow inputs.

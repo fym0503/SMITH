@@ -38,6 +38,7 @@ def test_make_smoke_h5ad(tmp_path):
     assert {"celltype", "cell_type", "region", "pathology"}.issubset(adata.obs.columns)
     assert "spatial" in adata.obsm
     assert "raw" in adata.layers
+    assert "absolute_time" in adata.obs
 
 
 def test_smith_one_epoch_smoke(tmp_path):
@@ -64,7 +65,7 @@ def test_smith_one_epoch_smoke(tmp_path):
             "--log_dir",
             str(log_dir),
             "--tasks",
-            "recon,cls,region,pathology,coordination",
+            "recon,cls,time,region,pathology,coordination",
             "--task_name",
             "celltype",
             "--panel_size",
@@ -85,6 +86,8 @@ def test_smith_one_epoch_smoke(tmp_path):
             "8",
             "--device",
             "cpu",
+            "--time_label",
+            "absolute_time",
             "--seed",
             "7",
             "--balance_mode",

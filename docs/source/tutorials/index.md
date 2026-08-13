@@ -1,22 +1,22 @@
 # Notebook Tutorials
 
-The tutorials are executable Jupyter notebooks for the Results sections whose real completed outputs are available in this public package. Each notebook validates pinned checksums, analyzes the result table directly, displays tables and figures, and states which parts of the manuscript require additional data or compute.
+These tutorials start from real H5AD inputs. Each workflow creates a new gene ranking, panel, evaluation table and `run_manifest.json`; the notebooks analyze only those new files.
 
-The repository keeps editable source notebooks and executed documentation copies under `docs/source/tutorials/notebooks/`. To run them locally:
+Download a case after its versioned Zenodo archive is published:
 
 ```bash
-python -m pip install -e '.[notebooks]'
-jupyter lab docs/source/tutorials/notebooks
+python scripts/download_tutorial_data.py --case 02_regulatory_activity --data-root data/tutorials
 ```
 
-The executed notebooks shown on this site are regenerated from the source notebooks by `scripts/build_tutorial_notebooks.py`. The fixtures are copied from completed paper-workspace outputs, not synthetic substitutes. WMB source/data availability is documented separately.
+Read the Docs renders notebooks that were executed on the project server. It does not download large data or train SMITH during documentation builds. Editable source notebooks are stored beside the executed copies.
+
+Old aggregate manuscript tables are retained under `reproducibility/reference_outputs/` only for optional comparison after a run. They are not tutorial inputs or part of the end-to-end workflow.
 
 ```{toctree}
 :maxdepth: 1
 
 01_wmb
-notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed
-notebooks/ribomap_section/03_SMITH_RIBOMap_Transfer_executed
-notebooks/disease_section/04_SMITH_InHouse_Disease_Transfer_executed
-notebooks/agent_section/05_SMITH_Agent_Evaluation_executed
+02_regulatory_activity
+03_ribomap_transfer
+05_agent
 ```

@@ -10,7 +10,8 @@ recursive-include manifests *
 recursive-include tests *.py
 recursive-include data .gitkeep README.md
 recursive-include outputs .gitkeep
-recursive-include reproducibility *.yaml *.csv *.tsv *.md
+recursive-include reproducibility *.py *.yaml *.csv *.tsv *.md
+recursive-include docs *.ipynb
 recursive-include src/smith_agent/resources *
 
 

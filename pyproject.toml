@@ -73,8 +73,6 @@ include = ["smith", "smith.*", "smith_agent", "smith_agent.*"]
 "smith.reproducibility.resources" = [
   "README.md",
   "manifests/*.yaml",
-  "fixtures/*.csv",
-  "fixtures/*.tsv",
 ]
 "smith_agent.resources" = [
   "requirements.txt",

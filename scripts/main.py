@@ -23,9 +23,9 @@ def set_random_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, train=True):
-    input_data = feed_dict['input']
-    labels = {t: feed_dict[t] for t in tasks[1:]}
+def process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, device, train=True):
+    input_data = feed_dict['input'].to(device, non_blocking=True)
+    labels = {t: feed_dict[t].to(device, non_blocking=True) for t in tasks[1:]}
     
     if train:
         optimizer.zero_grad()
@@ -89,6 +89,7 @@ def Smith(args):
     var, tasks, datas = get_dataset(args)
     os.makedirs(args.log_dir, exist_ok=True)
     os.makedirs(args.saving_dir, exist_ok=True)
+    device = torch.device(args.device)
     
     train_dataloader, val_dataloader = split_dataset(tasks, datas, args)
     loss_fn = losses.get_loss(args)
@@ -112,7 +113,7 @@ def Smith(args):
         mask, masks = None, {}
         
         for feed_dict in train_dataloader:
-            batch_losses = process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, True)
+            batch_losses = process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, device, True)
             for t in tasks[1:]:
                 epoch_losses[t].append(batch_losses[t])
         
@@ -121,7 +122,7 @@ def Smith(args):
             for m in model.values():
                 m.eval()
             for feed_dict in val_dataloader:
-                batch_losses = process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, False)
+                batch_losses = process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, device, False)
                 for t in tasks[1:]:
                     epoch_val_losses[t].append(batch_losses[t])
         
@@ -167,9 +168,12 @@ if __name__ == '__main__':
     parser.add_argument('--evaluate_epoch', type=int, default=10)
     parser.add_argument('--balance_mode', type=str, default='mean', choices=['off', 'mean', 'capped'])
     parser.add_argument('--balance_cap', type=int, default=500)
+    parser.add_argument('--max_cells', type=int, default=None)
+    parser.add_argument('--sampling_strategy', choices=['random', 'celltype', 'spatial', 'celltype_spatial'], default='random')
+    parser.add_argument('--time_label', type=str, default=None)
     
     args = parser.parse_args()
-    if args.seed:
+    if args.seed is not None:
         set_random_seed(args.seed)
     
     Smith(args)

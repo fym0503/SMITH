@@ -1,19 +1,18 @@
-# Data and Access
+# Data and access
 
-Raw datasets are intentionally excluded from the Python distribution. Their expected package paths and original workspace locations are tracked in `manifests/external_data_manifest.tsv` and in the Agent dataset registry.
+`reproducibility/data_manifest.yaml` is the versioned source of truth for tutorial files, sizes, SHA-256 checksums, resource estimates and archive metadata. Raw H5AD data are not stored in Git or the Python wheel.
 
-## Public external data
+The local archives and file checksums have been prepared. The Zenodo record URL is intentionally `null` until upstream licenses are checked and an authorized user publishes the archives. `CC BY-NC 4.0` is a target bundle license, not a claim that every upstream dataset has already been relicensed.
 
-The whole-mouse-brain, C. elegans regulatory-activity, RIBOMap and STARmap analyses should ultimately use DOI- or repository-versioned downloads. A release should publish checksums and preparation commands instead of relying on `/workspace/...` paths.
+After publication, download and verify a case with:
 
-## Controlled-access data
+```bash
+python scripts/download_tutorial_data.py --case 03_ribomap_transfer --data-root data/tutorials
+smith-repro check 03_ribomap_transfer --data-root data/tutorials
+```
 
-The human neurodegeneration atlas example distributes only de-identified aggregate statistics. Authorized users can place prepared H5AD files at the paths declared by the dataset registry and run the full workflow in their approved environment.
+The downloader resumes partial files, skips verified existing data, checks archive and individual-file checksums, rejects unsafe archive paths/links, and removes incomplete extraction directories after failure.
 
-## Probe backend assets
+Build a local archive before an authorized Zenodo upload with `scripts/build_tutorial_archives.py`. That command validates every source file against the manifest and prints the final archive size and checksum; it never uploads automatically.
 
-Full feasibility screening can require transcript FASTA files, BLAST databases, genome indexes and separate tool environments. These assets belong in a download/cache layer and must not be embedded in the wheel.
-
-## Release requirement
-
-Before publication, every public dataset entry should include an accession or DOI, license, preparation script, expected SHA-256 checksum and the manuscript cases that consume it.
+Whole mouse brain remains unavailable. The controlled in-house disease chapter and inputs are not included in the public case registry or tutorials.

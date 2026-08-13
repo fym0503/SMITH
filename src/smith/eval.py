@@ -6,7 +6,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score, classification_report, explained_variance_score
 from scipy.stats import pearsonr
-import scanpy as sc
 import argparse
 import os
 

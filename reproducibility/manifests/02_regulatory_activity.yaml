@@ -3,17 +3,23 @@ order: 2
 title: Developmental regulatory activity panels
 manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
 figure: Figure 3
-runtime: Less than 5 seconds on CPU
-data_access: Bundled aggregate metrics derived from five-run TF and miRNA evaluations.
-summary: Recomputes the best SMITH cell-identity and developmental-time summary for each assay and panel size.
+runtime: 10-60 minutes depending on cells, epochs and device
+data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
+summary: Starts from a real C. elegans train/test split, trains SMITH, writes a new ranking and panel, then evaluates cell identity and developmental time.
 claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
 inputs:
-  - path: fixtures/elegans_five_run_results_summary.csv
-    sha256: 0a6f4d3fbc75057b58f5dcd9271dbf0f426ba93f4b97274d59fdc0d6b152d01d
-outputs: [summary.json]
+  - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
+    kind: data
+    bytes: 171431555
+    sha256: 6b7bfa064ed119bf6e1891c88550894db94d454c99837d7ae53defbd3dbf4fcc
+  - path: regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad
+    kind: data
+    bytes: 115530989
+    sha256: 31ee972b9b5ad2131bd2f8cb80f5a0cae02b14e26dc2844fdff6495532bf871a
+outputs: [smith/ranking/epoch_*.csv, smith/panel_top32.csv, evaluation/metrics.json, run_manifest.json]
 full_workflow:
   availability: public_data_external_download
   data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity]
   source_scripts:
-    - /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/run_elegans_smith_multitask.py
-    - /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/scripts/evaluate_elegans_split_metrics.py
+    - reproducibility/workflows/regulatory_activity/run_tutorial.py
+    - reproducibility/workflows/regulatory_activity/evaluate_outputs.py

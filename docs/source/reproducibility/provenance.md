@@ -1,15 +1,5 @@
-# Provenance and Artifacts
+# Run provenance
 
-Each case is defined by a YAML file under `reproducibility/manifests/`. The manifest records:
+Every runnable workflow writes `run_manifest.json` with CLI configuration, resolved input paths, input sizes and SHA-256 values, training artifacts, generated panels and evaluation outputs. Outputs are always rooted at `--output-dir`; workflows do not depend on `/workspace/fanyimin/...` paths.
 
-- manuscript section and figure;
-- representative claim and example scope;
-- expected runtime;
-- pinned inputs and declared outputs;
-- full-paper source workflows and data-access limitations.
-
-The bundled fixtures under `reproducibility/fixtures/` are compact result tables copied from completed manuscript runs. They should remain immutable for a tagged paper release. A changed fixture requires a new checksum, a provenance note and review of any affected manuscript claim. The original generation scripts for the real examples are archived under `reproducibility/workflows/`.
-
-Generated artifacts belong under `outputs/reproducibility/` and are not packaged. CI should run `smith-repro check`; the four available real examples are executable, while WMB is intentionally unavailable.
-
-The paper release environment is pinned in `requirements-reproducibility.txt`. The general package dependencies in `pyproject.toml` remain intentionally less restrictive for library users.
+The versioned data manifest records the intended archive contents independently from any one server. Optional aggregate tables in `reproducibility/reference_outputs/` preserve historical manuscript summaries for comparison, but are not accepted as tutorial inputs.

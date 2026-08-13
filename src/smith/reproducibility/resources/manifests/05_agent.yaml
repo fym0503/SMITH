@@ -3,21 +3,31 @@ order: 5
 title: Multi-reference ranking and probe feasibility
 manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay Design
 figure: Figure 6
-runtime: Less than 5 seconds on CPU
-data_access: Bundled aggregate MERFISH metrics and a ten-gene feasibility example.
-summary: Recomputes multi-reference accuracy summaries and feasibility pass rates.
+runtime: 20-120 minutes depending on references, cells, epochs and device
+data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
+summary: Starts from real liver scRNA, MERFISH and at least two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels.
 claim: Reference aggregation and probe-level checks can be recorded as explicit, auditable stages after panel selection.
 inputs:
-  - path: fixtures/agent_multi_reference_metrics.tsv
-    sha256: 113eb3ca6329a3aaadb9c0612b1cf25a8c8da87a0778dc5d687f7161558912ab
-  - path: fixtures/agent_feasibility_demo.tsv
-    sha256: fc8fb6b32aea6a219de6e2da3bc501268eb39883b0ef1bf2520e8f31f1979fe7
-  - path: fixtures/agent_full_tool_pass_summary.tsv
-    sha256: 38bc0c51d8650037fe90e74acb13938265b0b71600cc4711d2361f84d55ed90c
-outputs: [summary.json]
+  - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
+    kind: data
+    bytes: 1262101004
+    sha256: faa8897adfc86a436053c28e7d5012a422335a00f9faf306bc09761b76127ade
+  - path: agent/liver_merfish/adata_healthy_merfish.h5ad
+    kind: data
+    bytes: 350386069
+    sha256: 6b7fc5879a78b03002d94500ceffb3dcebef4cea82c29b381d720bbd650eb40c
+  - path: agent/references/PSC011_C1_visium.h5ad
+    kind: data
+    bytes: 157609327
+    sha256: 21f3710fd52fb842d24c2dee30c8be42a22f451935cdf22a9dc89ceee9bff0b7
+  - path: agent/references/WSSS_F_IMMsp9838712_visium.h5ad
+    kind: data
+    bytes: 314137660
+    sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d
+outputs: [prepared_data/*.h5ad, aggregation/integrated_top_64_panel.tsv, evaluation/metrics.tsv, run_manifest.json]
 full_workflow:
   availability: mixed_public_and_external_tools
   source_scripts:
-    - scripts/agent_examples/formal_liver_merfish_multi_visium_smith.py
-    - scripts/agent_examples/run_top128_feasibility_filtering.py
-  note: Full probe screening additionally requires ODT, BLAST indexes, and backend-specific reference assets.
+    - reproducibility/workflows/agent/run_tutorial.py
+    - reproducibility/workflows/agent/evaluate_outputs.py
+  note: Probe screening is intentionally not run by this tutorial. ODT, BLAST indexes, OligoMiner and ProbeDealer backends must be configured separately.

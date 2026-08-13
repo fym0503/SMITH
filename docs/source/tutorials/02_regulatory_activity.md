@@ -1,15 +1,20 @@
----
-orphan: true
----
+# Regulatory activity
 
-# Regulatory Activity
-
-This compatibility page is kept for the old URL. The real executable notebook is here: [open the notebook](notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed.ipynb).
-
-This example recomputes representative TF and miRNA summaries from the five-run evaluation table. It focuses on the joint cell-identity and developmental-time claim.
+The workflow begins with a real C. elegans `train.h5ad` and `test.h5ad`, trains SMITH with reconstruction, cell-type and developmental-time objectives, writes a new ranking/panel, and evaluates it on the held-out split.
 
 ```bash
-smith-repro run 02_regulatory_activity
+python scripts/download_tutorial_data.py --case 02_regulatory_activity --data-root data/tutorials
+python reproducibility/workflows/regulatory_activity/run_tutorial.py \
+  --data-root data/tutorials \
+  --output-dir outputs/tutorials/regulatory \
+  --dataset elegans_tf --split split_1 \
+  --panel-size 32 --epochs 30 --device cpu
 ```
 
-Inspect `summary.json` for the best validated SMITH result at each dataset and panel size. Full Figure 3 regeneration also needs lineage-aware splits, panel training, baseline runs, module coverage, co-activity reconstruction and scRNA-to-TF transfer.
+Outputs are written under `outputs/tutorials/regulatory/`: `smith/ranking/`, `smith/panel_top32.csv`, `evaluation/metrics.tsv`, developmental-time predictions and `run_manifest.json`.
+
+```{toctree}
+:maxdepth: 1
+
+notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed
+```

@@ -45,6 +45,7 @@ def build_smoke_adata(n_cells: int, n_genes: int, seed: int) -> ad.AnnData:
         },
         index=obs_names,
     )
+    obs["absolute_time"] = np.linspace(0.0, 1.0, n_cells, dtype=np.float32)
     var = pd.DataFrame(index=var_names)
     coords = np.column_stack(
         [

@@ -46,6 +46,7 @@ def get_loss(args):
     else:
         loss_fn['recon'] = F.mse_loss
     loss_fn['coo'] = F.mse_loss
+    loss_fn['time'] = F.mse_loss
     loss_fn['region'] = torch.nn.CrossEntropyLoss()
     loss_fn['pathology'] = torch.nn.CrossEntropyLoss()
         

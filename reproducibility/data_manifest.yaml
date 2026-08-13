@@ -1,0 +1,93 @@
+schema_version: 1
+release_version: 2026.08
+zenodo_record_url: null
+archive_license_target: CC-BY-NC-4.0
+publication_status: prepared_not_uploaded
+license_note: >-
+  CC BY-NC 4.0 is the intended tutorial-bundle license. Each upstream dataset license
+  must be checked for compatibility before a Zenodo record is published.
+cases:
+  02_regulatory_activity:
+    title: C. elegans regulatory activity
+    archive_name: smith-tutorial-02-regulatory-2026.08.tar.gz
+    archive_url: null
+    archive_sha256: null
+    prepared_archive_bytes: 223863306
+    prepared_archive_sha256: f71307161de4532d39d0aab41f53bed949ffc24f66aa770faeded1366b228571
+    disk_gb: 0.5
+    ram_gb: 8
+    gpu: optional
+    source: SMITH paper workspace split-generation output
+    upstream_license: pending_verification
+    processing_scripts:
+      - reproducibility/workflows/regulatory_activity/run_tutorial.py
+      - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+    preparation: Existing donor/cell-name split H5AD files; no aggregate result tables are included as inputs.
+    files:
+      - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
+        bytes: 171431555
+        sha256: 6b7bfa064ed119bf6e1891c88550894db94d454c99837d7ae53defbd3dbf4fcc
+      - path: regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad
+        bytes: 115530989
+        sha256: 31ee972b9b5ad2131bd2f8cb80f5a0cae02b14e26dc2844fdff6495532bf871a
+      - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad
+        bytes: 39587756
+        sha256: 9240ad2e17a70cdb4de50351d1be03284d98e8dc4cca89fd9714f01fc7b89333
+      - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad
+        bytes: 27111860
+        sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
+  03_ribomap_transfer:
+    title: RIBOMap cross-study transfer
+    archive_name: smith-tutorial-03-ribomap-2026.08.tar.gz
+    archive_url: null
+    archive_sha256: null
+    prepared_archive_bytes: 293028430
+    prepared_archive_sha256: a407a94b90985b7cd4bc8fb27967302f339463df76f7fc7c99d8871aa4388ecb
+    disk_gb: 0.7
+    ram_gb: 12
+    gpu: optional
+    source: Standardized RIBOMap H5AD files prepared for the SMITH manuscript
+    upstream_license: pending_verification
+    processing_scripts:
+      - reproducibility/workflows/ribomap_transfer/run_tutorial.py
+      - reproducibility/workflows/ribomap_transfer/evaluate_outputs.py
+    preparation: Shared genes are recomputed by the tutorial workflow and written to its output directory.
+    files:
+      - path: ribomap_transfer/ribomap/deep_brain_ribomap.h5ad
+        bytes: 142886875
+        sha256: c27939e85d6a0e958e09b07807c7d721f8b993b392a444e3140a296f5dd56afc
+      - path: ribomap_transfer/ribomap/mouse_brain_ribomap_rep1.h5ad
+        bytes: 90291819
+        sha256: 4551431e38ff5dac9746f4e1495997dc9c4a88c5715b87f244e55b4a1d012b40
+      - path: ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad
+        bytes: 72496557
+        sha256: 601b83c65a392865d8a82f9d4fbed00f7bdbf7ccb52426191b838c96b3d5456d
+  05_agent:
+    title: Liver SMITH-Agent multi-reference evaluation
+    archive_name: smith-tutorial-05-agent-2026.08.tar.gz
+    archive_url: null
+    archive_sha256: null
+    prepared_archive_bytes: 1447074946
+    prepared_archive_sha256: c865ea325274b8e66c91c0bb655eda2be9f30960d9777ec1df932b5dc990cbec
+    disk_gb: 3.0
+    ram_gb: 24
+    gpu: optional
+    source: Healthy liver snRNA/MERFISH objects and materialized liver Visium references
+    upstream_license: pending_verification
+    processing_scripts:
+      - reproducibility/workflows/agent/run_tutorial.py
+      - reproducibility/workflows/agent/evaluate_outputs.py
+    preparation: The tutorial uses two real references by default; the paper-scale command may repeat --reference for all five.
+    files:
+      - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
+        bytes: 1262101004
+        sha256: faa8897adfc86a436053c28e7d5012a422335a00f9faf306bc09761b76127ade
+      - path: agent/liver_merfish/adata_healthy_merfish.h5ad
+        bytes: 350386069
+        sha256: 6b7fc5879a78b03002d94500ceffb3dcebef4cea82c29b381d720bbd650eb40c
+      - path: agent/references/PSC011_C1_visium.h5ad
+        bytes: 157609327
+        sha256: 21f3710fd52fb842d24c2dee30c8be42a22f451935cdf22a9dc89ceee9bff0b7
+      - path: agent/references/WSSS_F_IMMsp9838712_visium.h5ad
+        bytes: 314137660
+        sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d

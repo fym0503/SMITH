@@ -46,7 +46,8 @@ smith-repro check
 smith-repro run 01_wmb
 smith-repro run 02_regulatory_activity
 smith-repro run 03_ribomap_transfer
-smith-repro run 04_inhouse_disease
+smith-repro check 02_regulatory_activity --data-root data/tutorials
+smith-repro run 02_regulatory_activity --data-root data/tutorials --output-dir outputs/tutorials/regulatory
 smith-repro run 05_agent
 ```
 

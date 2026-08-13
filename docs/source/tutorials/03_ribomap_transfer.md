@@ -1,15 +1,19 @@
----
-orphan: true
----
+# RIBOMap transfer
 
-# RIBOMap Transfer
-
-This compatibility page is kept for the old URL. The real executable notebook is here: [open the notebook](notebooks/ribomap_section/03_SMITH_RIBOMap_Transfer_executed.ipynb).
-
-This example recomputes SMITH transfer summaries for modality-matched RIBOMap references and cross-modality STARmap references.
+This workflow loads real deep-brain and mouse-brain RIBOMap objects, recomputes their shared-gene inputs, trains SMITH, selects a variance baseline, and evaluates both newly generated panels on target data.
 
 ```bash
-smith-repro run 03_ribomap_transfer
+python scripts/download_tutorial_data.py --case 03_ribomap_transfer --data-root data/tutorials
+python reproducibility/workflows/ribomap_transfer/run_tutorial.py \
+  --data-root data/tutorials \
+  --output-dir outputs/tutorials/ribomap \
+  --panel-size 64 --epochs 30 --device cpu
 ```
 
-The output reports cell type and region accuracy from pinned five-seed aggregate results. Full Figure 4 additionally requires raw spatial objects, baseline selection, pathway enrichment, panel-overlap analysis and aligned clean-fusion experiments.
+Prepared H5AD files are written under `prepared_data/`; ranking, both panels, evaluation tables and `run_manifest.json` remain in the selected output directory.
+
+```{toctree}
+:maxdepth: 1
+
+notebooks/ribomap_section/03_SMITH_RIBOMap_Transfer_executed
+```

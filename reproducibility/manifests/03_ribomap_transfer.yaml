@@ -3,18 +3,27 @@ order: 3
 title: Cross-study and cross-modality RIBOMap transfer
 manuscript_section: SMITH Transfers Panel Design to Spatial Translatome Profiling
 figure: Figure 4
-runtime: Less than 5 seconds on CPU
-data_access: Bundled aggregate metrics from five-seed RIBOMap and STARmap transfer evaluation.
-summary: Recomputes SMITH accuracy summaries for RIBOMap-to-RIBOMap and STARmap-to-RIBOMap transfer.
+runtime: 10-60 minutes depending on cells, epochs and device
+data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
+summary: Starts from real RIBOMap H5AD files, prepares shared genes, trains SMITH and a variance baseline, then evaluates new panels on held-out targets.
 claim: Transcriptomic and translatomic references provide distinct but useful priors for translatome panel design.
 inputs:
-  - path: fixtures/ribomap_benchmark_methods_summary.csv
-    sha256: ea91769109a2aa473707f1adacc7c2471f80b969daf721cfcc31df2781544e4e
-outputs: [summary.json]
+  - path: ribomap_transfer/ribomap/deep_brain_ribomap.h5ad
+    kind: data
+    bytes: 142886875
+    sha256: c27939e85d6a0e958e09b07807c7d721f8b993b392a444e3140a296f5dd56afc
+  - path: ribomap_transfer/ribomap/mouse_brain_ribomap_rep1.h5ad
+    kind: data
+    bytes: 90291819
+    sha256: 4551431e38ff5dac9746f4e1495997dc9c4a88c5715b87f244e55b4a1d012b40
+  - path: ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad
+    kind: data
+    bytes: 72496557
+    sha256: 601b83c65a392865d8a82f9d4fbed00f7bdbf7ccb52426191b838c96b3d5456d
+outputs: [prepared_data/*.h5ad, smith/panel_top64.csv, variance/panel_top64.csv, evaluation/metrics.tsv, run_manifest.json]
 full_workflow:
   availability: public_data_external_download
   data_ids: [mouse_brain_ribomap_rep1, mouse_brain_ribomap_rep2, mouse_brain_starmap_rep2, ribomap_deep_brain, starmap_deep_brain]
   source_scripts:
-    - /workspace/fanyimin/SMITH_unified/code/workflows/run_ribomap_cross_study.py
-    - /workspace/fanyimin/SMITH_unified/code/workflows/run_starmap_to_ribomap_baselines.py
-    - /workspace/fanyimin/SMITH_unified/code/workflows/make_ribo_figure_panels.py
+    - reproducibility/workflows/ribomap_transfer/run_tutorial.py
+    - reproducibility/workflows/ribomap_transfer/evaluate_outputs.py

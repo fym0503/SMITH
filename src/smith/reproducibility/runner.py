@@ -2,11 +2,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 from .registry import ReproducibilityCase, default_reproducibility_root
+
+
+WORKFLOW_SCRIPTS = {
+    "02_regulatory_activity": "regulatory_activity/run_tutorial.py",
+    "03_ribomap_transfer": "ribomap_transfer/run_tutorial.py",
+    "05_agent": "agent/run_tutorial.py",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -17,17 +25,27 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def check_case(case: ReproducibilityCase, root: str | Path | None = None) -> dict[str, Any]:
+def check_case(
+    case: ReproducibilityCase,
+    root: str | Path | None = None,
+    data_root: str | Path | None = None,
+) -> dict[str, Any]:
     repro_root = Path(root).resolve() if root else default_reproducibility_root()
+    data_base = Path(data_root).resolve() if data_root else None
     checks = []
     for spec in case.inputs:
-        path = repro_root / str(spec["path"])
-        expected = str(spec.get("sha256", ""))
-        actual = _sha256(path) if path.exists() and path.is_file() else ""
+        kind = str(spec.get("kind", "reproducibility"))
+        base = data_base if kind == "data" and data_base else repro_root
+        path = base / str(spec["path"])
+        expected = str(spec.get("sha256") or "")
+        actual = _sha256(path) if path.is_file() and expected else ""
+        expected_bytes = spec.get("bytes")
         checks.append(
             {
                 "path": str(path),
-                "exists": path.exists(),
+                "kind": kind,
+                "exists": path.is_file(),
+                "size_ok": expected_bytes is None or (path.is_file() and path.stat().st_size == int(expected_bytes)),
                 "sha256_ok": not expected or actual == expected,
                 "expected_sha256": expected,
                 "actual_sha256": actual,
@@ -36,87 +54,39 @@ def check_case(case: ReproducibilityCase, root: str | Path | None = None) -> dic
     available = case.full_workflow.get("availability") != "source_unavailable"
     return {
         "case": case.id,
-        "ready": available and bool(checks) and all(item["exists"] and item["sha256_ok"] for item in checks),
+        "ready": available and bool(data_base) and bool(checks) and all(item["exists"] and item["size_ok"] and item["sha256_ok"] for item in checks),
         "availability": case.full_workflow.get("availability"),
+        "data_root": str(data_base) if data_base else None,
         "inputs": checks,
     }
 
 
-def _write_summary(case: ReproducibilityCase, output_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    result = {
-        "case": case.id,
-        "title": case.title,
-        "manuscript_section": case.manuscript_section,
-        "figure": case.figure,
-        "claim": case.claim,
-        **payload,
-    }
-    output_path = output_dir / "summary.json"
-    output_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    result["summary_json"] = str(output_path)
-    return result
-
-
-def _run_regulatory(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
-    df = pd.read_csv(repro_root / case.inputs[0]["path"])
-    smith = df[df["method"].str.startswith("SMITH")].copy()
-    rows = []
-    for (dataset, panel_size), group in smith.groupby(["dataset", "num_markers"]):
-        best = group.sort_values(["celltype_knn_accuracy_mean", "time_knn_pearson_mean"], ascending=False).iloc[0]
-        rows.append({
-            "dataset": dataset,
-            "panel_size": int(panel_size),
-            "method": best["method"],
-            "celltype_accuracy": float(best["celltype_knn_accuracy_mean"]),
-            "time_pearson": float(best["time_knn_pearson_mean"]),
-        })
-    return _write_summary(case, output_dir, {"best_smith_by_dataset_and_panel": rows})
-
-
-def _run_ribomap(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
-    df = pd.read_csv(repro_root / case.inputs[0]["path"])
-    subset = df[(df["method"] == "SMITH") & (df["metric"] == "accuracy")].copy()
-    rows = subset.sort_values(["dataset", "label"])[["dataset", "label", "panel_size", "value_mean", "value_std", "rank"]]
-    return _write_summary(case, output_dir, {"smith_transfer_metrics": rows.to_dict(orient="records")})
-
-
-def _run_inhouse(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
-    df = pd.read_csv(repro_root / case.inputs[0]["path"])
-    cols = ["comparison", "n_seeds", "delta_spearman_mean", "delta_top64_mean", "spearman_improved_seeds", "top64_improved_seeds"]
-    return _write_summary(case, output_dir, {"transfer_robustness": df[cols].to_dict(orient="records")})
-
-
-def _run_agent(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
-    metrics = pd.read_csv(repro_root / case.inputs[0]["path"], sep="\t")
-    accuracy = metrics[metrics["metric"] == "cell_type_accuracy"]
-    grouped = accuracy.groupby(["panel_size", "panel"], as_index=False)["value"].agg(["mean", "std"]).reset_index()
-    feasibility = pd.read_csv(repro_root / case.inputs[2]["path"], sep="\t")
-    pass_rates = {
-        str(row.gate): float(row.pass_count / row.total_count)
-        for row in feasibility.itertuples()
-    }
-    return _write_summary(
-        case,
-        output_dir,
-        {"multi_reference_accuracy": grouped.to_dict(orient="records"), "feasibility_pass_rates": pass_rates},
-    )
-
-
-RUNNERS = {
-    "02_regulatory_activity": _run_regulatory,
-    "03_ribomap_transfer": _run_ribomap,
-    "04_inhouse_disease": _run_inhouse,
-    "05_agent": _run_agent,
-}
-
-
-def run_case(case: ReproducibilityCase, output_dir: str | Path, root: str | Path | None = None) -> dict[str, Any]:
+def run_case(
+    case: ReproducibilityCase,
+    output_dir: str | Path,
+    root: str | Path | None = None,
+    data_root: str | Path | None = None,
+    extra_args: list[str] | None = None,
+) -> dict[str, Any]:
     repro_root = Path(root).resolve() if root else default_reproducibility_root()
-    status = check_case(case, repro_root)
+    status = check_case(case, repro_root, data_root)
     if not status["ready"]:
-        raise FileNotFoundError(f"Inputs are missing or invalid for reproducibility case `{case.id}`.")
-    runner = RUNNERS.get(case.id)
-    if runner is None:
-        raise KeyError(f"No runner registered for reproducibility case `{case.id}`.")
-    return runner(case, repro_root, Path(output_dir).resolve())
+        raise FileNotFoundError(f"Real H5AD inputs are missing or invalid for `{case.id}`. Pass --data-root after downloading the case archive.")
+    relative_script = WORKFLOW_SCRIPTS.get(case.id)
+    if relative_script is None:
+        raise RuntimeError(f"Case `{case.id}` is not executable from the public package.")
+    script = repro_root / "workflows" / relative_script
+    if not script.is_file():
+        raise RuntimeError(
+            "End-to-end tutorial workflows are distributed with the SMITH GitHub checkout. "
+            "Clone the repository and run the command shown in docs/source/tutorials/."
+        )
+    command = [
+        sys.executable, str(script), "--data-root", str(Path(data_root).resolve()),
+        "--output-dir", str(Path(output_dir).resolve()), *(extra_args or []),
+    ]
+    subprocess.run(command, cwd=repro_root.parent, check=True)
+    manifest = Path(output_dir).resolve() / "run_manifest.json"
+    if not manifest.is_file():
+        raise FileNotFoundError(f"Workflow completed without run_manifest.json: {manifest}")
+    return json.loads(manifest.read_text(encoding="utf-8"))

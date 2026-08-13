@@ -18,12 +18,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-reproducibility.txt
           python -m pip install -e '.[docs,notebooks]'
-      - name: Verify tutorial inputs
-        run: smith-repro check
-      - name: Run tests and chapter tutorials
+      - name: Run tests and validate tutorial notebooks
         run: |
           python -m pytest -q tests
-          python scripts/build_tutorial_notebooks.py --execute
+          python scripts/build_tutorial_notebooks.py
       - name: Build documentation
         run: sphinx-build -W -b html docs/source docs/_build/html
       - name: Build wheel

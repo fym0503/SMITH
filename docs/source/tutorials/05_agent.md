@@ -1,15 +1,19 @@
----
-orphan: true
----
+# SMITH-Agent panel evaluation
 
-# SMITH-Agent
-
-This compatibility page is kept for the old URL. The real executable notebook is here: [open the notebook](notebooks/agent_section/05_SMITH_Agent_Evaluation_executed.ipynb).
-
-This example covers two auditable Agent stages: multi-reference panel evaluation and integrated probe feasibility.
+The Agent tutorial starts from real healthy liver snRNA-seq, MERFISH and two spatial references. It trains a source panel and reference panels, aggregates their new rankings, then evaluates source-only and multi-reference panels on MERFISH cell type and spatial coordinates.
 
 ```bash
-smith-repro run 05_agent
+python scripts/download_tutorial_data.py --case 05_agent --data-root data/tutorials
+python reproducibility/workflows/agent/run_tutorial.py \
+  --data-root data/tutorials \
+  --output-dir outputs/tutorials/agent \
+  --panel-size 64 --epochs 30 --device cpu
 ```
 
-The summary contains mean MERFISH classification accuracy by panel source and feasibility pass rates from the real 12,160-gene scan. Full Figure 6 additionally requires public reference retrieval, repeated SMITH runs, a locked MERFISH test, ODT, BLAST indexes, ProbeDealer resources and Pareto-guided hyperparameter search.
+Repeat `--reference agent/references/<file>.h5ad` to run the full paper reference set. ODT, OligoMiner and ProbeDealer are separate optional backends; the tutorial reports an explicit `not_run` state when they are not configured and never fabricates a pass rate.
+
+```{toctree}
+:maxdepth: 1
+
+notebooks/agent_section/05_SMITH_Agent_Evaluation_executed
+```
