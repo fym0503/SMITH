@@ -1,0 +1,7 @@
+gate	pass_count	total_count
+transcript_resolved	12060	12160
+ODT_property_ge20	12057	12160
+OligoMiner_strict_specific_ge10	3891	12160
+OligoMiner_geneaware_specific_ge10	11332	12160
+ProbeDealer_target_final_ge20	11069	12160
+three_tool_feasibility	10873	12160

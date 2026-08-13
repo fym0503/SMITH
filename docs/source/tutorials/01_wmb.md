@@ -1,15 +1,5 @@
 # Whole Mouse Brain Selection
 
-This example exercises the algorithmic path underlying the WMB section: AnnData loading, five task tensors, stochastic-gate training and target export. It uses deterministic synthetic observations so it can run in CI and does not reproduce donor-level benchmark values.
+The original whole-mouse-brain code and data are not present on the machine used to publish this package. The previous synthetic notebook has therefore been removed: it was not a valid example of Figure 2.
 
-```bash
-smith-repro run 01_wmb
-```
-
-Expected artifacts:
-
-- `smoke_panel.h5ad`: deterministic annotated input.
-- `selection/epoch_0.csv`: ranked eight-target panel.
-- `summary.json`: selected targets and manuscript mapping.
-
-The full Figure 2 workflow additionally requires WMB references, donor-aware splits, baseline panels, five seeds, transfer evaluation, ablations and runtime benchmarking. Those requirements are recorded in `reproducibility/manifests/01_wmb.yaml`.
+This page records the exact reproducibility boundary. Figure 2 requires the WMB processed references, donor-aware splits, baseline panels, repeated seeds, transfer evaluation and ablation workflow. See `reproducibility/manifests/01_wmb.yaml` for the missing-source record. `smith-repro check 01_wmb` intentionally reports this case as unavailable.

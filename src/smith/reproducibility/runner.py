@@ -2,15 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from importlib import resources
-
 from .registry import ReproducibilityCase, default_reproducibility_root
 
 
@@ -38,7 +33,13 @@ def check_case(case: ReproducibilityCase, root: str | Path | None = None) -> dic
                 "actual_sha256": actual,
             }
         )
-    return {"case": case.id, "ready": all(item["exists"] and item["sha256_ok"] for item in checks), "inputs": checks}
+    available = case.full_workflow.get("availability") != "source_unavailable"
+    return {
+        "case": case.id,
+        "ready": available and bool(checks) and all(item["exists"] and item["sha256_ok"] for item in checks),
+        "availability": case.full_workflow.get("availability"),
+        "inputs": checks,
+    }
 
 
 def _write_summary(case: ReproducibilityCase, output_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
@@ -55,64 +56,6 @@ def _write_summary(case: ReproducibilityCase, output_dir: Path, payload: dict[st
     output_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     result["summary_json"] = str(output_path)
     return result
-
-
-def _run_wmb(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    package_root = repro_root.parent
-    scripts_root = package_root / "scripts"
-    if not scripts_root.exists():
-        scripts_root = Path(str(resources.files("smith_agent.resources"))) / "scripts"
-    env = os.environ.copy()
-    source_root = package_root / "src"
-    if source_root.exists():
-        current = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = str(source_root) + ((os.pathsep + current) if current else "")
-    adata = output_dir / "example_panel.h5ad"
-    saving = output_dir / "selection"
-    logs = output_dir / "logs"
-    subprocess.run(
-        [sys.executable, str(scripts_root / "make_smoke_h5ad.py"), "--output", str(adata)],
-        check=True,
-        cwd=output_dir,
-        env=env,
-    )
-    subprocess.run(
-        [
-            sys.executable,
-            str(scripts_root / "main.py"),
-            "--adata_file", str(adata),
-            "--saving_dir", str(saving),
-            "--log_dir", str(logs),
-            "--tasks", "recon,cls,region,pathology,coordination",
-            "--task_name", "celltype",
-            "--panel_size", "8",
-            "--epoch", "1",
-            "--record", "1",
-            "--batch_size", "16",
-            "--rep_dim", "8",
-            "--rep_hidden_dims", "8",
-            "--head_hidden_dims", "8",
-            "--dim", "8",
-            "--device", "cpu",
-            "--seed", "7",
-            "--balance_mode", "off",
-        ],
-        check=True,
-        cwd=output_dir,
-        env=env,
-    )
-    ranking = pd.read_csv(saving / "epoch_0.csv")
-    selected = ranking.head(8)
-    return _write_summary(
-        case,
-        output_dir,
-        {
-            "selected_targets": selected.iloc[:, 0].astype(str).tolist(),
-            "selected_panel_size": int(len(selected)),
-            "ranking_size": int(len(ranking)),
-        },
-    )
 
 
 def _run_regulatory(case: ReproducibilityCase, repro_root: Path, output_dir: Path) -> dict[str, Any]:
@@ -148,9 +91,11 @@ def _run_agent(case: ReproducibilityCase, repro_root: Path, output_dir: Path) ->
     metrics = pd.read_csv(repro_root / case.inputs[0]["path"], sep="\t")
     accuracy = metrics[metrics["metric"] == "cell_type_accuracy"]
     grouped = accuracy.groupby(["panel_size", "panel"], as_index=False)["value"].agg(["mean", "std"]).reset_index()
-    feasibility = pd.read_csv(repro_root / case.inputs[1]["path"], sep="\t")
-    pass_columns = [name for name in ["pass_property", "pass_specificity", "pass_deployment", "overall_pass"] if name in feasibility]
-    pass_rates = {name: float(feasibility[name].fillna(False).astype(bool).mean()) for name in pass_columns}
+    feasibility = pd.read_csv(repro_root / case.inputs[2]["path"], sep="\t")
+    pass_rates = {
+        str(row.gate): float(row.pass_count / row.total_count)
+        for row in feasibility.itertuples()
+    }
     return _write_summary(
         case,
         output_dir,
@@ -159,7 +104,6 @@ def _run_agent(case: ReproducibilityCase, repro_root: Path, output_dir: Path) ->
 
 
 RUNNERS = {
-    "01_wmb": _run_wmb,
     "02_regulatory_activity": _run_regulatory,
     "03_ribomap_transfer": _run_ribomap,
     "04_inhouse_disease": _run_inhouse,

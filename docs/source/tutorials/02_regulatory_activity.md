@@ -1,4 +1,10 @@
+---
+orphan: true
+---
+
 # Regulatory Activity
+
+This compatibility page is kept for the old URL. The real executable notebook is here: [open the notebook](notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed.ipynb).
 
 This example recomputes representative TF and miRNA summaries from the five-run evaluation table. It focuses on the joint cell-identity and developmental-time claim.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and optionally execute the manuscript-section tutorial notebooks."""
+"""Build executable notebooks from real paper-derived result tables."""
 
 from __future__ import annotations
 
@@ -9,234 +9,166 @@ from pathlib import Path
 import nbformat
 from nbclient import NotebookClient
 
-
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_ROOT = ROOT / "docs" / "source" / "tutorials" / "notebooks"
 
-
 SETUP = '''from pathlib import Path
-import sys
-
+import hashlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from IPython.display import display
 
-
-def find_repository(start: Path) -> Path:
+def find_repository(start):
     for candidate in (start, *start.parents):
         if (candidate / "pyproject.toml").exists() and (candidate / "reproducibility").exists():
             return candidate
     raise RuntimeError("Run this notebook from inside a SMITH repository checkout.")
 
-
 ROOT = find_repository(Path.cwd().resolve())
-sys.path.insert(0, str(ROOT / "src"))
-
-from smith.reproducibility import check_case, load_cases, run_case
-
 plt.style.use("seaborn-v0_8-whitegrid")
-pd.set_option("display.max_columns", 30)
-print(f"Repository: {ROOT}")
+pd.set_option("display.max_columns", 40)
+
+def verify_fixture(relative_path, expected_sha256):
+    path = ROOT / "reproducibility" / relative_path
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert digest == expected_sha256, f"Checksum mismatch for {path}: {digest}"
+    print(f"Verified {relative_path} ({digest[:12]}...)")
+    return path
 '''
-
-
-RUN_CASE = '''case = load_cases()[CASE_ID]
-status = check_case(case)
-if status["inputs"]:
-    display(pd.DataFrame(status["inputs"])[["path", "exists", "sha256_ok"]])
-else:
-    print("This tutorial creates its deterministic input during execution.")
-assert status["ready"], "The pinned tutorial inputs are missing or have changed."
-
-output_dir = ROOT / "outputs" / "notebooks" / CASE_ID
-result = run_case(case, output_dir)
-print(f"Summary written to: {result['summary_json']}")
-result
-'''
-
 
 NOTEBOOKS = {
-    "01_wmb": {
-        "folder": "wmb_section",
-        "stem": "01_SMITH_WMB_Panel_Selection",
-        "title": "SMITH whole-mouse-brain panel selection",
-        "intro": """This notebook runs a compact, deterministic version of the multi-objective panel-selection analysis underlying the whole-mouse-brain Results section. It creates an annotated expression object, trains the stochastic-gate selector on five objectives, and exports an eight-target ranking.
-
-The compact input is designed for a runnable tutorial. It demonstrates the analysis path but does not claim to regenerate donor-level Figure 2 values.""",
-        "analysis": '''selected = pd.DataFrame({
-    "target": result["selected_targets"],
-    "rank_score": np.arange(result["selected_panel_size"], 0, -1),
-})
-display(selected)
-
-fig, ax = plt.subplots(figsize=(7, 3.8))
-ax.barh(selected["target"][::-1], selected["rank_score"][::-1], color="#3264a8")
-ax.set(xlabel="Selection rank score", ylabel="Target", title="Compact SMITH target panel")
-fig.tight_layout()
-plt.show()
-''',
-        "limits": """## What this reproduces
-
-This notebook reproduces the package path from annotated observations through multi-objective target ranking. The complete manuscript workflow additionally requires the WMB references, donor-aware splits, baseline panels, repeated seeds, transfer evaluation, ablations, and runtime benchmarking listed in `reproducibility/manifests/01_wmb.yaml`.""",
-    },
     "02_regulatory_activity": {
-        "folder": "regulatory_section",
-        "stem": "02_SMITH_Regulatory_Activity",
+        "folder": "regulatory_section", "stem": "02_SMITH_Regulatory_Activity",
         "title": "SMITH regulatory-activity preservation",
-        "intro": """This notebook recomputes a representative analysis for the regulatory-activity Results section. It selects the strongest validated SMITH configuration for every dataset and panel size using the pinned five-run summary, then compares preservation of cell identity and developmental time.""",
-        "analysis": '''best = pd.DataFrame(result["best_smith_by_dataset_and_panel"])
-display(best.sort_values(["dataset", "panel_size"]))
-
-fig, ax = plt.subplots(figsize=(6.5, 4.5))
-for dataset, group in best.groupby("dataset"):
-    ax.scatter(group["celltype_accuracy"], group["time_pearson"], s=65, label=dataset)
-    for row in group.itertuples():
-        ax.annotate(str(row.panel_size), (row.celltype_accuracy, row.time_pearson),
-                    xytext=(4, 3), textcoords="offset points", fontsize=8)
-ax.set(xlabel="Cell-type kNN accuracy", ylabel="Developmental-time Pearson r",
-       title="Validated SMITH configurations")
-ax.legend(frameon=False)
-fig.tight_layout()
-plt.show()
+        "intro": "This notebook reads the exact five-run summary produced by the C. elegans regulatory-activity workflow. It compares SMITH and baselines across the reported cell-identity and developmental-time metrics.",
+        "analysis": '''path = verify_fixture("fixtures/elegans_five_run_results_summary.csv", "0a6f4d3fbc75057b58f5dcd9271dbf0f426ba93f4b97274d59fdc0d6b152d01d")
+df = pd.read_csv(path)
+summary = (df.groupby(["dataset", "method"], as_index=False)
+             .agg(celltype_accuracy=("celltype_knn_accuracy_mean", "max"),
+                  time_pearson=("time_knn_pearson_mean", "max")))
+smith = summary[summary["method"].str.startswith("SMITH")].sort_values(["dataset", "celltype_accuracy"], ascending=[True, False])
+display(smith)
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+for dataset, group in summary.groupby("dataset"):
+    axes[0].plot(group["method"], group["celltype_accuracy"], marker="o", label=dataset)
+    axes[1].plot(group["method"], group["time_pearson"], marker="o", label=dataset)
+for ax, ylabel, title in zip(axes, ["Cell-type kNN accuracy", "Developmental-time Pearson r"], ["Identity preservation", "Time preservation"]):
+    ax.set_ylabel(ylabel); ax.set_title(title); ax.tick_params(axis="x", rotation=65); ax.legend(frameon=False, fontsize=7)
+fig.tight_layout(); plt.show()
 ''',
-        "limits": """## What this reproduces
-
-The table and plot recompute the joint cell-identity/developmental-time comparison from pinned aggregate results. Full Figure 3 regeneration additionally needs lineage-aware splits, TF/miRNA activity inference, baseline training, module coverage, co-activity reconstruction, and scRNA-to-TF transfer.""",
+        "limits": "The bundled CSV is a real completed five-run output. Re-running Figure 3 from raw atlas data still requires the source datasets, activity inference, donor-aware splits and baseline workflows. The exact generation scripts are archived under `reproducibility/workflows/regulatory_activity/`.",
     },
     "03_ribomap_transfer": {
-        "folder": "ribomap_section",
-        "stem": "03_SMITH_RIBOMap_Transfer",
+        "folder": "ribomap_section", "stem": "03_SMITH_RIBOMap_Transfer",
         "title": "SMITH RIBOMap and STARmap transfer",
-        "intro": """This notebook extracts the SMITH transfer results for modality-matched RIBOMap references and cross-modality STARmap references from a pinned five-seed benchmark table. It preserves the reported uncertainty and ranking rather than copying values into prose.""",
-        "analysis": '''transfer = pd.DataFrame(result["smith_transfer_metrics"])
-display(transfer)
-
-labels = transfer["dataset"] + "\\n" + transfer["label"]
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.bar(np.arange(len(transfer)), transfer["value_mean"],
-       yerr=transfer["value_std"], capsize=4, color="#6c4aa5")
-ax.set_xticks(np.arange(len(transfer)), labels, rotation=30, ha="right")
-ax.set(ylabel="Accuracy", title="SMITH spatial-transfer performance (mean ± SD)")
-fig.tight_layout()
-plt.show()
+        "intro": "This notebook reads the real benchmark table used for the RIBOMap transfer analysis and visualizes SMITH against the recorded baselines for each dataset and metric.",
+        "analysis": '''path = verify_fixture("fixtures/ribomap_benchmark_methods_summary.csv", "ea91769109a2aa473707f1adacc7c2471f80b969daf721cfcc31df2781544e4e")
+df = pd.read_csv(path)
+accuracy = df[df["metric"].eq("accuracy")].copy()
+smith = accuracy[accuracy["method"].eq("SMITH")].sort_values(["dataset", "label"])
+display(smith[["dataset", "label", "panel_size", "value_mean", "value_std", "rank"]])
+fig, ax = plt.subplots(figsize=(10, 4.5))
+for method, group in accuracy.groupby("method"):
+    means = group.groupby("dataset")["value_mean"].mean()
+    ax.plot(means.index, means.values, marker="o", label=method)
+ax.set_ylabel("Mean accuracy"); ax.set_title("RIBOMap/STARmap transfer benchmark")
+ax.tick_params(axis="x", rotation=35); ax.legend(frameon=False, ncol=2, fontsize=8)
+fig.tight_layout(); plt.show()
 ''',
-        "limits": """## What this reproduces
-
-This notebook recomputes the manuscript-facing SMITH accuracy summary and its uncertainty. Complete Figure 4 regeneration also requires raw spatial objects, baseline selection, pathway enrichment, panel-overlap analysis, and aligned clean-fusion experiments.""",
+        "limits": "This is the real completed benchmark summary, not hand-entered tutorial data. Full Figure 4 regeneration additionally requires raw spatial objects and the archived workflows under `reproducibility/workflows/ribomap_transfer/`.",
     },
     "04_inhouse_disease": {
-        "folder": "disease_section",
-        "stem": "04_SMITH_InHouse_Disease_Transfer",
+        "folder": "disease_section", "stem": "04_SMITH_InHouse_Disease_Transfer",
         "title": "SMITH human disease transfer robustness",
-        "intro": """Participant-level human brain data are controlled access. This notebook therefore performs an auditable analysis of the released de-identified aggregate table: it compares improvements in rank correlation and top-64 panel overlap across cohort transfers.""",
-        "analysis": '''robustness = pd.DataFrame(result["transfer_robustness"])
-display(robustness)
-
-fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-axes[0].bar(robustness["comparison"], robustness["delta_spearman_mean"], color="#218c74")
-axes[0].set(ylabel="Δ Spearman correlation", title="Expression-rank transfer")
-axes[1].bar(robustness["comparison"], robustness["delta_top64_mean"], color="#cc8e35")
-axes[1].set(ylabel="Δ top-64 overlap", title="Panel-overlap transfer")
-for ax in axes:
-    ax.tick_params(axis="x", rotation=45)
-    ax.axhline(0, color="black", linewidth=0.8)
-fig.tight_layout()
-plt.show()
+        "intro": "Participant-level human brain data remain controlled access. This notebook uses the real released per-seed metrics and checks that their aggregate summary agrees with the published de-identified table.",
+        "analysis": '''summary_path = verify_fixture("fixtures/inhouse_transfer_summary.csv", "2adf61357af7215d93ea48be992817fa74cb4daac942c02a26649034ad568f20")
+seed_path = verify_fixture("fixtures/inhouse_transfer_per_seed_metrics.csv", "843de9833c00489e27e0f83d05421fb4c49beab566936af544b63871ef50acf5")
+summary = pd.read_csv(summary_path)
+per_seed = pd.read_csv(seed_path)
+recomputed = (per_seed.groupby("comparison", as_index=False)
+              .agg(n_seeds=("seed", "nunique"), delta_spearman_mean=("delta_spearman", "mean"), delta_top64_mean=("delta_top64", "mean")))
+check = summary[["comparison", "n_seeds", "delta_spearman_mean", "delta_top64_mean"]].merge(recomputed, on="comparison", suffixes=("_released", "_recomputed"))
+check["spearman_match"] = np.isclose(check["delta_spearman_mean_released"], check["delta_spearman_mean_recomputed"])
+check["top64_match"] = np.isclose(check["delta_top64_mean_released"], check["delta_top64_mean_recomputed"])
+assert check["spearman_match"].all() and check["top64_match"].all()
+display(check)
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+for column, ax, title in [("delta_spearman", axes[0], "Rank-correlation gain"), ("delta_top64", axes[1], "Top-64 overlap gain")]:
+    groups = per_seed.groupby("comparison")[column]
+    ax.boxplot([values for _, values in groups], labels=[name for name, _ in groups], showmeans=True)
+    ax.axhline(0, color="black", linewidth=0.8); ax.set_title(title); ax.tick_params(axis="x", rotation=55)
+fig.tight_layout(); plt.show()
 ''',
-        "limits": """## Data boundary
-
-The notebook reproduces only analyses supported by the de-identified aggregate release. Participant-level panels, UMAPs, imputation results, and spatial gene examples require authorized inputs; this is recorded explicitly in `reproducibility/manifests/04_inhouse_disease.yaml`.""",
+        "limits": "The real per-seed table contains de-identified rank metrics only. Participant-level panels, UMAPs and spatial examples require authorized data access. The source summarization script is archived under `reproducibility/workflows/inhouse_disease/`.",
     },
     "05_agent": {
-        "folder": "agent_section",
-        "stem": "05_SMITH_Agent_Evaluation",
+        "folder": "agent_section", "stem": "05_SMITH_Agent_Evaluation",
         "title": "SMITH-Agent evaluation and probe feasibility",
-        "intro": """This notebook covers two auditable SMITH-Agent stages: multi-reference panel evaluation on a locked spatial test set and integrated probe-feasibility filtering. It recomputes group statistics and feasibility pass rates from pinned tables.""",
-        "analysis": '''accuracy = pd.DataFrame(result["multi_reference_accuracy"])
-pass_rates = pd.Series(result["feasibility_pass_rates"], name="pass_rate")
-display(accuracy)
-display(pass_rates.to_frame())
-
-fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        "intro": "This notebook combines the real five-seed MERFISH evaluation output with the full 12,160-gene three-tool feasibility summary from the Agent workflow.",
+        "analysis": '''metrics_path = verify_fixture("fixtures/agent_multi_reference_metrics.tsv", "113eb3ca6329a3aaadb9c0612b1cf25a8c8da87a0778dc5d687f7161558912ab")
+feasibility_path = verify_fixture("fixtures/agent_full_tool_pass_summary.tsv", "38bc0c51d8650037fe90e74acb13938265b0b71600cc4711d2361f84d55ed90c")
+metrics = pd.read_csv(metrics_path, sep="\\t")
+accuracy = metrics[metrics["metric"].eq("cell_type_accuracy")]
+display(accuracy.groupby(["panel_size", "panel"], as_index=False)["value"].agg(["mean", "std"]).reset_index())
+gates = pd.read_csv(feasibility_path, sep="\\t")
+gates["pass_rate"] = gates["pass_count"] / gates["total_count"]
+display(gates)
+fig, axes = plt.subplots(1, 2, figsize=(11, 4))
 for panel, group in accuracy.groupby("panel"):
-    axes[0].errorbar(group["panel_size"], group["mean"], yerr=group["std"],
-                     marker="o", capsize=3, label=panel)
-axes[0].set(xlabel="Panel size", ylabel="Cell-type accuracy", title="Multi-reference evaluation")
-axes[0].legend(frameon=False, fontsize=8)
-axes[1].bar(pass_rates.index, pass_rates.values, color="#b33939")
-axes[1].set(ylim=(0, 1), ylabel="Fraction passing", title="Probe-feasibility gates")
-axes[1].tick_params(axis="x", rotation=35)
-fig.tight_layout()
-plt.show()
+    grouped = group.groupby("panel_size")["value"].agg(["mean", "std"])
+    axes[0].errorbar(grouped.index, grouped["mean"], yerr=grouped["std"], marker="o", capsize=3, label=panel)
+axes[0].set(xlabel="Panel size", ylabel="Cell-type accuracy", title="Five-seed MERFISH evaluation"); axes[0].legend(frameon=False)
+axes[1].bar(gates["gate"], gates["pass_rate"], color="#2f6690")
+axes[1].set_ylim(0, 1.05); axes[1].set_ylabel("Fraction of 12,160 genes passing"); axes[1].tick_params(axis="x", rotation=60)
+fig.tight_layout(); plt.show()
 ''',
-        "limits": """## What this reproduces
-
-The notebook recomputes multi-reference accuracy and feasibility summaries. Full Figure 6 also requires public-reference retrieval, repeated SMITH runs, a locked MERFISH test, ODT, BLAST indexes, ProbeDealer resources, and Pareto-guided hyperparameter search.""",
+        "limits": "These are completed Agent outputs. Full Figure 6 regeneration still needs reference retrieval, locked test objects and the external ODT/OligoMiner/ProbeDealer resources. The source scripts are archived under `reproducibility/workflows/agent/`.",
     },
 }
 
 
-def build_notebook(case_id: str, spec: dict[str, str]) -> nbformat.NotebookNode:
+def build_notebook(case_id, spec):
     notebook = nbformat.v4.new_notebook()
-    notebook.metadata.update(
-        kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"},
-        language_info={"name": "python", "version": "3"},
-    )
+    notebook.metadata.update(kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"}, language_info={"name": "python", "version": "3"})
     notebook.cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\n{spec['intro']}"),
-        nbformat.v4.new_markdown_cell(
-            "[Open the editable source notebook on GitHub]("
-            f"https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/"
-            f"{spec['folder']}/{spec['stem']}_source.ipynb)"
-        ),
-        nbformat.v4.new_markdown_cell(
-            "## Setup\n\nRun this notebook from a cloned SMITH repository with "
-            "`pip install -e '.[notebooks]'`. All inputs are checksum-validated before analysis."
-        ),
+        nbformat.v4.new_markdown_cell("[Open the editable source notebook on GitHub](https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/" + f"{spec['folder']}/{spec['stem']}_source.ipynb)"),
+        nbformat.v4.new_markdown_cell("## Provenance\n\nThe code cell verifies the SHA-256 of every bundled result table. These files are copied from completed paper-workspace runs; they are not synthetic replacements for the manuscript outputs."),
         nbformat.v4.new_code_cell(SETUP),
-        nbformat.v4.new_code_cell(f'CASE_ID = "{case_id}"\n' + RUN_CASE),
         nbformat.v4.new_markdown_cell("## Analysis"),
         nbformat.v4.new_code_cell(spec["analysis"]),
-        nbformat.v4.new_markdown_cell(spec["limits"]),
+        nbformat.v4.new_markdown_cell("## Scope\n\n" + spec["limits"]),
     ]
     return notebook
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--execute", action="store_true", help="also write executed notebooks for the docs")
-    parser.add_argument("--only", choices=sorted(NOTEBOOKS), help="build one notebook")
+    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--only", choices=sorted(NOTEBOOKS))
     args = parser.parse_args()
-
     selected = {args.only: NOTEBOOKS[args.only]} if args.only else NOTEBOOKS
-    generated_paths: list[Path] = []
+    generated = []
     for case_id, spec in selected.items():
         folder = NOTEBOOK_ROOT / spec["folder"]
         folder.mkdir(parents=True, exist_ok=True)
         source_path = folder / f"{spec['stem']}_source.ipynb"
         executed_path = folder / f"{spec['stem']}_executed.ipynb"
         notebook = build_notebook(case_id, spec)
-        nbformat.write(notebook, source_path)
-        generated_paths.append(source_path)
+        nbformat.write(notebook, source_path); generated.append(source_path)
         print(f"wrote {source_path.relative_to(ROOT)}")
         if args.execute:
-            executed = NotebookClient(
-                nbformat.from_dict(notebook), timeout=600, kernel_name="python3", allow_errors=False
-            ).execute(cwd=str(ROOT))
-            nbformat.write(executed, executed_path)
-            generated_paths.append(executed_path)
+            executed = NotebookClient(nbformat.from_dict(notebook), timeout=600, kernel_name="python3", allow_errors=False).execute(cwd=str(ROOT))
+            nbformat.write(executed, executed_path); generated.append(executed_path)
             print(f"wrote {executed_path.relative_to(ROOT)}")
-
-    for path in generated_paths:
+    for path in generated:
         notebook = nbformat.read(path, as_version=4)
+        code = [cell for cell in notebook.cells if cell.cell_type == "code"]
         if path.name.endswith("_source.ipynb"):
-            assert all(cell.get("execution_count") is None for cell in notebook.cells if cell.cell_type == "code")
-            assert all(not cell.get("outputs") for cell in notebook.cells if cell.cell_type == "code")
+            assert all(cell.get("execution_count") is None and not cell.get("outputs") for cell in code)
         else:
-            code_cells = [cell for cell in notebook.cells if cell.cell_type == "code"]
-            assert code_cells and all(cell.get("execution_count") is not None for cell in code_cells)
-            assert any(cell.get("outputs") for cell in code_cells)
+            assert code and all(cell.get("execution_count") is not None for cell in code)
 
 
 if __name__ == "__main__":

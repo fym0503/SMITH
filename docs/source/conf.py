@@ -19,8 +19,8 @@ master_doc = "index"
 root_doc = "index"
 exclude_patterns = [
     "_build/**",
-    "tutorials/0*.md",
     "**/*_source.ipynb",
+    "tutorials/notebooks/wmb_section/**",
     "**/.ipynb_checkpoints",
 ]
 html_theme = "furo"

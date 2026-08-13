@@ -12,6 +12,8 @@ inputs:
     sha256: 113eb3ca6329a3aaadb9c0612b1cf25a8c8da87a0778dc5d687f7161558912ab
   - path: fixtures/agent_feasibility_demo.tsv
     sha256: fc8fb6b32aea6a219de6e2da3bc501268eb39883b0ef1bf2520e8f31f1979fe7
+  - path: fixtures/agent_full_tool_pass_summary.tsv
+    sha256: 38bc0c51d8650037fe90e74acb13938265b0b71600cc4711d2361f84d55ed90c
 outputs: [summary.json]
 full_workflow:
   availability: mixed_public_and_external_tools

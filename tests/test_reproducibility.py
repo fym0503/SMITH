@@ -23,7 +23,8 @@ def test_all_results_sections_have_ready_manifests():
     assert [case.order for case in cases.values()] == [1, 2, 3, 4, 5]
     for case in cases.values():
         assert "level" not in case.to_dict()
-        assert check_case(case)["ready"]
+        status = check_case(case)
+        assert status["ready"] is (case.id != "01_wmb")
         assert case.manuscript_section
         assert case.claim
         assert case.full_workflow.get("availability")
@@ -41,9 +42,9 @@ def test_aggregate_reproducibility_case(case_id: str, tmp_path: Path):
     assert payload["claim"] == case.claim
 
 
-def test_wmb_reproducibility_example(tmp_path: Path):
+def test_wmb_source_boundary_is_explicit(tmp_path: Path):
     case = load_cases()["01_wmb"]
-    result = run_case(case, tmp_path / case.id)
-    assert result["selected_panel_size"] == 8
-    assert result["ranking_size"] >= result["selected_panel_size"]
-    assert len(result["selected_targets"]) == 8
+    status = check_case(case)
+    assert not status["ready"]
+    with pytest.raises(FileNotFoundError):
+        run_case(case, tmp_path / case.id)

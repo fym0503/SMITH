@@ -4,4 +4,4 @@ This directory maps each main Results section to one representative executable e
 
 Use `smith-repro list`, `smith-repro check`, and `smith-repro run <case>` after installing the package. Full-paper sources and data-access constraints are recorded in `manifests/`.
 
-The files under `fixtures/` are small derived analysis tables, not raw biological datasets. Their SHA-256 values are pinned in the corresponding manifests.
+The files under `fixtures/` are compact result tables copied from completed paper-workspace runs, not synthetic examples or raw biological datasets. Their SHA-256 values are pinned in the corresponding manifests.

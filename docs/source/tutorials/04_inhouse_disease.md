@@ -1,4 +1,10 @@
+---
+orphan: true
+---
+
 # In-House Disease Transfer
+
+This compatibility page is kept for the old URL. The real executable notebook is here: [open the notebook](notebooks/disease_section/04_SMITH_InHouse_Disease_Transfer_executed.ipynb).
 
 Raw participant-level human brain data are controlled access. This example therefore recomputes results from a de-identified aggregate transfer-robustness table.
 

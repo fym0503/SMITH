@@ -10,6 +10,8 @@ claim: Spatial-reference transfer changes panel rankings consistently across dis
 inputs:
   - path: fixtures/inhouse_transfer_summary.csv
     sha256: 2adf61357af7215d93ea48be992817fa74cb4daac942c02a26649034ad568f20
+  - path: fixtures/inhouse_transfer_per_seed_metrics.csv
+    sha256: 843de9833c00489e27e0f83d05421fb4c49beab566936af544b63871ef50acf5
 outputs: [summary.json]
 full_workflow:
   availability: controlled_access
