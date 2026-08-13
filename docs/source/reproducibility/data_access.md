@@ -2,7 +2,11 @@
 
 `reproducibility/data_manifest.yaml` is the versioned source of truth for tutorial files, sizes, SHA-256 checksums, resource estimates and archive metadata. Raw H5AD data are not stored in Git or the Python wheel.
 
-The local archives and file checksums have been prepared. The Zenodo record URL is intentionally `null` until upstream licenses are checked and an authorized user publishes the archives. `CC BY-NC 4.0` is a target bundle license, not a claim that every upstream dataset has already been relicensed.
+The real source files and individual-file checksums have been inventoried. The
+archive checksums and Zenodo record URL remain `null` until the expanded bundles
+are built, upstream licenses are checked, and an authorized user publishes them.
+`CC BY-NC 4.0` is a target bundle license, not a claim that every upstream
+dataset has already been relicensed.
 
 After publication, download and verify a case with:
 

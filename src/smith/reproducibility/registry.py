@@ -8,6 +8,9 @@ from typing import Any
 import yaml
 
 
+PUBLIC_CASE_IDS = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
+
+
 @dataclass(frozen=True)
 class ReproducibilityCase:
     id: str
@@ -53,7 +56,11 @@ def load_cases(root: str | Path | None = None) -> dict[str, ReproducibilityCase]
     repro_root = Path(root).resolve() if root else default_reproducibility_root()
     cases: dict[str, ReproducibilityCase] = {}
     for manifest_path in sorted((repro_root / "manifests").glob("*.yaml")):
+        if manifest_path.name.startswith("._"):
+            continue
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+        if str(payload.get("id")) not in PUBLIC_CASE_IDS:
+            continue
         case = ReproducibilityCase(
             id=str(payload["id"]),
             order=int(payload["order"]),

@@ -2,7 +2,7 @@ id: 05_agent
 order: 5
 title: Multi-reference ranking and probe feasibility
 manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay Design
-figure: Figure 6
+figure: Figure 6c-d
 runtime: 20-120 minutes depending on references, cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
 summary: Starts from real liver scRNA, MERFISH and at least two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels.
@@ -25,6 +25,10 @@ inputs:
     bytes: 314137660
     sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d
 outputs: [prepared_data/*.h5ad, aggregation/integrated_top_64_panel.tsv, evaluation/metrics.tsv, run_manifest.json]
+reproduced_panels: [Figure 6c, Figure 6d]
+not_reproduced:
+  Figure 6e-g: Requires separately installed probe-design backends and indexes.
+  Figure 6h-j: Requires the validation-guided hyperparameter search.
 full_workflow:
   availability: mixed_public_and_external_tools
   source_scripts:

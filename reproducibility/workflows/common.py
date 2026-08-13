@@ -68,6 +68,48 @@ def read_panel(path: str | Path, panel_size: int | None = None) -> list[str]:
     return genes[:panel_size] if panel_size else genes
 
 
+def parse_int_list(value: str | list[int] | tuple[int, ...]) -> list[int]:
+    if isinstance(value, (list, tuple)):
+        values = [int(item) for item in value]
+    else:
+        values = [int(item.strip()) for item in str(value).split(",") if item.strip()]
+    if not values or any(item <= 0 for item in values):
+        raise ValueError(f"Expected positive comma-separated integers, got {value!r}.")
+    return list(dict.fromkeys(values))
+
+
+def parse_key_value_list(values: list[str] | None) -> dict[str, str]:
+    parsed = {}
+    for value in values or []:
+        if "=" not in value:
+            raise ValueError(f"Expected NAME=VALUE, got {value!r}.")
+        key, item = value.split("=", 1)
+        if not key.strip() or not item.strip():
+            raise ValueError(f"Expected NAME=VALUE, got {value!r}.")
+        parsed[key.strip()] = item.strip()
+    return parsed
+
+
+def write_top_panel(ranking_path: str | Path, output_path: str | Path, panel_size: int) -> Path:
+    ranking_path = Path(ranking_path)
+    frame = pd.read_csv(ranking_path, sep="\t" if ranking_path.suffix.lower() == ".tsv" else ",")
+    gene_column = next(
+        (name for name in frame.columns if str(name).lower() in {"marker", "gene", "gene_symbol", "target"}),
+        frame.columns[0],
+    )
+    genes = []
+    for value in frame[gene_column]:
+        gene = clean_gene(value)
+        if gene and gene not in genes:
+            genes.append(gene)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"rank": range(1, min(panel_size, len(genes)) + 1), "gene_symbol": genes[:panel_size]}).to_csv(
+        output_path, sep="\t" if output_path.suffix.lower() == ".tsv" else ",", index=False
+    )
+    return output_path
+
+
 def panel_positions(adata: ad.AnnData, panel: list[str]) -> tuple[list[int], list[str]]:
     first = {}
     for index, gene in enumerate(gene_symbols(adata)):

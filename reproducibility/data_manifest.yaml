@@ -12,17 +12,17 @@ cases:
     archive_name: smith-tutorial-02-regulatory-2026.08.tar.gz
     archive_url: null
     archive_sha256: null
-    prepared_archive_bytes: 223863306
-    prepared_archive_sha256: f71307161de4532d39d0aab41f53bed949ffc24f66aa770faeded1366b228571
-    disk_gb: 0.5
-    ram_gb: 8
+    prepared_archive_bytes: null
+    prepared_archive_sha256: null
+    disk_gb: 4.0
+    ram_gb: 12
     gpu: optional
     source: SMITH paper workspace split-generation output
     upstream_license: pending_verification
     processing_scripts:
       - reproducibility/workflows/regulatory_activity/run_tutorial.py
       - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
-    preparation: Existing donor/cell-name split H5AD files; no aggregate result tables are included as inputs.
+    preparation: Five lineage-aware TF splits and five lineage-aware miRNA splits used for Figure 3c-f; no aggregate result tables are included as inputs.
     files:
       - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
         bytes: 171431555
@@ -36,14 +36,30 @@ cases:
       - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad
         bytes: 27111860
         sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_2/train.h5ad, bytes: 171603487, sha256: f1540f5f56da82e25d6936870193e26ea67d646365c3bd05ae0bee81216fd441}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_2/test.h5ad, bytes: 115313553, sha256: e16b550418dff083326ba2b644a45c0a539a9d738bf8b34b6d8cd731cbe93b63}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_3/train.h5ad, bytes: 173802951, sha256: 36e52417f61f9ee7828e48c9ebcad2acb29c89ac9e7b28f6922bb95919d0d6ef}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_3/test.h5ad, bytes: 113140601, sha256: bf3ebab0737a111c3da3f400f35ce719a7f88294d507965b66ca12c0e53eebdc}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_4/train.h5ad, bytes: 168778897, sha256: 7c6659f4526fce9a9c015aa5dc9240a9162c427a36a30b969eca2ca2f141f95f}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_4/test.h5ad, bytes: 118182095, sha256: a324ef6e65940087a60b2aa53baf48110cbd5b44e279f35c9f18b3399c8a973d}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_5/train.h5ad, bytes: 173296764, sha256: 572ce18ab500fa3ea51938e2711b007d46420af55c50259ecbd6caaa752e84b9}
+      - {path: regulatory_activity/elegans/splits/elegans_tf/split_5/test.h5ad, bytes: 113653988, sha256: 3e459c74417d7dc50a41abf4ce2a021a5736f5071bfb1d9f948f1fff51d664c2}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_2/train.h5ad, bytes: 40292768, sha256: 24d3d8909eb02630c51445d130de4ca92473b439ee9f31691b866af143642be8}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_2/test.h5ad, bytes: 26390448, sha256: 50d8a460a54b0d229faa46667b4469dc8466371e4154ad2a68c029dd10846be3}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_3/train.h5ad, bytes: 40804672, sha256: bea0586858a8251fb2016323cf0e70cc8c40b3a04d92d23b00b00461e27c3250}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_3/test.h5ad, bytes: 25910384, sha256: 07da0adf69a5d06bdcb4c598232e26c50150bc812768ad28178d08bf673d179e}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_4/train.h5ad, bytes: 40318884, sha256: 44e1b3f4c00c98984edb2522a2f8425d43de139a7726f40c6d0a558530a72039}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_4/test.h5ad, bytes: 26329428, sha256: 55417820eade3131cd1fa035bd8257bc8db91244d5d9faf557d1045d494531c8}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/train.h5ad, bytes: 39937936, sha256: b29478519108c24d42b2c0a330b9b16ffbd5e0e4096d49810d6654d2a95b4926}
+      - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/test.h5ad, bytes: 26763128, sha256: e4632f404242345e2e50fe8acb7519fc9a2d150528d96ba06e18405bf2e1b3b0}
   03_ribomap_transfer:
     title: RIBOMap cross-study transfer
     archive_name: smith-tutorial-03-ribomap-2026.08.tar.gz
     archive_url: null
     archive_sha256: null
-    prepared_archive_bytes: 293028430
-    prepared_archive_sha256: a407a94b90985b7cd4bc8fb27967302f339463df76f7fc7c99d8871aa4388ecb
-    disk_gb: 0.7
+    prepared_archive_bytes: null
+    prepared_archive_sha256: null
+    disk_gb: 1.5
     ram_gb: 12
     gpu: optional
     source: Standardized RIBOMap H5AD files prepared for the SMITH manuscript
@@ -62,22 +78,25 @@ cases:
       - path: ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad
         bytes: 72496557
         sha256: 601b83c65a392865d8a82f9d4fbed00f7bdbf7ccb52426191b838c96b3d5456d
+      - path: ribomap_transfer/ribomap/mouse_brain_starmap_rep2.h5ad
+        bytes: 94653631
+        sha256: ac8e5a427e4c06b321614f628a84275539fa223428ee48ccc59e8ab09d952aea
   05_agent:
     title: Liver SMITH-Agent multi-reference evaluation
     archive_name: smith-tutorial-05-agent-2026.08.tar.gz
     archive_url: null
     archive_sha256: null
-    prepared_archive_bytes: 1447074946
-    prepared_archive_sha256: c865ea325274b8e66c91c0bb655eda2be9f30960d9777ec1df932b5dc990cbec
-    disk_gb: 3.0
-    ram_gb: 24
+    prepared_archive_bytes: null
+    prepared_archive_sha256: null
+    disk_gb: 8.0
+    ram_gb: 32
     gpu: optional
     source: Healthy liver snRNA/MERFISH objects and materialized liver Visium references
     upstream_license: pending_verification
     processing_scripts:
       - reproducibility/workflows/agent/run_tutorial.py
       - reproducibility/workflows/agent/evaluate_outputs.py
-    preparation: The tutorial uses two real references by default; the paper-scale command may repeat --reference for all five.
+    preparation: The hosted tutorial uses two real references. All five real references required by the Figure 6c-d paper-scale command are included in the archive definition.
     files:
       - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
         bytes: 1262101004
@@ -88,6 +107,15 @@ cases:
       - path: agent/references/PSC011_C1_visium.h5ad
         bytes: 157609327
         sha256: 21f3710fd52fb842d24c2dee30c8be42a22f451935cdf22a9dc89ceee9bff0b7
+      - path: agent/references/C73_B1_healthy_visium.h5ad
+        bytes: 2733152199
+        sha256: 584a480ee0634822c6d2b2008f685c40e146d3c48b2a5f646e2a2b1c5765fb8e
+      - path: agent/references/H35_sample1_visium.h5ad
+        bytes: 1264911210
+        sha256: a9bc8e13abb31cde8f5274a82a3682ea1afbbcafc85f46cf8207cab694646e0d
       - path: agent/references/WSSS_F_IMMsp9838712_visium.h5ad
         bytes: 314137660
         sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d
+      - path: agent/references/H35_sample2_visium.h5ad
+        bytes: 1177683302
+        sha256: 5ecf1f438d7647db591c48dd1febb6e253252c214f23ba9cdcfab191f30c3ecb

@@ -2,10 +2,10 @@ id: 02_regulatory_activity
 order: 2
 title: Developmental regulatory activity panels
 manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
-figure: Figure 3
+figure: Figure 3c-f
 runtime: 10-60 minutes depending on cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from a real C. elegans train/test split, trains SMITH, writes a new ranking and panel, then evaluates cell identity and developmental time.
+summary: Starts from five real TF and five real miRNA lineage-aware splits, selects panels, evaluates held-out identity/time, and rebuilds Figure 3c-f.
 claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
 inputs:
   - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
@@ -16,7 +16,18 @@ inputs:
     kind: data
     bytes: 115530989
     sha256: 31ee972b9b5ad2131bd2f8cb80f5a0cae02b14e26dc2844fdff6495532bf871a
+  - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad
+    kind: data
+    bytes: 39587756
+    sha256: 9240ad2e17a70cdb4de50351d1be03284d98e8dc4cca89fd9714f01fc7b89333
+  - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad
+    kind: data
+    bytes: 27111860
+    sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
 outputs: [smith/ranking/epoch_*.csv, smith/panel_top32.csv, evaluation/metrics.json, run_manifest.json]
+reproduced_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f]
+not_reproduced:
+  Figure 3h-k: Requires versioned developmental-module, TF-pair and scRNA-to-TF transfer inputs.
 full_workflow:
   availability: public_data_external_download
   data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity]

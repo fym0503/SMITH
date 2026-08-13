@@ -1,10 +1,12 @@
 # Reproducibility matrix
 
-| Figure | Public tutorial | Starting input | Newly generated outputs | Boundary |
+| Manuscript panel | Public tutorial | Real starting input | Freshly generated analysis | Boundary |
 |---|---|---|---|---|
-| Figure 2 | Whole mouse brain | Unavailable | None | Source and data unavailable |
-| Figure 3 | Regulatory activity | C. elegans train/test H5AD | SMITH ranking, panel, identity/time metrics | Tutorial runs one real split |
-| Figure 4 | RIBOMap transfer | RIBOMap source/target H5AD | Shared-gene H5AD, SMITH/baseline panels, metrics | Manuscript adds directions/baselines/seeds |
-| Figure 6 | SMITH-Agent | liver snRNA, MERFISH, spatial references | source/reference rankings, integrated panel, MERFISH metrics | Probe backends are separate |
+| Figure 2 | Whole mouse brain | Unavailable | None | Source and data unavailable; no mock result |
+| Figure 3c-f | Regulatory activity | Five TF and five miRNA lineage-aware train/test H5AD splits | Seven-method panels, held-out identity/time metrics, grouped bars and split-level tests | Hosted notebook shows a one-split SMITH run; h-k need auxiliary annotations |
+| Figure 4c-h | RIBOMap transfer | Deep-RIBOmap, STARmap and target RIBOMap H5AD | Shared-gene inputs, seven-method panels, target metrics, Jaccard and RIBOMap bias | Hosted notebook runs SMITH; i and j-n require versioned pathway/alignment inputs |
+| Figure 6c-d | SMITH-Agent | Liver snRNA, MERFISH and five spatial references | Per-seed rankings, integrated panels, MERFISH metrics and paired tests | Hosted notebook uses two references/two seeds; e-j require external backends/HPO |
 
-The public package intentionally omits the controlled in-house disease chapter. Reference output tables under `reproducibility/reference_outputs/` are optional comparisons and are never workflow inputs.
+Each figure table consumed by a notebook is written under that run's
+`figure_data/` directory. Files under `reproducibility/reference_outputs/` are
+optional post-run comparisons only and are never tutorial inputs.

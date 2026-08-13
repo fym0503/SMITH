@@ -2,10 +2,10 @@ id: 03_ribomap_transfer
 order: 3
 title: Cross-study and cross-modality RIBOMap transfer
 manuscript_section: SMITH Transfers Panel Design to Spatial Translatome Profiling
-figure: Figure 4
+figure: Figure 4c-h
 runtime: 10-60 minutes depending on cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from real RIBOMap H5AD files, prepares shared genes, trains SMITH and a variance baseline, then evaluates new panels on held-out targets.
+summary: Starts from real Deep-RIBOmap, STARmap and RIBOMap H5AD files, prepares shared genes, selects panels and rebuilds Figure 4c-h from new outputs.
 claim: Transcriptomic and translatomic references provide distinct but useful priors for translatome panel design.
 inputs:
   - path: ribomap_transfer/ribomap/deep_brain_ribomap.h5ad
@@ -20,7 +20,15 @@ inputs:
     kind: data
     bytes: 72496557
     sha256: 601b83c65a392865d8a82f9d4fbed00f7bdbf7ccb52426191b838c96b3d5456d
-outputs: [prepared_data/*.h5ad, smith/panel_top64.csv, variance/panel_top64.csv, evaluation/metrics.tsv, run_manifest.json]
+  - path: ribomap_transfer/ribomap/mouse_brain_starmap_rep2.h5ad
+    kind: data
+    bytes: 94653631
+    sha256: ac8e5a427e4c06b321614f628a84275539fa223428ee48ccc59e8ab09d952aea
+outputs: [prepared_data/*.h5ad, runs/*/panels/*.tsv, figure_data/figure4_c_f_values.tsv, figure_data/figure4_g_jaccard.tsv, figure_data/figure4_h_ribomap_bias.tsv, run_manifest.json]
+reproduced_panels: [Figure 4c, Figure 4d, Figure 4e, Figure 4f, Figure 4g, Figure 4h]
+not_reproduced:
+  Figure 4i: Requires the exact versioned Reactome/GO snapshot.
+  Figure 4j-n: Requires the manuscript clean-fusion aligned H5AD.
 full_workflow:
   availability: public_data_external_download
   data_ids: [mouse_brain_ribomap_rep1, mouse_brain_ribomap_rep2, mouse_brain_starmap_rep2, ribomap_deep_brain, starmap_deep_brain]

@@ -1,16 +1,34 @@
-# SMITH-Agent panel evaluation
+# Reproduce Figure 6c-d
 
-The Agent tutorial starts from real healthy liver snRNA-seq, MERFISH and two spatial references. It trains a source panel and reference panels, aggregates their new rankings, then evaluates source-only and multi-reference panels on MERFISH cell type and spatial coordinates.
+This tutorial starts from real healthy-liver snRNA-seq, MERFISH, and spatial
+reference H5AD files. For each training seed it runs SMITH on the source and every
+reference, aggregates the new rankings, selects source-only and multi-reference
+panels at 32/64/128 genes, and evaluates both panels on MERFISH. The final code
+rebuilds Figure 6c (cell-type accuracy) and Figure 6d (mean MERFISH expression)
+with paired seed-level points and one-sided Wilcoxon tests.
 
 ```bash
-python scripts/download_tutorial_data.py --case 05_agent --data-root data/tutorials
+python scripts/download_tutorial_data.py \
+  --case 05_agent --data-root data/tutorials
+
 python reproducibility/workflows/agent/run_tutorial.py \
   --data-root data/tutorials \
   --output-dir outputs/tutorials/agent \
-  --panel-size 64 --epochs 30 --device cpu
+  --panel-sizes 32,64,128 \
+  --training-seeds 1,2,3,4,5 \
+  --epochs 200 --device cuda:0
+
+python reproducibility/workflows/agent/plot_figure6.py \
+  --accuracy outputs/tutorials/agent/figure_data/figure6_c_cell_type_accuracy.tsv \
+  --expression outputs/tutorials/agent/figure_data/figure6_d_merfish_expression.tsv \
+  --output-prefix outputs/tutorials/agent/figures/figure6_c_d_reproduced
 ```
 
-Repeat `--reference agent/references/<file>.h5ad` to run the full paper reference set. ODT, OligoMiner and ProbeDealer are separate optional backends; the tutorial reports an explicit `not_run` state when they are not configured and never fabricates a pass rate.
+The hosted notebook uses two real references and two seeds; the manuscript run
+uses all five references listed in the data manifest and five seeds. Figure 6e-g
+requires separately installed ODT, OligoMiner, and ProbeDealer backends, while
+Figure 6h-j requires the validation-guided hyperparameter search. Those stages
+remain explicit `not_run` boundaries and are never filled with fabricated rates.
 
 ```{toctree}
 :maxdepth: 1

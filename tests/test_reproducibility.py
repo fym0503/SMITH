@@ -71,13 +71,44 @@ def test_safe_extract_rejects_path_traversal(tmp_path: Path):
 
 def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
     root = Path(__file__).resolve().parents[1]
-    sources = sorted((root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb"))
+    sources = sorted(
+        path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
+        if not path.name.startswith("._")
+    )
     assert len(sources) == 3
     for path in sources:
         notebook = nbformat.read(path, as_version=4)
         text = "\n".join(str(cell.source) for cell in notebook.cells)
         assert "run_tutorial.py" in text
+        assert "plot_figure" in text
         assert "run_manifest.json" in text
         assert "reference_outputs" not in text
         assert "verify_fixture" not in text
         assert "Provenance Analysis" not in text
+
+
+def test_tutorial_sources_target_manuscript_panels():
+    root = Path(__file__).resolve().parents[1]
+    expected = {
+        "02_SMITH_Regulatory_Activity_source.ipynb": ("Figure 3c-f", "plot_figure3.py"),
+        "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Figure 4c-h", "plot_figure4.py"),
+        "05_SMITH_Agent_Evaluation_source.ipynb": ("Figure 6c-d", "plot_figure6.py"),
+    }
+    sources = (
+        path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
+        if not path.name.startswith("._")
+    )
+    for path in sources:
+        notebook = nbformat.read(path, as_version=4)
+        text = "\n".join(str(cell.source) for cell in notebook.cells)
+        figure, plotter = expected[path.name]
+        assert figure in text
+        assert plotter in text
+        assert "quick hosted run" in text
+
+
+def test_ribomap_plot_has_no_placeholder_panel():
+    root = Path(__file__).resolve().parents[1]
+    plotter = (root / "reproducibility" / "workflows" / "ribomap_transfer" / "plot_figure4.py").read_text()
+    assert "Pathway enrichment" not in plotter
+    assert "versioned Reactome/GO" not in plotter

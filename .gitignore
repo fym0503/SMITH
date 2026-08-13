@@ -9,6 +9,7 @@ dist/
 .venv/
 venv/
 .env
+._*
 docs/_build/
 reports/
 sessions/
