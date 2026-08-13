@@ -96,7 +96,9 @@ display(check)
 fig, axes = plt.subplots(1, 2, figsize=(11, 4))
 for column, ax, title in [("delta_spearman", axes[0], "Rank-correlation gain"), ("delta_top64", axes[1], "Top-64 overlap gain")]:
     groups = per_seed.groupby("comparison")[column]
-    ax.boxplot([values for _, values in groups], labels=[name for name, _ in groups], showmeans=True)
+    names = list(groups.groups)
+    ax.boxplot([groups.get_group(name) for name in names], showmeans=True)
+    ax.set_xticks(np.arange(1, len(names) + 1), names)
     ax.axhline(0, color="black", linewidth=0.8); ax.set_title(title); ax.tick_params(axis="x", rotation=55)
 fig.tight_layout(); plt.show()
 ''',
