@@ -24,7 +24,7 @@ inputs:
     kind: data
     bytes: 27111860
     sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
-outputs: [smith/ranking/epoch_*.csv, smith/panel_top32.csv, evaluation/metrics.json, run_manifest.json]
+outputs: [runs/*/SMITH/ranking/epoch_*.csv, figure_data/figure3_c_f_values.tsv, figures/figure3_c.*, figures/figure3_d.*, figures/figure3_e.*, figures/figure3_f.*, run_manifest.json]
 reproduced_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f]
 not_reproduced:
   Figure 3h-k: Requires versioned developmental-module, TF-pair and scRNA-to-TF transfer inputs.

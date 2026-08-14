@@ -30,7 +30,13 @@ SPECS = {
         "arguments": ["--datasets", "elegans_tf,elegans_mirna", "--splits", "split_1", "--methods", "SMITH", "--seeds", "1", "--max-cells", "3000"],
         "plot_arguments": ["--values", "figure_data/figure3_c_f_values.tsv"],
         "tables": ["figure_data/figure3_c_f_summary.tsv"],
-        "figure_prefix": "figures/figure3_c_f_reproduced",
+        "figure_panels": [
+            ("Figure 3c - TF cell-type accuracy", "figures/figure3_c.png", 430),
+            ("Figure 3d - TF developmental-time correlation", "figures/figure3_d.png", 430),
+            ("Figure 3e - miRNA cell-type accuracy", "figures/figure3_e.png", 430),
+            ("Figure 3f - miRNA developmental-time correlation", "figures/figure3_f.png", 430),
+            ("Shared method legend", "figures/figure3_method_legend.png", 900),
+        ],
         "paper_command": "--splits split_1,split_2,split_3,split_4,split_5 --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --epochs 200",
         "scope": "This executed page uses one real TF split, one real miRNA split and SMITH only to keep the hosted example tractable. The paper command above regenerates Figure 3c-f with all five lineage-aware splits and manuscript baselines. Figure 3h-k additionally require versioned module, TF-pair and scRNA-to-TF transfer inputs and are not represented by substitute plots.",
     },
@@ -47,7 +53,15 @@ SPECS = {
         "arguments": ["--methods", "SMITH", "--panel-sizes", "32,64,128", "--training-seeds", "1,2", "--evaluation-seeds", "1,2,3", "--max-cells", "3000"],
         "plot_arguments": ["--metrics", "figure_data/figure4_c_f_values.tsv", "--overlap", "figure_data/figure4_g_jaccard.tsv", "--bias", "figure_data/figure4_h_ribomap_bias.tsv"],
         "tables": ["figure_data/figure4_c_f_values.tsv", "figure_data/figure4_g_jaccard.tsv", "figure_data/figure4_h_ribomap_bias.tsv"],
-        "figure_prefix": "figures/figure4_c_h_reproduced",
+        "figure_panels": [
+            ("Figure 4c - Deep-RIBOmap cell-type transfer", "figures/figure4_c.png", 430),
+            ("Figure 4d - Deep-RIBOmap region transfer", "figures/figure4_d.png", 430),
+            ("Figure 4e - STARmap cell-type transfer", "figures/figure4_e.png", 430),
+            ("Figure 4f - STARmap region transfer", "figures/figure4_f.png", 430),
+            ("Figure 4g - same- versus cross-modality overlap", "figures/figure4_g.png", 430),
+            ("Figure 4h - RIBOMap expression bias", "figures/figure4_h.png", 430),
+            ("Shared method legend", "figures/figure4_method_legend.png", 900),
+        ],
         "paper_command": "--methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --panel-sizes 32,64,128 --training-seeds 1,2,3,4,5 --evaluation-seeds 1,2,3,4,5 --epochs 200",
         "scope": "The workflow reproduces the quantitative logic and layout of Figure 4c-h from newly selected Deep-RIBOmap and STARmap panels. Figure 4i is deliberately omitted unless a versioned Reactome/GO snapshot is supplied. Figure 4j-n additionally require the manuscript clean-fusion aligned H5AD and are not replaced with unrelated summaries.",
     },
@@ -63,7 +77,10 @@ SPECS = {
         "arguments": ["--reference", "references/PSC011_C1_visium.h5ad", "--reference", "references/WSSS_F_IMMsp9838712_visium.h5ad", "--panel-sizes", "32,64,128", "--training-seeds", "1,2", "--max-cells", "3000"],
         "plot_arguments": ["--accuracy", "figure_data/figure6_c_cell_type_accuracy.tsv", "--expression", "figure_data/figure6_d_merfish_expression.tsv"],
         "tables": ["figure_data/figure6_c_cell_type_accuracy.tsv", "figure_data/figure6_d_merfish_expression.tsv"],
-        "figure_prefix": "figures/figure6_c_d_reproduced",
+        "figure_panels": [
+            ("Figure 6c - MERFISH cell-type accuracy", "figures/figure6_c.png", 430),
+            ("Figure 6d - MERFISH expression support", "figures/figure6_d.png", 430),
+        ],
         "paper_command": "--panel-sizes 32,64,128 --training-seeds 1,2,3,4,5 --epochs 200 (omit --reference to use all five manifest-listed defaults)",
         "scope": "This hosted run uses two real spatial references and two training seeds. The manuscript Figure 6c-d command uses five retrieved liver references and five training seeds. Figure 6e-j requires external probe-design backends and the validation-guided HPO run; this notebook does not fabricate those panels.",
     },
@@ -75,7 +92,7 @@ def build_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNod
     setup = f'''from pathlib import Path
 import hashlib, json, os, subprocess, sys
 import pandas as pd
-from IPython.display import Image, display
+from IPython.display import Image, Markdown, display
 
 def find_repository(start):
     for candidate in (start, *start.parents):
@@ -125,11 +142,13 @@ print("Generated", manifest["manuscript_figure"], "data from fresh workflow outp
     for index in range(0, len(spec["plot_arguments"]), 2):
         plot_args.extend([spec["plot_arguments"][index], f"str(CASE_OUTPUT / {spec['plot_arguments'][index + 1]!r})"])
     plot_pairs = ", ".join([repr(plot_args[i]) if i % 2 == 0 else plot_args[i] for i in range(len(plot_args))])
-    plotting = f'''figure_prefix = CASE_OUTPUT / {spec['figure_prefix']!r}
-plot_command = [sys.executable, str(ROOT / {spec['plotter']!r}), {plot_pairs}, "--output-prefix", str(figure_prefix)]
+    plotting = f'''figure_dir = CASE_OUTPUT / "figures"
+plot_command = [sys.executable, str(ROOT / {spec['plotter']!r}), {plot_pairs}, "--output-dir", str(figure_dir)]
 subprocess.run(plot_command, cwd=ROOT, check=True)
-display(Image(filename=str(figure_prefix.with_suffix(".png"))))
-print("Editable exports:", figure_prefix.with_suffix(".pdf"), figure_prefix.with_suffix(".svg"))
+for heading, relative, width in {spec['figure_panels']!r}:
+    display(Markdown(f"### {{heading}}"))
+    display(Image(filename=str(CASE_OUTPUT / relative), width=width))
+print("Each panel is also exported independently as editable PDF/SVG and 600-dpi TIFF under", figure_dir)
 '''
     notebook = nbformat.v4.new_notebook()
     notebook.metadata.update(kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"}, language_info={"name": "python", "version": "3"})
@@ -139,7 +158,7 @@ print("Editable exports:", figure_prefix.with_suffix(".pdf"), figure_prefix.with
         nbformat.v4.new_markdown_cell("## Verify input files"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Run the workflow for {spec['figure']}"), nbformat.v4.new_code_cell(command),
         nbformat.v4.new_markdown_cell("## Inspect newly generated figure data"), nbformat.v4.new_code_cell(tables),
-        nbformat.v4.new_markdown_cell("## Draw panels from this run\n\nThe quick hosted run below has the manuscript axes and panel definitions, but only the methods/repeats actually executed above. Use the full command to regenerate the complete multi-method manuscript comparison."), nbformat.v4.new_code_cell(plotting),
+        nbformat.v4.new_markdown_cell("## Draw separate manuscript panels\n\nEvery panel below has its own canvas and manuscript-matched aspect ratio. The quick hosted run uses only the methods/repeats executed above; use the full command to regenerate the complete multi-method comparison."), nbformat.v4.new_code_cell(plotting),
         nbformat.v4.new_markdown_cell(f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']}"),
     ]
     return notebook

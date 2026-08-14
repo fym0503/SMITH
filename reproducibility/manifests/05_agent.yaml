@@ -24,7 +24,7 @@ inputs:
     kind: data
     bytes: 314137660
     sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d
-outputs: [prepared_data/*.h5ad, aggregation/integrated_top_64_panel.tsv, evaluation/metrics.tsv, run_manifest.json]
+outputs: [prepared_data/*.h5ad, runs/*/aggregation/integrated_panel_rank.tsv, figure_data/figure6_c_cell_type_accuracy.tsv, figure_data/figure6_d_merfish_expression.tsv, figures/figure6_c.*, figures/figure6_d.*, run_manifest.json]
 reproduced_panels: [Figure 6c, Figure 6d]
 not_reproduced:
   Figure 6e-g: Requires separately installed probe-design backends and indexes.

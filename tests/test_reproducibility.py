@@ -105,6 +105,8 @@ def test_tutorial_sources_target_manuscript_panels():
         assert figure in text
         assert plotter in text
         assert "quick hosted run" in text
+        assert "--output-dir" in text
+        assert "Each panel is also exported independently" in text
 
 
 def test_ribomap_plot_has_no_placeholder_panel():
@@ -112,3 +114,21 @@ def test_ribomap_plot_has_no_placeholder_panel():
     plotter = (root / "reproducibility" / "workflows" / "ribomap_transfer" / "plot_figure4.py").read_text()
     assert "Pathway enrichment" not in plotter
     assert "versioned Reactome/GO" not in plotter
+
+
+def test_plotters_export_independent_manuscript_panels():
+    root = Path(__file__).resolve().parents[1]
+    expected = {
+        "regulatory_activity/plot_figure3.py": ["figure3_c", "figure3_d", "figure3_e", "figure3_f"],
+        "ribomap_transfer/plot_figure4.py": [
+            "figure4_c", "figure4_d", "figure4_e", "figure4_f", "figure4_g", "figure4_h"
+        ],
+        "agent/plot_figure6.py": ["figure6_c", "figure6_d"],
+    }
+    workflow_root = root / "reproducibility" / "workflows"
+    for relative, stems in expected.items():
+        text = (workflow_root / relative).read_text()
+        assert "--output-dir" in text
+        assert "--output-prefix" not in text
+        for stem in stems:
+            assert stem in text

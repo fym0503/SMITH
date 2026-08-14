@@ -24,8 +24,12 @@ python reproducibility/workflows/regulatory_activity/run_tutorial.py \
 
 python reproducibility/workflows/regulatory_activity/plot_figure3.py \
   --values outputs/tutorials/regulatory/figure_data/figure3_c_f_values.tsv \
-  --output-prefix outputs/tutorials/regulatory/figures/figure3_c_f_reproduced
+  --output-dir outputs/tutorials/regulatory/figures
 ```
+
+The plotter writes Figure 3c, d, e and f as separate PNG/PDF/SVG/TIFF files.
+Each panel uses the manuscript panel proportions; the shared seven-method legend
+is exported as its own asset instead of changing the chart canvases.
 
 For the manuscript-scale c-f panels, use all five splits and the six external
 baseline backends. `--baseline-python METHOD=PATH` can be repeated when PERSIST

@@ -21,8 +21,11 @@ python reproducibility/workflows/agent/run_tutorial.py \
 python reproducibility/workflows/agent/plot_figure6.py \
   --accuracy outputs/tutorials/agent/figure_data/figure6_c_cell_type_accuracy.tsv \
   --expression outputs/tutorials/agent/figure_data/figure6_d_merfish_expression.tsv \
-  --output-prefix outputs/tutorials/agent/figures/figure6_c_d_reproduced
+  --output-dir outputs/tutorials/agent/figures
 ```
+
+Figure 6c and d are separate square panels, matching the original `2.25 x 2.25`
+inch plotting canvases. Each is exported independently as PNG/PDF/SVG/TIFF.
 
 The hosted notebook uses two real references and two seeds; the manuscript run
 uses all five references listed in the data manifest and five seeds. Figure 6e-g

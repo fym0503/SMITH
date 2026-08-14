@@ -24,8 +24,12 @@ python reproducibility/workflows/ribomap_transfer/plot_figure4.py \
   --metrics outputs/tutorials/ribomap/figure_data/figure4_c_f_values.tsv \
   --overlap outputs/tutorials/ribomap/figure_data/figure4_g_jaccard.tsv \
   --bias outputs/tutorials/ribomap/figure_data/figure4_h_ribomap_bias.tsv \
-  --output-prefix outputs/tutorials/ribomap/figures/figure4_c_h_reproduced
+  --output-dir outputs/tutorials/ribomap/figures
 ```
+
+Figure 4c-h are exported one panel per file. Panels c-f retain the near-square
+benchmark geometry from the manuscript, while g and h keep their original
+portrait proportions. The shared method legend is a separate export.
 
 The executed page uses both real source modalities but only SMITH. The complete
 paper command adds all six manuscript baselines and five seeds; the grouped bars

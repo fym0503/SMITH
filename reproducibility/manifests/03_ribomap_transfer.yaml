@@ -24,7 +24,7 @@ inputs:
     kind: data
     bytes: 94653631
     sha256: ac8e5a427e4c06b321614f628a84275539fa223428ee48ccc59e8ab09d952aea
-outputs: [prepared_data/*.h5ad, runs/*/panels/*.tsv, figure_data/figure4_c_f_values.tsv, figure_data/figure4_g_jaccard.tsv, figure_data/figure4_h_ribomap_bias.tsv, run_manifest.json]
+outputs: [prepared_data/*.h5ad, runs/*/panels/*.tsv, figure_data/figure4_c_f_values.tsv, figure_data/figure4_g_jaccard.tsv, figure_data/figure4_h_ribomap_bias.tsv, figures/figure4_c.*, figures/figure4_d.*, figures/figure4_e.*, figures/figure4_f.*, figures/figure4_g.*, figures/figure4_h.*, run_manifest.json]
 reproduced_panels: [Figure 4c, Figure 4d, Figure 4e, Figure 4f, Figure 4g, Figure 4h]
 not_reproduced:
   Figure 4i: Requires the exact versioned Reactome/GO snapshot.
