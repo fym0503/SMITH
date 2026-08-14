@@ -1,11 +1,24 @@
 # Reproduce Figure 6c-d
 
-This tutorial starts from real healthy-liver snRNA-seq, MERFISH, and spatial
-reference H5AD files. For each training seed it runs SMITH on the source and every
-reference, aggregates the new rankings, selects source-only and multi-reference
-panels at 32/64/128 genes, and evaluates both panels on MERFISH. The final code
-rebuilds Figure 6c (cell-type accuracy) and Figure 6d (mean MERFISH expression)
-with paired seed-level points and one-sided Wilcoxon tests.
+## Biological question
+
+Which genes should be measured in a spatial liver assay so that cell identities
+and their expression programs remain interpretable? The source snRNA-seq gives
+broad cell-state coverage, while spatial references add tissue context. We
+therefore compare a source-only panel with a panel informed by both kinds of
+biological evidence before reading out MERFISH.
+
+## Data, model, and analysis
+
+The inputs are healthy-liver snRNA-seq, MERFISH, and spatial-reference H5AD
+files. MERFISH is held out for evaluation; the source and spatial references are
+training views. SMITH is trained separately on the source and each reference
+after restricting them to the MERFISH gene universe. Their rankings are
+aggregated into source-only and multi-reference panels. MERFISH cell-type
+accuracy tests whether selected genes retain cellular identity in the assay that
+will be measured; mean MERFISH expression tests whether the panel is supported
+by detectable biology. The paired comparison asks whether spatial references add
+information beyond the source transcriptome.
 
 ```bash
 python scripts/download_tutorial_data.py \
@@ -16,7 +29,7 @@ python reproducibility/workflows/agent/run_tutorial.py \
   --output-dir outputs/tutorials/agent \
   --panel-sizes 32,64,128 \
   --training-seeds 1,2,3,4,5 \
-  --epochs 200 --device cuda:0
+  --epochs 200 --device cuda:0 --force
 
 python reproducibility/workflows/agent/plot_figure6.py \
   --accuracy outputs/tutorials/agent/figure_data/figure6_c_cell_type_accuracy.tsv \
@@ -24,7 +37,9 @@ python reproducibility/workflows/agent/plot_figure6.py \
   --output-dir outputs/tutorials/agent/figures
 ```
 
-Figure 6c and d are separate square panels, matching the original `2.25 x 2.25`
+The run trains fresh source/reference models, aggregates their rankings, and
+writes new panels, MERFISH evaluation tables, metrics, logs, and
+`run_manifest.json` under the output directory. Figure 6c and d are separate square panels, matching the original `2.25 x 2.25`
 inch plotting canvases. Each is exported independently as PNG/PDF/SVG/TIFF.
 
 The hosted notebook uses two real references and two seeds; the manuscript run
