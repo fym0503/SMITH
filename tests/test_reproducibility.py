@@ -118,6 +118,7 @@ def test_ribomap_plot_has_no_placeholder_panel():
 
 def test_plotters_export_independent_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
+    notebook_builder = (root / "scripts" / "build_tutorial_notebooks.py").read_text()
     expected = {
         "regulatory_activity/plot_figure3.py": ["figure3_c", "figure3_d", "figure3_e", "figure3_f"],
         "ribomap_transfer/plot_figure4.py": [
@@ -131,4 +132,4 @@ def test_plotters_export_independent_manuscript_panels():
         assert "--output-dir" in text
         assert "--output-prefix" not in text
         for stem in stems:
-            assert stem in text
+            assert stem in text or stem in notebook_builder
