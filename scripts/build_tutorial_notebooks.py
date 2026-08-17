@@ -106,7 +106,6 @@ def build_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNod
     github = f"https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/{spec['folder']}/{spec['stem']}_source.ipynb"
     setup = f'''from pathlib import Path
 import hashlib, json, os, subprocess, sys
-import pandas as pd
 from IPython.display import Image, Markdown, display
 
 def find_repository(start):
@@ -130,41 +129,24 @@ def sha256_file(path):
     return digest.hexdigest()
 '''
     inspect = f'''inputs = {spec['inputs']!r}
-rows = []
+input_checksums = {{}}
 for relative in inputs:
     path = DATA_ROOT / relative
     if not path.is_file():
         raise FileNotFoundError(f"Missing {{path}}. Run scripts/download_tutorial_data.py first.")
-    rows.append({{"file": relative, "bytes": path.stat().st_size, "sha256": sha256_file(path)}})
-display(pd.DataFrame(rows))
+    input_checksums[relative] = sha256_file(path)
 '''
     command = f'''command = [sys.executable, str(ROOT / {spec['workflow']!r}), "--data-root", str(DATA_ROOT), "--output-dir", str(CASE_OUTPUT), "--device", DEVICE, "--epochs", str(EPOCHS)] + {spec['arguments']!r} + ["--force"]
-display_command = ["python", {spec['workflow']!r}, "--data-root", "data/tutorials", "--output-dir", "outputs/tutorials/{spec['output']}", "--device", DEVICE, "--epochs", str(EPOCHS)] + {spec['arguments']!r} + ["--force"]
-print(" ".join(display_command))
 completed = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 if completed.returncode:
     print(completed.stdout)
     raise subprocess.CalledProcessError(completed.returncode, command)
 manifest = json.loads((CASE_OUTPUT / "run_manifest.json").read_text())
-print("Generated", manifest["manuscript_figure"], "data from fresh workflow outputs.")
-training_rows = []
-def collect_training_runs(value):
-    if isinstance(value, dict):
-        if "ranking_csv" in value and "output_dir" in value:
-            training_rows.append({{key: value.get(key) for key in ("status", "ranking_csv", "panel_csv", "output_dir")}})
-        for child in value.values():
-            collect_training_runs(child)
-    elif isinstance(value, list):
-        for child in value:
-            collect_training_runs(child)
-collect_training_runs(manifest.get("training_runs", []))
-display(pd.DataFrame(training_rows).drop_duplicates())
-print("Panel and evaluation files are under", CASE_OUTPUT)
-'''
-    tables = f'''for relative in {spec['tables']!r}:
-    path = CASE_OUTPUT / relative
-    print(relative)
-    display(pd.read_csv(path, sep="\\t").head(20))
+if not manifest.get("training_runs"):
+    raise RuntimeError("The workflow did not record any SMITH training runs.")
+for relative in {spec['tables']!r}:
+    if not (CASE_OUTPUT / relative).is_file():
+        raise FileNotFoundError(CASE_OUTPUT / relative)
 '''
     plot_args = []
     for index in range(0, len(spec["plot_arguments"]), 2):
@@ -172,11 +154,10 @@ print("Panel and evaluation files are under", CASE_OUTPUT)
     plot_pairs = ", ".join([repr(plot_args[i]) if i % 2 == 0 else plot_args[i] for i in range(len(plot_args))])
     plotting = f'''figure_dir = CASE_OUTPUT / "figures"
 plot_command = [sys.executable, str(ROOT / {spec['plotter']!r}), {plot_pairs}, "--output-dir", str(figure_dir)]
-subprocess.run(plot_command, cwd=ROOT, check=True)
+subprocess.run(plot_command, cwd=ROOT, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 for heading, relative, width in {spec['figure_panels']!r}:
     display(Markdown(f"### {{heading}}"))
     display(Image(filename=str(CASE_OUTPUT / relative), width=width))
-print("Each panel is also exported independently as editable PDF/SVG and 600-dpi TIFF under", figure_dir)
 '''
     notebook = nbformat.v4.new_notebook()
     notebook.metadata.update(kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"}, language_info={"name": "python", "version": "3"})
@@ -187,8 +168,7 @@ print("Each panel is also exported independently as editable PDF/SVG and 600-dpi
         nbformat.v4.new_markdown_cell("## Configuration"), nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_markdown_cell(f"## Step 1: Inspect the biological input data\n\n{spec['data_role']}"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Step 2: Train SMITH and select a panel\n\n{spec['model_role']}\n\nThe command below starts from the H5AD inputs above and writes a fresh model ranking, panel, evaluation, and run manifest."), nbformat.v4.new_code_cell(command),
-        nbformat.v4.new_markdown_cell("## Step 3: Inspect model outputs and biological metrics"), nbformat.v4.new_code_cell(tables),
-        nbformat.v4.new_markdown_cell(f"## Step 4: Visualize the biological analysis\n\n{spec['analysis_role']}\n\nEvery panel below has its own manuscript-matched canvas. The quick hosted run uses only the methods/repeats executed above; use the full command to regenerate the complete multi-method comparison."), nbformat.v4.new_code_cell(plotting),
+        nbformat.v4.new_markdown_cell(f"## Step 3: Visualize the biological analysis\n\n{spec['analysis_role']}\n\nOnly the manuscript panels are rendered below. Intermediate tables remain in the output directory for reproducibility but are not printed in this notebook. The quick hosted run uses only the methods/repeats executed above; use the full command to regenerate the complete multi-method comparison."), nbformat.v4.new_code_cell(plotting),
         nbformat.v4.new_markdown_cell(f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']}"),
     ]
     return notebook

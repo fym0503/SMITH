@@ -106,7 +106,10 @@ def test_tutorial_sources_target_manuscript_panels():
         assert plotter in text
         assert "quick hosted run" in text
         assert "--output-dir" in text
-        assert "Each panel is also exported independently" in text
+        assert "import pandas" not in text
+        assert "pd.DataFrame" not in text
+        assert "pd.read_csv" not in text
+        assert "display(Image" in text
 
 
 def test_ribomap_plot_has_no_placeholder_panel():
