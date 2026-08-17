@@ -19,7 +19,7 @@ SPECS = {
     "02_regulatory_activity": {
         "case": "02_regulatory_activity",
         "folder": "regulatory_section", "stem": "02_SMITH_Regulatory_Activity",
-        "title": "Which regulatory features preserve C. elegans identity and development?", "figure": "Figure 3c-f",
+        "title": "Regulatory activity and developmental identity in C. elegans", "figure": "Figure 3c-f",
         "biology": "Which compact set of regulatory features is sufficient to preserve C. elegans cell identity and developmental progression? The TF and miRNA assays represent regulatory activity rather than a generic feature-selection benchmark: a useful panel should retain discrete lineage labels and the continuous developmental-time signal in held-out cells.",
         "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. Training cells are used to learn the activity representation; held-out cells test whether the selected regulators still recover biological identity and age.",
         "model_role": "SMITH is trained on the training H5AD with reconstruction, cell-type classification, and developmental-time objectives. Its learned gene ranking is then truncated to the manuscript panel sizes; no packaged aggregate ranking is used.",
@@ -48,7 +48,7 @@ SPECS = {
     "03_ribomap_transfer": {
         "case": "03_ribomap_transfer",
         "folder": "ribomap_section", "stem": "03_SMITH_RIBOMap_Transfer",
-        "title": "Can a compact panel transfer brain biology into RIBOMap?", "figure": "Figure 4c-h",
+        "title": "Cross-modality brain panel transfer to RIBOMap", "figure": "Figure 4c-h",
         "biology": "Can a compact gene panel transfer cell-type and brain-region biology from reference modalities into RIBOMap? Deep-RIBOmap and STARmap measure related but non-identical molecular views, so the biological question is whether the same panel captures stable tissue structure without erasing ribosome-associated expression differences.",
         "data_role": "The workflow starts from real Deep-RIBOmap, STARmap, and target RIBOMap H5AD files. Shared-gene preparation defines the common biological measurement space; target cell-type and region labels provide held-out transfer endpoints, while expression means support the RIBOMap-bias analysis.",
         "model_role": "For each source modality, SMITH is trained from the shared-gene H5AD with reconstruction and cell-type objectives, plus spatial coordination when coordinates are available. The ranking is converted into new source panels and evaluated on the target RIBOMap cells.",
@@ -78,7 +78,7 @@ SPECS = {
     "05_agent": {
         "case": "05_agent",
         "folder": "agent_section", "stem": "05_SMITH_Agent_Evaluation",
-        "title": "Which genes preserve liver cell identity in MERFISH?", "figure": "Figure 6c-d",
+        "title": "Liver cell identity in MERFISH", "figure": "Figure 6c-d",
         "biology": "Which genes should be measured in a spatial liver assay so that cell identities and their expression programs remain interpretable? The source snRNA-seq provides broad cell-state coverage, while spatial references add tissue context; the experiment compares a source-only panel with a panel informed by both kinds of biological evidence before reading out MERFISH.",
         "data_role": "The inputs are healthy-liver snRNA-seq, MERFISH, and spatial-reference H5AD files. MERFISH is the held-out assay used for evaluation; the snRNA-seq and spatial references are training views that contribute complementary cell-state and tissue-location information.",
         "model_role": "SMITH is trained separately on the source and each spatial reference after restricting them to the MERFISH gene universe. Source and reference rankings are aggregated into source-only and multi-reference panels, which are newly written for each seed and panel size.",

@@ -90,9 +90,9 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
 def test_tutorial_sources_target_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
     expected = {
-        "02_SMITH_Regulatory_Activity_source.ipynb": ("Which regulatory features preserve C. elegans identity and development?", "plot_figure3.py"),
-        "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Can a compact panel transfer brain biology into RIBOMap?", "plot_figure4.py"),
-        "05_SMITH_Agent_Evaluation_source.ipynb": ("Which genes preserve liver cell identity in MERFISH?", "plot_figure6.py"),
+        "02_SMITH_Regulatory_Activity_source.ipynb": ("Regulatory activity and developmental identity in C. elegans", "plot_figure3.py"),
+        "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Cross-modality brain panel transfer to RIBOMap", "plot_figure4.py"),
+        "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver cell identity in MERFISH", "plot_figure6.py"),
     }
     sources = (
         path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
@@ -111,6 +111,24 @@ def test_tutorial_sources_target_manuscript_panels():
         assert "pd.DataFrame" not in text
         assert "pd.read_csv" not in text
         assert "display(Image" in text
+
+
+def test_executed_tutorials_include_rendered_figure_outputs():
+    root = Path(__file__).resolve().parents[1]
+    executed = sorted(
+        path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_executed.ipynb")
+        if not path.name.startswith("._")
+    )
+    assert len(executed) == 3
+    for path in executed:
+        notebook = nbformat.read(path, as_version=4)
+        image_outputs = [
+            output
+            for cell in notebook.cells
+            for output in cell.get("outputs", [])
+            if output.output_type == "display_data" and "image/png" in output.get("data", {})
+        ]
+        assert image_outputs, f"{path} has no rendered example figures"
 
 
 def test_ribomap_plot_has_no_placeholder_panel():
