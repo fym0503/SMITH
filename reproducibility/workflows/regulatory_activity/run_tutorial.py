@@ -40,7 +40,7 @@ def run(args: argparse.Namespace) -> dict:
     seeds = parse_int_list(args.seeds)
     requested_methods = _csv_list(args.methods)
     if "SMITH" not in requested_methods:
-        raise ValueError("Figure 3 reproduction requires SMITH in --methods.")
+        raise ValueError("This biological workflow requires SMITH in --methods.")
     external_methods = [method for method in requested_methods if method != "SMITH"]
     baseline_pythons = parse_key_value_list(args.baseline_python)
     if external_methods and not args.baseline_root:
@@ -144,7 +144,9 @@ def run(args: argparse.Namespace) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reproduce the data panels in SMITH Figure 3c-f.")
+    parser = argparse.ArgumentParser(
+        description="Train SMITH to identify regulatory features that preserve C. elegans identity and developmental time."
+    )
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--datasets", default="elegans_tf,elegans_mirna")

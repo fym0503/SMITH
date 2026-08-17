@@ -1,14 +1,14 @@
-# Notebook Tutorials
+# Biological Panel-Design Tutorials
 
 These tutorials start from real H5AD inputs. Each workflow creates a new gene ranking, panel, evaluation table and `run_manifest.json`; the notebooks analyze only those new files.
 
-Download a case after its versioned Zenodo archive is published:
+Download a case from its versioned Zenodo archive:
 
 ```bash
 python scripts/download_tutorial_data.py --case 02_regulatory_activity --data-root data/tutorials
 ```
 
-Read the Docs renders notebooks that were executed on the project server. It does not download large data or train SMITH during documentation builds. Editable source notebooks are stored beside the executed copies.
+Read the Docs serves pre-executed notebooks. It does not download large data or train SMITH during documentation builds. Editable source notebooks are stored beside the executed copies.
 
 Old aggregate manuscript tables are retained under `reproducibility/reference_outputs/` only for optional comparison after a run. They are not tutorial inputs or part of the end-to-end workflow.
 

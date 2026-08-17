@@ -1,4 +1,4 @@
-# Reproduce Figure 3c-f
+# Which regulatory features preserve *C. elegans* identity and development?
 
 ## Biological question
 

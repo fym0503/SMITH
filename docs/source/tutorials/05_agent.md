@@ -1,4 +1,4 @@
-# Reproduce Figure 6c-d
+# Which genes preserve liver cell identity in MERFISH?
 
 ## Biological question
 
@@ -29,7 +29,7 @@ python reproducibility/workflows/agent/run_tutorial.py \
   --output-dir outputs/tutorials/agent \
   --panel-sizes 32,64,128 \
   --training-seeds 1,2,3,4,5 \
-  --epochs 200 --device cuda:0 --force
+  --epochs 200 --device cpu --force
 
 python reproducibility/workflows/agent/plot_figure6.py \
   --accuracy outputs/tutorials/agent/figure_data/figure6_c_cell_type_accuracy.tsv \

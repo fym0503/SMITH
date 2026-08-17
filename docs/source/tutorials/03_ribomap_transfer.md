@@ -1,4 +1,4 @@
-# Reproduce Figure 4c-h
+# Can a compact panel transfer brain biology into RIBOMap?
 
 ## Biological question
 

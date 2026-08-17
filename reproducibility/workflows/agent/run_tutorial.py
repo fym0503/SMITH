@@ -185,7 +185,9 @@ def run(args: argparse.Namespace) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reproduce SMITH-Agent Figure 6c-d.")
+    parser = argparse.ArgumentParser(
+        description="Train SMITH-Agent panels and evaluate which genes preserve liver cell identity in MERFISH."
+    )
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--source", default="liver_merfish/adata_healthy_nucseq.h5ad")

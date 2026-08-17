@@ -90,9 +90,9 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
 def test_tutorial_sources_target_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
     expected = {
-        "02_SMITH_Regulatory_Activity_source.ipynb": ("Figure 3c-f", "plot_figure3.py"),
-        "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Figure 4c-h", "plot_figure4.py"),
-        "05_SMITH_Agent_Evaluation_source.ipynb": ("Figure 6c-d", "plot_figure6.py"),
+        "02_SMITH_Regulatory_Activity_source.ipynb": ("Which regulatory features preserve C. elegans identity and development?", "plot_figure3.py"),
+        "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Can a compact panel transfer brain biology into RIBOMap?", "plot_figure4.py"),
+        "05_SMITH_Agent_Evaluation_source.ipynb": ("Which genes preserve liver cell identity in MERFISH?", "plot_figure6.py"),
     }
     sources = (
         path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
@@ -103,6 +103,7 @@ def test_tutorial_sources_target_manuscript_panels():
         text = "\n".join(str(cell.source) for cell in notebook.cells)
         figure, plotter = expected[path.name]
         assert figure in text
+        assert "Reproduce SMITH Figure" not in text
         assert plotter in text
         assert "quick hosted run" in text
         assert "--output-dir" in text

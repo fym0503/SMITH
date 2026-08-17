@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build manuscript-figure reproduction notebooks and optionally execute them."""
+"""Build biological-question notebooks and optionally execute them."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ SPECS = {
     "02_regulatory_activity": {
         "case": "02_regulatory_activity",
         "folder": "regulatory_section", "stem": "02_SMITH_Regulatory_Activity",
-        "title": "Reproduce SMITH Figure 3c-f", "figure": "Figure 3c-f",
+        "title": "Which regulatory features preserve C. elegans identity and development?", "figure": "Figure 3c-f",
         "biology": "Which compact set of regulatory features is sufficient to preserve C. elegans cell identity and developmental progression? The TF and miRNA assays represent regulatory activity rather than a generic feature-selection benchmark: a useful panel should retain discrete lineage labels and the continuous developmental-time signal in held-out cells.",
         "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. Training cells are used to learn the activity representation; held-out cells test whether the selected regulators still recover biological identity and age.",
         "model_role": "SMITH is trained on the training H5AD with reconstruction, cell-type classification, and developmental-time objectives. Its learned gene ranking is then truncated to the manuscript panel sizes; no packaged aggregate ranking is used.",
@@ -48,7 +48,7 @@ SPECS = {
     "03_ribomap_transfer": {
         "case": "03_ribomap_transfer",
         "folder": "ribomap_section", "stem": "03_SMITH_RIBOMap_Transfer",
-        "title": "Reproduce SMITH Figure 4c-h", "figure": "Figure 4c-h",
+        "title": "Can a compact panel transfer brain biology into RIBOMap?", "figure": "Figure 4c-h",
         "biology": "Can a compact gene panel transfer cell-type and brain-region biology from reference modalities into RIBOMap? Deep-RIBOmap and STARmap measure related but non-identical molecular views, so the biological question is whether the same panel captures stable tissue structure without erasing ribosome-associated expression differences.",
         "data_role": "The workflow starts from real Deep-RIBOmap, STARmap, and target RIBOMap H5AD files. Shared-gene preparation defines the common biological measurement space; target cell-type and region labels provide held-out transfer endpoints, while expression means support the RIBOMap-bias analysis.",
         "model_role": "For each source modality, SMITH is trained from the shared-gene H5AD with reconstruction and cell-type objectives, plus spatial coordination when coordinates are available. The ranking is converted into new source panels and evaluated on the target RIBOMap cells.",
@@ -73,12 +73,12 @@ SPECS = {
             ("Shared method legend", "figures/figure4_method_legend.png", 900),
         ],
         "paper_command": "--methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --panel-sizes 32,64,128 --training-seeds 1,2,3,4,5 --evaluation-seeds 1,2,3,4,5 --epochs 200",
-        "scope": "The workflow reproduces the quantitative logic and layout of Figure 4c-h from newly selected Deep-RIBOmap and STARmap panels. Figure 4i is deliberately omitted unless a versioned Reactome/GO snapshot is supplied. Figure 4j-n additionally require the manuscript clean-fusion aligned H5AD and are not replaced with unrelated summaries.",
+        "scope": "The workflow tests whether a panel selected in related brain modalities preserves cell-type and region biology in RIBOMap. Figure 4c-h provide the manuscript-aligned visual summaries. Figure 4i is deliberately omitted unless a versioned Reactome/GO snapshot is supplied. Figure 4j-n additionally require the manuscript clean-fusion aligned H5AD and are not replaced with unrelated summaries.",
     },
     "05_agent": {
         "case": "05_agent",
         "folder": "agent_section", "stem": "05_SMITH_Agent_Evaluation",
-        "title": "Reproduce SMITH Figure 6c-d", "figure": "Figure 6c-d",
+        "title": "Which genes preserve liver cell identity in MERFISH?", "figure": "Figure 6c-d",
         "biology": "Which genes should be measured in a spatial liver assay so that cell identities and their expression programs remain interpretable? The source snRNA-seq provides broad cell-state coverage, while spatial references add tissue context; the experiment compares a source-only panel with a panel informed by both kinds of biological evidence before reading out MERFISH.",
         "data_role": "The inputs are healthy-liver snRNA-seq, MERFISH, and spatial-reference H5AD files. MERFISH is the held-out assay used for evaluation; the snRNA-seq and spatial references are training views that contribute complementary cell-state and tissue-location information.",
         "model_role": "SMITH is trained separately on the source and each spatial reference after restricting them to the MERFISH gene universe. Source and reference rankings are aggregated into source-only and multi-reference panels, which are newly written for each seed and panel size.",
@@ -164,7 +164,7 @@ for heading, relative, width in {spec['figure_panels']!r}:
     notebook.cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\nThis notebook follows the biological workflow from real input data to a trained model, a newly selected panel, and manuscript-matched biological analyses. It does not read packaged aggregate results as tutorial inputs. [Open the editable source notebook on GitHub]({github})."),
         nbformat.v4.new_markdown_cell(f"## Biological question\n\n{spec['biology']}\n\n**How to read the endpoint:** {spec['analysis_role']}"),
-        nbformat.v4.new_markdown_cell(f"## Step 0: Download the real input data\n\nDownload the versioned files and verify their checksums before training:\n\n```bash\npython scripts/download_tutorial_data.py \\\n  --case {spec['case']} \\\n  --data-root data/tutorials\n```\n\nThe hosted notebook was executed against the same staged files on pc157; Read the Docs does not download or train during its documentation build."),
+        nbformat.v4.new_markdown_cell(f"## Step 0: Download the real input data\n\nDownload the versioned Zenodo archive and verify its checksums before training:\n\n```bash\npython scripts/download_tutorial_data.py \\\n  --case {spec['case']} \\\n  --data-root data/tutorials\n```\n\nThe notebook is pre-executed for documentation. Read the Docs does not download large data or train SMITH during documentation builds."),
         nbformat.v4.new_markdown_cell("## Configuration"), nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_markdown_cell(f"## Step 1: Inspect the biological input data\n\n{spec['data_role']}"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Step 2: Train SMITH and select a panel\n\n{spec['model_role']}\n\nThe command below starts from the H5AD inputs above and writes a fresh model ranking, panel, evaluation, and run manifest."), nbformat.v4.new_code_cell(command),

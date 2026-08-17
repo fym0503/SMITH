@@ -219,7 +219,9 @@ def run(args: argparse.Namespace) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reproduce SMITH Figure 4c-h from RIBOMap/STARmap H5AD inputs.")
+    parser = argparse.ArgumentParser(
+        description="Train SMITH and test whether a compact panel transfers brain biology into RIBOMap."
+    )
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--sources", default="Deep-RIBOmap,STARmap")
