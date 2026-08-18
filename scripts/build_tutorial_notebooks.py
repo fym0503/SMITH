@@ -149,16 +149,20 @@ for relative in {spec['tables']!r}:
         raise FileNotFoundError(CASE_OUTPUT / relative)
 '''
     if spec["case"] == "02_regulatory_activity":
-        analysis = '''from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
+        analysis = '''import warnings
+
+from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
 
 panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panels/SMITH_top32.tsv"
 recheck_dir = CASE_OUTPUT / "notebook_recheck" / "elegans_tf"
-evaluate(
-    DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad",
-    DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
-    panel_file, recheck_dir, 32, neighbors=5,
-)
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+    evaluate(
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad",
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
+        panel_file, recheck_dir, 32, neighbors=5,
+    )
 write_statistical_analysis(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", CASE_OUTPUT / "figure_data")
 if not (recheck_dir / "cell_type_predictions.tsv").is_file() or not (recheck_dir / "developmental_time_predictions.tsv").is_file():
     raise FileNotFoundError("Held-out prediction files were not generated")
