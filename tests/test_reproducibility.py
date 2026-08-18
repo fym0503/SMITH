@@ -167,9 +167,11 @@ def test_plotters_export_independent_manuscript_panels():
 
 def test_ribomap_analysis_formulas_are_manuscript_defined():
     assert jaccard_similarity({"A", "B"}, {"B", "C"}) == pytest.approx(1 / 3)
-    expected = (np.log1p([1.0, 3.0]) - np.mean(np.log1p([1.0, 3.0]))) / np.std(np.log1p([1.0, 3.0]))
-    expected -= (np.log1p([2.0, 2.0]) - np.mean(np.log1p([2.0, 2.0]))) / np.std(np.log1p([2.0, 2.0]))
-    assert np.allclose(ribomap_bias(np.array([1.0, 3.0]), np.array([2.0, 2.0])), expected, equal_nan=True)
+    ribomap_values = np.array([1.0, 3.0, 9.0])
+    starmap_values = np.array([1.0, 2.0, 8.0])
+    expected_ribo = (np.log1p(ribomap_values) - np.mean(np.log1p(ribomap_values))) / np.std(np.log1p(ribomap_values))
+    expected_star = (np.log1p(starmap_values) - np.mean(np.log1p(starmap_values))) / np.std(np.log1p(starmap_values))
+    assert np.allclose(ribomap_bias(ribomap_values, starmap_values), expected_ribo - expected_star)
     assert np.allclose(bh_adjust([0.01, 0.04, 0.2]), [0.03, 0.06, 0.2])
 
 
