@@ -6,11 +6,19 @@ from dataclasses import replace
 from pathlib import Path
 
 import nbformat
+import numpy as np
+import pandas as pd
 import pytest
 import yaml
 
 from smith.reproducibility import check_case, load_cases, run_case
 from scripts.download_tutorial_data import safe_extract
+from reproducibility.workflows.ribomap_transfer.analysis import (
+    bh_adjust,
+    jaccard_similarity,
+    ribomap_bias,
+)
+from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon
 
 
 EXPECTED_CASES = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
@@ -155,3 +163,23 @@ def test_plotters_export_independent_manuscript_panels():
         assert "--output-prefix" not in text
         for stem in stems:
             assert stem in text or stem in notebook_builder
+
+
+def test_ribomap_analysis_formulas_are_manuscript_defined():
+    assert jaccard_similarity({"A", "B"}, {"B", "C"}) == pytest.approx(1 / 3)
+    expected = (np.log1p([1.0, 3.0]) - np.mean(np.log1p([1.0, 3.0]))) / np.std(np.log1p([1.0, 3.0]))
+    expected -= (np.log1p([2.0, 2.0]) - np.mean(np.log1p([2.0, 2.0]))) / np.std(np.log1p([2.0, 2.0]))
+    assert np.allclose(ribomap_bias(np.array([1.0, 3.0]), np.array([2.0, 2.0])), expected, equal_nan=True)
+    assert np.allclose(bh_adjust([0.01, 0.04, 0.2]), [0.03, 0.06, 0.2])
+
+
+def test_regulatory_paired_test_uses_split_as_pairing_unit():
+    values = pd.DataFrame([
+        {"dataset": "elegans_tf", "split": "split_1", "panel_size": 32, "method": "SMITH", "metric": 0.8},
+        {"dataset": "elegans_tf", "split": "split_1", "panel_size": 32, "method": "PERSIST-class", "metric": 0.6},
+        {"dataset": "elegans_tf", "split": "split_2", "panel_size": 32, "method": "SMITH", "metric": 0.9},
+        {"dataset": "elegans_tf", "split": "split_2", "panel_size": 32, "method": "PERSIST-class", "metric": 0.7},
+    ])
+    result = paired_wilcoxon(values.rename(columns={"metric": "cell_type_accuracy"}), "cell_type_accuracy")
+    assert len(result) == 1
+    assert result.iloc[0]["n_pairs"] == 2

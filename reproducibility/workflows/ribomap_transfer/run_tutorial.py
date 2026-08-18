@@ -24,6 +24,12 @@ from reproducibility.workflows.common import (
 )
 from reproducibility.workflows.external_baselines import run_baseline
 from reproducibility.workflows.ribomap_transfer.evaluate_outputs import evaluate_panel
+from reproducibility.workflows.ribomap_transfer.analysis import (
+    bias_group,
+    jaccard_similarity,
+    ribomap_bias,
+    write_statistical_analysis,
+)
 
 
 SOURCE_FILES = {
@@ -79,11 +85,9 @@ def _bias_table(ribomap_file: Path, starmap_file: Path) -> pd.DataFrame:
     ribo = {g: v for g, v in zip(ribo_genes, ribo_mean) if g}
     star = {g: v for g, v in zip(star_genes, star_mean) if g}
     shared = sorted(set(ribo) & set(star))
-    r = np.log1p([ribo[g] for g in shared])
-    s = np.log1p([star[g] for g in shared])
-    rz = (r - r.mean()) / (r.std() or 1.0)
-    sz = (s - s.mean()) / (s.std() or 1.0)
-    return pd.DataFrame({"gene_symbol": shared, "ribomap_bias": rz - sz})
+    r = np.asarray([ribo[g] for g in shared], dtype=float)
+    s = np.asarray([star[g] for g in shared], dtype=float)
+    return pd.DataFrame({"gene_symbol": shared, "ribomap_bias": ribomap_bias(r, s)})
 
 
 def run(args: argparse.Namespace) -> dict:
@@ -152,7 +156,15 @@ def run(args: argparse.Namespace) -> dict:
     for record in panel_records:
         for eval_seed in eval_seeds:
             for label, column in (("celltype", celltype_column), ("region", region_column)):
-                result = evaluate_panel(target_file, record["panel_file"], record["panel_size"], eval_seed, column)
+                evaluation_dir = (
+                    output_dir / "evaluations" / record["source"] / record["method"]
+                    / f"train_seed_{record['training_seed']}" / f"panel_{record['panel_size']}"
+                    / f"evaluation_seed_{eval_seed}" / label
+                )
+                result = evaluate_panel(
+                    target_file, record["panel_file"], record["panel_size"], eval_seed,
+                    column, evaluation_dir, args.neighbors,
+                )
                 metric_rows.append({
                     **record, "evaluation_seed": eval_seed, "label": label,
                     "accuracy": result["metrics"]["accuracy"],
@@ -176,7 +188,8 @@ def run(args: argparse.Namespace) -> dict:
                 "modality_group": "Same modality" if left["source"] == right["source"] else "Cross modality",
                 "source_a": left["source"], "source_b": right["source"],
                 "method_a": left["method"], "method_b": right["method"],
-                "jaccard": len(a & b) / len(a | b) if a | b else np.nan,
+                "jaccard": jaccard_similarity(a, b),
+                "overlap": len(a & b), "union": len(a | b),
             })
     overlap_path = figure_dir / "figure4_g_jaccard.tsv"
     pd.DataFrame(overlaps).to_csv(overlap_path, sep="\t", index=False)
@@ -191,12 +204,7 @@ def run(args: argparse.Namespace) -> dict:
         for method, seed in pair_keys:
             deep = set(read_panel(by_key[("Deep-RIBOmap", method, seed)]["panel_file"], size))
             star = set(read_panel(by_key[("STARmap", method, seed)]["panel_file"], size))
-            group_map = {
-                gene: "Deep-RIBOmap" if gene in deep - star else
-                "Shared" if gene in deep & star else
-                "STARmap" if gene in star - deep else "Background"
-                for gene in bias["gene_symbol"]
-            }
+            group_map = {gene: bias_group(gene, deep, star) for gene in bias["gene_symbol"]}
             part = bias.copy()
             part["panel_size"] = size
             part["method"] = method
@@ -205,13 +213,16 @@ def run(args: argparse.Namespace) -> dict:
             bias_rows.append(part)
     bias_path = figure_dir / "figure4_h_ribomap_bias.tsv"
     pd.concat(bias_rows, ignore_index=True).to_csv(bias_path, sep="\t", index=False)
+    statistical_outputs = write_statistical_analysis(metrics_path, bias_path, figure_dir)
 
     manifest = {
         "workflow": "03_ribomap_transfer", "manuscript_figure": "Figure 4c-h",
         "configuration": vars(args),
         "inputs": [{"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path)} for path in [target_file, *sources.values()]],
         "training_runs": run_records,
-        "outputs": {"figure4_c_f": str(metrics_path), "figure4_g": str(overlap_path), "figure4_h": str(bias_path)},
+        "outputs": {"figure4_c_f": str(metrics_path), "figure4_g": str(overlap_path), "figure4_h": str(bias_path),
+                    **statistical_outputs,
+                    "prediction_files": sorted(str(path) for path in output_dir.glob("evaluations/**/predictions.tsv"))},
         "not_reproduced": {"Figure 4i": "Requires a versioned Reactome/GO gene-set snapshot; pass it in a separate enrichment analysis."},
     }
     write_json(output_dir / "run_manifest.json", manifest)
@@ -242,6 +253,7 @@ def main() -> None:
     parser.add_argument("--panel-size", type=int, default=128, help="Compatibility option; use --panel-sizes.")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--max-cells", type=int, default=None)
+    parser.add_argument("--neighbors", type=int, default=5)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     print(json.dumps(run(args), indent=2))

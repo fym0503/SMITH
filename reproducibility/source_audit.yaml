@@ -1,0 +1,51 @@
+schema_version: 1
+audited_on: 2026-08-18
+host: pc157
+repository: /workspace/fanyimin/SMITH_unified
+purpose: >-
+  Frozen audit of the cluster implementations used to align the portable
+  Figure 3c-f and Figure 4c-h tutorials. These files are provenance only;
+  tutorials execute the checked-in portable workflows.
+scripts:
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/run_elegans_smith_multitask.py
+    sha256: 1c0a7c23dbc362a5aaa7c769947eeb3ca5c45c3ca7eb6cd52eb3f98699091db5
+    data: regulatory_activity/elegans/splits/{dataset}/{split}/train.h5ad + test.h5ad
+    parameters: "tasks=recon,cls,coordination,time (TF); recon,cls,time (miRNA); epochs=150; seed=42; knn_neighbors=5; panel_sizes=dataset-specific"
+    portable_mapping: reproducibility/workflows/regulatory_activity/run_tutorial.py
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/scripts/evaluate_elegans_split_metrics.py
+    sha256: 98cec17e6a5f4fc96b732e6eae267199814fcf83d5e6c6c1b3e6b5d801c1042f
+    data: same fixed lineage-aware train/test splits
+    parameters: "knn_neighbors=5; identifier=cell_name; gene_case=upper"
+    portable_mapping: reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+  - case: 03_ribomap_transfer
+    path: /workspace/fanyimin/SMITH_unified/code/workflows/run_ribomap_cross_study.py
+    sha256: 311d8b626c34248acccbb0f328641f0ca4a0a3e3ed0a7dbe6d71daad0a5e2583
+    data: deep_brain_ribomap.h5ad -> mouse_brain_ribomap_rep2.h5ad
+    parameters: "panel_sizes=32; tasks=recon,cls,coordination; seed=3400"
+    portable_mapping: reproducibility/workflows/ribomap_transfer/run_tutorial.py
+  - case: 03_ribomap_transfer
+    path: /workspace/fanyimin/SMITH_unified/code/workflows/run_starmap_to_ribomap_baselines.py
+    sha256: bb8c220d14bbacf63fc46988aa7d49fdff6ae1aa4a7138d8468902d1b9961e38
+    data: mouse_brain_starmap_rep2.h5ad -> mouse_brain_ribomap_rep2.h5ad
+    parameters: "panel_sizes=configurable; tasks=recon,cls,coordination; seed=configurable"
+    portable_mapping: reproducibility/workflows/ribomap_transfer/run_tutorial.py
+  - case: 03_ribomap_transfer
+    path: /workspace/fanyimin/SMITH_unified/code/workflows/make_ribo_figure_panels.py
+    sha256: 65a4d636f7810044e42db1968df4325fe52776d9c89ab8be31a0e344bdbceaf8
+    data: generated panel overlap and modality-bias tables
+    parameters: "jaccard=shared-gene universe; bias=zscore(log1p(mean)); tests=BH-adjusted Mann-Whitney"
+    portable_mapping: reproducibility/workflows/ribomap_transfer/analysis.py + plot_figure4.py
+  - case: 03_ribomap_transfer
+    path: /workspace/fanyimin/SMITH_unified/code/workflows/plot_modality_marker_analysis.py
+    sha256: e6eecd0d627fff9b26cfc8bb1c7581ea2ae9a8c7e92667a1d4b4f427b4929691
+    data: Deep-RIBOmap, STARmap and RIBOMap H5ADs plus generated marker files
+    parameters: "jaccard=same/cross modality; bias_groups=RIBOMap-only/Shared/STARmap-only/Background"
+    portable_mapping: reproducibility/workflows/ribomap_transfer/analysis.py
+source_data:
+  regulatory_activity: /workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/cell_name_splits
+  ribomap_transfer: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data
+notes:
+  - Cluster absolute paths are recorded for audit only and are not used by the package.
+  - No aggregate CSV is a tutorial input.

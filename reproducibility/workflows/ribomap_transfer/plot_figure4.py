@@ -8,7 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import mannwhitneyu, wilcoxon
+from scipy.stats import wilcoxon
 
 from reproducibility.workflows.figure_style import (
     METHOD_COLORS,
@@ -121,9 +121,11 @@ def _draw_jaccard(ax, overlap: pd.DataFrame) -> None:
     ax.legend(loc="lower left", bbox_to_anchor=(0, 1.02), fontsize=6.3, handlelength=1.2, borderaxespad=0)
 
 
-def _draw_bias(ax, bias: pd.DataFrame) -> None:
+def _draw_bias(ax, bias: pd.DataFrame, tests: pd.DataFrame | None = None) -> None:
     frame = bias[bias["panel_size"] == 128]
-    order = ["Deep-RIBOmap", "Shared", "STARmap", "Background"]
+    if "method" in frame:
+        frame = frame[frame["method"] == "SMITH"]
+    order = ["RIBOMap-only", "Shared", "STARmap-only", "Background"]
     values = [frame.loc[frame["group"] == group, "ribomap_bias"].dropna().to_numpy() for group in order]
     parts = ax.violinplot(values, positions=range(4), showmeans=False, showmedians=False, showextrema=False)
     for body, color in zip(parts["bodies"], ["#3E7FAF", "#B7A6C9", "#E3A15B", "#BDBDBD"]):
@@ -143,15 +145,25 @@ def _draw_bias(ax, bias: pd.DataFrame) -> None:
             linewidths=0,
             zorder=4,
         )
-    for left, right, y in ((0, 1, 6.8), (0, 3, 8.25)):
+    comparisons = ((0, 2), (0, 3))
+    finite = np.concatenate([value[np.isfinite(value)] for value in values if len(value)])
+    y_min, y_max = (float(finite.min()), float(finite.max())) if len(finite) else (-1.0, 1.0)
+    span = max(1.0, y_max - y_min)
+    for comparison_index, (left, right) in enumerate(comparisons):
         if len(values[left]) and len(values[right]):
-            pvalue = mannwhitneyu(values[left], values[right], alternative="greater").pvalue
+            row = None
+            if tests is not None:
+                match = tests[(tests["panel_size"] == 128) & (tests["group_a"] == order[left]) &
+                              (tests["group_b"] == order[right])]
+                row = match.iloc[0] if len(match) else None
+            qvalue = float(row["qvalue_bh"]) if row is not None else np.nan
+            y = y_max + span * (0.10 + 0.14 * comparison_index)
             height = 0.35
             ax.plot([left, left, right, right], [y, y + height, y + height, y], color="black", lw=0.5)
-            label = "p<0.001" if pvalue < 0.001 else f"p={pvalue:.3f}"
+            label = "q<0.001" if qvalue < 0.001 else (f"q={qvalue:.3f}" if np.isfinite(qvalue) else "q=n/a")
             ax.text((left + right) / 2, y + height, label, ha="center", va="bottom", fontsize=6.5)
     ax.axhline(0, color="#777777", lw=0.5)
-    ax.set_ylim(-8, 10.5)
+    ax.set_ylim(y_min - span * 0.08, y_max + span * 0.42)
     ax.set_xticks(range(4), order, rotation=30, ha="right")
     ax.set_ylabel("RIBOMap Bias Score")
 
@@ -161,11 +173,13 @@ def plot(
     overlap_path: str | Path,
     bias_path: str | Path,
     output_dir: str | Path,
+    bias_tests_path: str | Path | None = None,
 ) -> dict[str, dict[str, str]]:
     configure()
     metrics = pd.read_csv(metrics_path, sep="\t")
     overlap = pd.read_csv(overlap_path, sep="\t")
     bias = pd.read_csv(bias_path, sep="\t")
+    bias_tests = pd.read_csv(bias_tests_path, sep="\t") if bias_tests_path else None
     output_dir = Path(output_dir)
     outputs: dict[str, dict[str, str]] = {}
     methods: list[str] = []
@@ -186,7 +200,7 @@ def plot(
     plt.close(fig_g)
 
     fig_h, ax_h = plt.subplots(figsize=(2.30, 2.59), facecolor="white")
-    _draw_bias(ax_h, bias)
+    _draw_bias(ax_h, bias, bias_tests)
     fig_h.text(0.015, 0.985, "h", ha="left", va="top", fontsize=10, weight="bold")
     fig_h.subplots_adjust(left=0.25, right=0.97, bottom=0.28, top=0.86)
     outputs["figure4_h"] = save_figure(fig_h, output_dir / "figure4_h")
@@ -201,9 +215,10 @@ def main() -> None:
     parser.add_argument("--metrics", required=True)
     parser.add_argument("--overlap", required=True)
     parser.add_argument("--bias", required=True)
+    parser.add_argument("--bias-tests", default=None)
     parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
-    print(json.dumps(plot(args.metrics, args.overlap, args.bias, args.output_dir), indent=2))
+    print(json.dumps(plot(args.metrics, args.overlap, args.bias, args.output_dir, args.bias_tests), indent=2))
 
 
 if __name__ == "__main__":

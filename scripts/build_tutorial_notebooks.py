@@ -34,7 +34,7 @@ SPECS = {
         ],
         "arguments": ["--datasets", "elegans_tf,elegans_mirna", "--splits", "split_1", "--methods", "SMITH", "--seeds", "1", "--max-cells", "3000"],
         "plot_arguments": ["--values", "figure_data/figure3_c_f_values.tsv"],
-        "tables": ["figure_data/figure3_c_f_summary.tsv"],
+        "tables": ["figure_data/figure3_c_f_summary.tsv", "figure_data/figure3_c_f_paired_tests.tsv"],
         "figure_panels": [
             ("Figure 3c - TF cell-type accuracy", "figures/figure3_c.png", 430),
             ("Figure 3d - TF developmental-time correlation", "figures/figure3_d.png", 430),
@@ -61,8 +61,8 @@ SPECS = {
             "ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad",
         ],
         "arguments": ["--methods", "SMITH", "--panel-sizes", "32,64,128", "--training-seeds", "1,2", "--evaluation-seeds", "1,2,3", "--max-cells", "3000"],
-        "plot_arguments": ["--metrics", "figure_data/figure4_c_f_values.tsv", "--overlap", "figure_data/figure4_g_jaccard.tsv", "--bias", "figure_data/figure4_h_ribomap_bias.tsv"],
-        "tables": ["figure_data/figure4_c_f_values.tsv", "figure_data/figure4_g_jaccard.tsv", "figure_data/figure4_h_ribomap_bias.tsv"],
+        "plot_arguments": ["--metrics", "figure_data/figure4_c_f_values.tsv", "--overlap", "figure_data/figure4_g_jaccard.tsv", "--bias", "figure_data/figure4_h_ribomap_bias.tsv", "--bias-tests", "figure_data/figure4_h_pairwise_tests.tsv"],
+        "tables": ["figure_data/figure4_c_f_values.tsv", "figure_data/figure4_g_jaccard.tsv", "figure_data/figure4_h_ribomap_bias.tsv", "figure_data/figure4_h_pairwise_tests.tsv"],
         "figure_panels": [
             ("Figure 4c - Deep-RIBOmap cell-type transfer", "figures/figure4_c.png", 430),
             ("Figure 4d - Deep-RIBOmap region transfer", "figures/figure4_d.png", 430),
@@ -148,6 +148,43 @@ for relative in {spec['tables']!r}:
     if not (CASE_OUTPUT / relative).is_file():
         raise FileNotFoundError(CASE_OUTPUT / relative)
 '''
+    if spec["case"] == "02_regulatory_activity":
+        analysis = '''from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
+from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
+
+panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panels/SMITH_top32.tsv"
+recheck_dir = CASE_OUTPUT / "notebook_recheck" / "elegans_tf"
+evaluate(
+    DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad",
+    DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
+    panel_file, recheck_dir, 32, neighbors=5,
+)
+write_statistical_analysis(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", CASE_OUTPUT / "figure_data")
+if not (recheck_dir / "cell_type_predictions.tsv").is_file() or not (recheck_dir / "developmental_time_predictions.tsv").is_file():
+    raise FileNotFoundError("Held-out prediction files were not generated")
+'''
+    elif spec["case"] == "03_ribomap_transfer":
+        analysis = '''from reproducibility.workflows.ribomap_transfer.analysis import write_statistical_analysis
+from reproducibility.workflows.ribomap_transfer.evaluate_outputs import evaluate_panel
+
+panel_file = CASE_OUTPUT / "runs/Deep-RIBOmap/seed_1/panels/SMITH_top32.tsv"
+recheck_dir = CASE_OUTPUT / "notebook_recheck" / "Deep-RIBOmap_celltype"
+evaluate_panel(
+    DATA_ROOT / "ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad",
+    panel_file, 32, 1, "celltype", recheck_dir, 5,
+)
+write_statistical_analysis(
+    CASE_OUTPUT / "figure_data/figure4_c_f_values.tsv",
+    CASE_OUTPUT / "figure_data/figure4_h_ribomap_bias.tsv",
+    CASE_OUTPUT / "figure_data",
+)
+if not (recheck_dir / "predictions.tsv").is_file():
+    raise FileNotFoundError("Held-out RIBOMap predictions were not generated")
+'''
+    else:
+        analysis = '''if not list(CASE_OUTPUT.glob("evaluations/**/metrics.json")):
+    raise FileNotFoundError("No generated evaluation files found")
+'''
     plot_args = []
     for index in range(0, len(spec["plot_arguments"]), 2):
         plot_args.extend([spec["plot_arguments"][index], f"str(CASE_OUTPUT / {spec['plot_arguments'][index + 1]!r})"])
@@ -168,8 +205,9 @@ for heading, relative, width in {spec['figure_panels']!r}:
         nbformat.v4.new_markdown_cell("## Configuration"), nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_markdown_cell(f"## Step 1: Inspect the biological input data\n\n{spec['data_role']}"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Step 2: Train SMITH and select a panel\n\n{spec['model_role']}\n\nThe command below starts from the H5AD inputs above and writes a fresh model ranking, panel, evaluation, and run manifest."), nbformat.v4.new_code_cell(command),
-        nbformat.v4.new_markdown_cell(f"## Step 3: Visualize the biological analysis\n\n{spec['analysis_role']}\n\nOnly the manuscript panels are rendered below. Intermediate tables remain in the output directory for reproducibility but are not printed in this notebook. The quick hosted run uses only the methods/repeats executed above; use the full command to regenerate the complete multi-method comparison."), nbformat.v4.new_code_cell(plotting),
-        nbformat.v4.new_markdown_cell(f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']}"),
+        nbformat.v4.new_markdown_cell(f"## Step 3: Evaluate held-out biology\n\n{spec['analysis_role']}\n\nThe next cell recomputes one held-out prediction from the newly selected panel and writes truth/prediction files. The workflow also records split-level metrics and statistical metadata. No aggregate reference output is read."), nbformat.v4.new_code_cell(analysis),
+        nbformat.v4.new_markdown_cell("## Step 4: Render the manuscript panels\n\nOnly the manuscript figure images are rendered below. Intermediate tables and logs remain in the output directory but are not displayed."), nbformat.v4.new_code_cell(plotting),
+        nbformat.v4.new_markdown_cell(f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']} This quick hosted run is intentionally smaller than the paper-scale comparison, but it starts from the same real inputs and executes the same prediction and analysis functions."),
     ]
     return notebook
 

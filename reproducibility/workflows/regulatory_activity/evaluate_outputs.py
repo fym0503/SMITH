@@ -50,7 +50,7 @@ def evaluate(
     output_dir: str | Path,
     panel_size: int,
     time_column: str | None = None,
-    neighbors: int = 15,
+    neighbors: int = 5,
 ) -> dict:
     train = ad.read_h5ad(train_file)
     test = ad.read_h5ad(test_file)
@@ -95,6 +95,9 @@ def evaluate(
         "celltype_columns": [train_celltype, test_celltype],
         "time_columns": [train_time, test_time],
         "metrics": metrics,
+        "knn_neighbors": n_neighbors,
+        "n_train": int(len(x_train)),
+        "n_test": int(len(x_test)),
     }
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -104,6 +107,9 @@ def evaluate(
     )
     pd.DataFrame({"truth": t_test, "prediction": predicted_time}).to_csv(
         output_dir / "developmental_time_predictions.tsv", sep="\t", index=False
+    )
+    pd.DataFrame({"truth": y_test, "prediction": predicted_celltype}).to_csv(
+        output_dir / "cell_type_predictions.tsv", sep="\t", index=False
     )
     return payload
 

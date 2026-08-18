@@ -18,6 +18,7 @@ from reproducibility.workflows.common import (
 )
 from reproducibility.workflows.external_baselines import run_baseline
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
+from reproducibility.workflows.regulatory_activity.analysis import lineage_overlap, write_statistical_analysis
 
 
 PAPER_METHODS = ("PERSIST-class", "PERSIST", "ActiveSVM", "scGIST", "scGeneFit", "Spapros")
@@ -64,13 +65,16 @@ def run(args: argparse.Namespace) -> dict:
                 if not path.is_file():
                     raise FileNotFoundError(f"Missing Figure 3 input: {path}")
                 inputs.append({"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path)})
+            overlap = lineage_overlap(train_file, test_file)
+            if overlap:
+                raise ValueError(f"Lineage-aware split {split} leaks {overlap} cell identifiers")
 
             for seed in seeds:
                 run_dir = output_dir / "runs" / dataset / split / f"seed_{seed}"
                 training = run_smith(
                     adata_file=train_file,
                     output_dir=run_dir / "SMITH",
-                    tasks="recon,cls,time",
+                    tasks="recon,cls,standard_coordination,time" if dataset == "elegans_tf" else "recon,cls,time",
                     task_name=f"{dataset}_{split}_seed{seed}",
                     panel_size=max_panel,
                     epochs=args.epochs,
@@ -131,13 +135,16 @@ def run(args: argparse.Namespace) -> dict:
     )
     summary_path = figure_dir / "figure3_c_f_summary.tsv"
     summary.to_csv(summary_path, sep="\t", index=False)
+    stats_path = write_statistical_analysis(values_path, figure_dir)
     manifest = {
         "workflow": "02_regulatory_activity",
         "manuscript_figure": "Figure 3c-f",
         "configuration": vars(args),
         "inputs": list({item["path"]: item for item in inputs}.values()),
         "training_runs": runs,
-        "outputs": {"figure_values": str(values_path), "figure_summary": str(summary_path)},
+        "outputs": {"figure_values": str(values_path), "figure_summary": str(summary_path),
+                    "paired_tests": str(stats_path),
+                    "prediction_files": sorted(str(path) for path in output_dir.glob("runs/**/evaluation/**/*predictions.tsv"))},
     }
     write_json(output_dir / "run_manifest.json", manifest)
     return manifest
@@ -165,7 +172,7 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--max-cells", type=int, default=None)
     parser.add_argument("--time-column", default="absolute_time")
-    parser.add_argument("--neighbors", type=int, default=15)
+    parser.add_argument("--neighbors", type=int, default=5)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     print(json.dumps(run(args), indent=2))
