@@ -1,20 +1,6 @@
 # Biological Panel-Design Tutorials
 
-Each chapter below is a runnable notebook. It starts from real H5AD inputs,
-trains SMITH, creates a new gene ranking and panel, evaluates the biological
-endpoint, and renders the manuscript-matched figures on the same page.
-
-Download a case from its versioned Zenodo archive:
-
-```bash
-python scripts/download_tutorial_data.py --case 02_regulatory_activity --data-root data/tutorials
-```
-
-Read the Docs serves pre-executed notebooks with their figure outputs. It does
-not download large data or train SMITH during documentation builds. The source
-notebook is linked from each page for a fresh local run.
-
-Old aggregate manuscript tables are retained under `reproducibility/reference_outputs/` only for optional comparison after a run. They are not tutorial inputs or part of the end-to-end workflow.
+These runnable notebooks follow SMITH from real biological inputs through model training, panel selection, held-out evaluation, and manuscript-aligned figures. Read the Docs shows pre-executed results; each notebook also links to its editable source for a fresh run.
 
 ```{toctree}
 :maxdepth: 1

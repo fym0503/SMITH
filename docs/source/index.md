@@ -1,10 +1,11 @@
-# SMITH Documentation
+# SMITH
 
-SMITH is a target-panel design framework for imaging-based spatial molecular profiling. The documentation separates everyday package use from paper-oriented reproducibility.
+SMITH is a framework for designing compact, biologically informative target-gene panels for imaging-based spatial molecular profiling. It combines multi-objective panel selection with an agent workflow for organizing reference data, model training, panel evaluation, and experimental feasibility checks. This documentation covers the core package, biological examples, and reproducible analyses from the SMITH study.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Getting started
+:hidden:
 
 installation
 concepts
@@ -14,6 +15,7 @@ quickstart
 ```{toctree}
 :maxdepth: 2
 :caption: Paper examples
+:hidden:
 
 tutorials/index
 ```
@@ -21,6 +23,7 @@ tutorials/index
 ```{toctree}
 :maxdepth: 2
 :caption: Reproducibility
+:hidden:
 
 reproducibility/matrix
 reproducibility/data_access
@@ -30,6 +33,7 @@ reproducibility/provenance
 ```{toctree}
 :maxdepth: 2
 :caption: Reference
+:hidden:
 
 reference/cli
 smith_tool_readme
