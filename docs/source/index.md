@@ -22,16 +22,6 @@ tutorials/index
 
 ```{toctree}
 :maxdepth: 2
-:caption: Reproducibility
-:hidden:
-
-reproducibility/matrix
-reproducibility/data_access
-reproducibility/provenance
-```
-
-```{toctree}
-:maxdepth: 2
 :caption: Reference
 :hidden:
 

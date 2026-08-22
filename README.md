@@ -51,7 +51,7 @@ smith-repro run 02_regulatory_activity --data-root data/tutorials --output-dir o
 smith-repro run 05_agent
 ```
 
-See `docs/source/reproducibility/matrix.md` for the claim-to-artifact mapping and `docs/source/reproducibility/data_access.md` for public, external-tool, and controlled-access boundaries.
+The runnable biological examples are documented under `docs/source/tutorials/`; their workflows write input checksums, model rankings, panels, evaluations and run manifests to the selected output directory.
 
 ## Technical Workflow
 
