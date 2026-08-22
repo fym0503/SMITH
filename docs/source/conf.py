@@ -12,6 +12,7 @@ release = "0.1.0"
 
 extensions = [
     "myst_nb",
+    "sphinx.ext.mathjax",
     "sphinx_copybutton",
     "sphinx_design",
 ]
@@ -25,7 +26,7 @@ exclude_patterns = [
 ]
 html_theme = "furo"
 html_title = "SMITH"
-myst_enable_extensions = ["colon_fence", "deflist"]
+myst_enable_extensions = ["amsmath", "colon_fence", "deflist", "dollarmath"]
 nb_execution_mode = "off"
 nb_merge_streams = True
 nb_output_stderr = "remove"

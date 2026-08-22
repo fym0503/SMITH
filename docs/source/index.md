@@ -8,7 +8,7 @@ SMITH is a framework for designing compact, biologically informative target-gene
 :hidden:
 
 installation
-concepts
+introduction/index
 quickstart
 ```
 
