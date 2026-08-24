@@ -166,9 +166,11 @@ def test_regulatory_tutorial_interleaves_code_and_figures():
         if cell.cell_type == "code" and "display(figure)" in str(cell.source)
         and not str(cell.source).lstrip().startswith("from pathlib")
     ]
-    assert len(display_cells) == 10
+    assert len(display_cells) == 9
     text = "\n".join(str(cell.source) for cell in notebook.cells)
     assert "render_figure3_panel" not in text
+    assert "Methods used in the panel comparisons" not in text
+    assert "METHOD_COLORS" not in text
     coactivity_cell = next(
         cell for cell in notebook.cells
         if "figure3_i_coactivity.tsv" in str(cell.source) and "axis.bar(" in str(cell.source)

@@ -339,17 +339,6 @@ figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
 display(figure)
 plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
-                "### Methods used in the panel comparisons\n\n"
-                "The shared legend applies to the four benchmark panels immediately above."
-            ),
-            nbformat.v4.new_code_cell('''from reproducibility.workflows.figure_style import METHOD_COLORS, METHOD_ORDER
-figure, axis = plt.subplots(figsize=(5.8, 0.55), facecolor="white")
-handles = [plt.Line2D([0], [0], marker="s", linestyle="", markersize=7, markerfacecolor=METHOD_COLORS[name], markeredgecolor="black", label=name) for name in METHOD_ORDER if name in set(tf_values["method"])]
-axis.legend(handles=handles, frameon=False, ncol=max(1, len(handles)), loc="center")
-axis.axis("off")
-display(figure)
-plt.close(figure)'''),
-            nbformat.v4.new_markdown_cell(
                 "## Developmental regulatory programs\n\n"
                 "### Spatiotemporal TF modules\n\n"
                 "The atlas annotation organizes regulators by tissue system and temporal module. This establishes the biological programs whose coverage is tested in the next analysis."
