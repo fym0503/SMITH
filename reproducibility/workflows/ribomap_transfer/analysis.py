@@ -27,6 +27,47 @@ def ribomap_bias(ribomap_mean: np.ndarray, starmap_mean: np.ndarray) -> np.ndarr
     return zscore(np.log1p(ribomap_mean)) - zscore(np.log1p(starmap_mean))
 
 
+def bias_table_from_objects(ribomap, starmap) -> pd.DataFrame:
+    """Compute RIBOMap bias from currently loaded AnnData objects."""
+    from reproducibility.workflows.common import gene_symbols
+    from scipy import sparse
+
+    def means(adata):
+        matrix = adata.X
+        values = np.asarray(matrix.mean(axis=0)).ravel() if sparse.issparse(matrix) else np.asarray(matrix).mean(axis=0)
+        return {gene: float(value) for gene, value in zip(gene_symbols(adata), values) if gene}
+
+    ribo, star = means(ribomap), means(starmap)
+    shared = sorted(set(ribo) & set(star))
+    return pd.DataFrame({
+        "gene_symbol": shared,
+        "ribomap_bias": ribomap_bias(
+            np.asarray([ribo[gene] for gene in shared], dtype=float),
+            np.asarray([star[gene] for gene in shared], dtype=float),
+        ),
+    })
+
+
+def jaccard_from_panel_records(panel_records: list[dict]) -> pd.DataFrame:
+    """Calculate same/cross-modality overlap from in-memory panel gene lists."""
+    import itertools
+
+    rows = []
+    for size in sorted({int(row["panel_size"]) for row in panel_records}):
+        current = [row for row in panel_records if int(row["panel_size"]) == size]
+        for left, right in itertools.combinations(current, 2):
+            left_genes, right_genes = set(left["panel_genes"]), set(right["panel_genes"])
+            rows.append({
+                "panel_size": size,
+                "modality_group": "Same modality" if left["source"] == right["source"] else "Cross modality",
+                "source_a": left["source"], "source_b": right["source"],
+                "method_a": left.get("method", "SMITH"), "method_b": right.get("method", "SMITH"),
+                "jaccard": jaccard_similarity(left_genes, right_genes),
+                "overlap": len(left_genes & right_genes), "union": len(left_genes | right_genes),
+            })
+    return pd.DataFrame(rows)
+
+
 def bh_adjust(pvalues: list[float]) -> np.ndarray:
     values = np.asarray(pvalues, dtype=float)
     order = np.argsort(values)

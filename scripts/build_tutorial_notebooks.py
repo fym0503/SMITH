@@ -9,6 +9,7 @@ from pathlib import Path
 
 import nbformat
 from nbclient import NotebookClient
+from memory_tutorial_notebooks import agent_notebook, ribomap_notebook
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -474,6 +475,14 @@ write_json(CASE_OUTPUT / "run_manifest.json", {
 def build_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNode:
     if spec["case"] == "02_regulatory_activity":
         return build_regulatory_notebook(spec, epochs, device)
+    if spec["case"] == "03_ribomap_transfer":
+        return ribomap_notebook(spec, epochs, device)
+    if spec["case"] == "05_agent":
+        return agent_notebook(spec, epochs, device)
+    if spec["case"] == "03_ribomap_transfer":
+        return build_ribomap_notebook(spec, epochs, device)
+    if spec["case"] == "05_agent":
+        return build_agent_notebook(spec, epochs, device)
     github = f"https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/{spec['folder']}/{spec['stem']}_source.ipynb"
     setup = f'''from pathlib import Path
 import hashlib, json, os, subprocess, sys

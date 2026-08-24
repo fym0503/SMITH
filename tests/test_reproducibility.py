@@ -17,9 +17,22 @@ from scripts.download_tutorial_data import safe_extract
 from scripts.build_tutorial_archives import case_files
 from reproducibility.workflows.ribomap_transfer.analysis import (
     bh_adjust,
+    bias_table_from_objects,
     jaccard_similarity,
+    jaccard_from_panel_records,
     ribomap_bias,
 )
+from reproducibility.workflows.ribomap_transfer.evaluate_outputs import (
+    evaluate_panel_loaded as evaluate_ribomap_panel_loaded,
+    prepare_shared_adata,
+)
+from smith_agent.benchmarking import (
+    cell_type_evaluation_loaded,
+    mean_expression_loaded,
+    prepare_agent_adata,
+    spatial_coordinate_evaluation_loaded,
+)
+from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded
 from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon, statistical_analysis
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate_loaded
 from reproducibility.workflows.regulatory_activity.paper_analysis import (
@@ -114,10 +127,27 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "run_manifest.json\").read" not in text
             assert "pd.read_csv(FIGURE_DATA" not in text
             assert "pd.read_csv(CASE_OUTPUT" not in text
+        elif path.name.startswith("03_SMITH_RIBOMap"):
+            assert "subprocess.run" not in text
+            assert "run_tutorial.py" in text  # Full manuscript command only.
+            assert "prepare_shared_adata" in text
+            assert "evaluate_panel_loaded" in text
+            assert "jaccard_from_panel_records" in text
+            assert "bias_table_from_objects" in text
+            assert 'run_manifest.json").read' not in text
+            assert "pd.read_csv(FIGURE_DATA" not in text
+            assert "pd.read_csv(CASE_OUTPUT" not in text
+        elif path.name.startswith("05_SMITH_Agent"):
+            assert "subprocess.run" not in text
+            assert "run_tutorial.py" in text  # Full manuscript command only.
+            assert "prepare_agent_adata" in text
+            assert "aggregate_reference_panel_ranks_loaded" in text
+            assert "cell_type_evaluation_loaded" in text
+            assert 'run_manifest.json").read' not in text
+            assert "pd.read_csv(FIGURE_DATA" not in text
+            assert "pd.read_csv(CASE_OUTPUT" not in text
         else:
-            assert "run_tutorial.py" in text
-            assert "plot_figure" in text
-            assert "run_manifest.json" in text
+            raise AssertionError(f"Unexpected tutorial source: {path.name}")
         assert "reference_outputs" not in text
         assert "verify_fixture" not in text
         assert "Provenance Analysis" not in text
@@ -140,10 +170,10 @@ def test_tutorial_sources_target_manuscript_panels():
         figure, plotter = expected[path.name]
         assert figure in text
         assert "Reproduce SMITH Figure" not in text
-        assert plotter in text or "_draw_bar_panel" in text
-        assert "quick hosted run" in text or "executed tutorial uses one real lineage split" in text
+        assert plotter in text or "_draw_bar_panel" in text or "_draw_performance" in text or "_draw_violin_panel" in text
+        assert "quick hosted run" in text or "executed tutorial uses one real lineage split" in text or "current SMITH panels directly" in text or "current panels directly" in text
         assert "--output-dir" in text
-        assert "pd.DataFrame" not in text
+        assert "display(pd.DataFrame" not in text
         assert "display(df" not in text
         assert "display(dataframe" not in text.lower()
         assert "display(Image" in text or "display(figure" in text
@@ -230,6 +260,49 @@ def test_ribomap_analysis_formulas_are_manuscript_defined():
     expected_star = (np.log1p(starmap_values) - np.mean(np.log1p(starmap_values))) / np.std(np.log1p(starmap_values))
     assert np.allclose(ribomap_bias(ribomap_values, starmap_values), expected_ribo - expected_star)
     assert np.allclose(bh_adjust([0.01, 0.04, 0.2]), [0.03, 0.06, 0.2])
+
+
+def test_ribomap_loaded_analysis_uses_current_objects():
+    rng = np.random.default_rng(3)
+    n = 30
+    labels = np.repeat(["a", "b", "c"], 10)
+    obs = pd.DataFrame({"celltype": labels, "region": np.repeat(["r1", "r2", "r3"], 10)})
+    genes = ["G1", "G2", "G3", "G4"]
+    source = ad.AnnData(rng.poisson(1, (n, 4)).astype(float), obs=obs, var=pd.DataFrame(index=genes))
+    source.obsm["spatial"] = rng.normal(size=(n, 2))
+    target = ad.AnnData(source.X[:, 1:], obs=obs.copy(), var=pd.DataFrame(index=genes[1:]))
+    prepared = prepare_shared_adata(source, target)
+    assert list(prepared.var_names) == genes[1:]
+    metrics, predictions = evaluate_ribomap_panel_loaded(target, ["G2", "G3"], 2, 7, label_column="celltype")
+    assert metrics["panel_size_evaluated"] == 2
+    assert not predictions.empty
+    bias = bias_table_from_objects(target, prepared)
+    assert set(bias["gene_symbol"]) == set(genes[1:])
+    overlap = jaccard_from_panel_records([
+        {"source": "Deep-RIBOmap", "panel_size": 2, "panel_genes": ["G1", "G2"]},
+        {"source": "STARmap", "panel_size": 2, "panel_genes": ["G2", "G3"]},
+    ])
+    assert overlap.iloc[0]["jaccard"] == pytest.approx(1 / 3)
+
+
+def test_agent_loaded_analysis_and_rank_aggregation():
+    rng = np.random.default_rng(4)
+    n = 30
+    labels = np.repeat(["a", "b", "c"], 10)
+    obs = pd.DataFrame({"Cell_Type": labels})
+    genes = ["G1", "G2", "G3"]
+    data = ad.AnnData(rng.poisson(1, (n, 3)).astype(float), obs=obs, var=pd.DataFrame(index=genes))
+    data.obsm["spatial"] = rng.normal(size=(n, 2))
+    prepared = prepare_agent_adata(data, genes, require_spatial=True)
+    classification, _ = cell_type_evaluation_loaded(prepared, ["G1", "G2"], panel_size=2)
+    spatial, _ = spatial_coordinate_evaluation_loaded(prepared, ["G1", "G2"], panel_size=2)
+    assert "cell_type_accuracy" in classification["metrics"]
+    assert "spatial_mae" in spatial["metrics"]
+    assert set(mean_expression_loaded(prepared)) == set(genes)
+    ranking = pd.DataFrame({"gene_symbol": genes, "rank_score": [0.9, 0.7, 0.2]})
+    aggregated = aggregate_reference_panel_ranks_loaded(ranking, [ranking], panel_size=2)
+    assert len(aggregated["source_panel_genes"]) == 2
+    assert len(aggregated["integrated_panel_genes"]) == 2
 
 
 def test_regulatory_paired_test_uses_split_as_pairing_unit():

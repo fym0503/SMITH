@@ -273,6 +273,86 @@ def _rank_scores(df: pd.DataFrame, score_column: str) -> pd.DataFrame:
     return out
 
 
+def _normalize_loaded_rank(df: pd.DataFrame, dataset_id: str) -> pd.DataFrame:
+    """Normalize a ranking returned by a current SMITH run for in-memory aggregation."""
+    frame = df.copy()
+    gene_column = next((column for column in frame.columns if str(column).lower() in {"gene", "genes", "gene_symbol", "target", "marker"}), frame.columns[0])
+    result = pd.DataFrame({"gene_symbol": frame[gene_column].map(_clean_gene_symbol)})
+    score_column = next((column for column in frame.columns if str(column).lower() in {"rank_score", "score", "prob", "weight"}), None)
+    if score_column:
+        result["rank_score"] = pd.to_numeric(frame[score_column], errors="coerce").fillna(0.0).to_numpy()
+    else:
+        result["rank_score"] = 1.0 - (np.arange(len(frame)) / max(1, len(frame) - 1))
+    result = result[result["gene_symbol"].astype(bool)].drop_duplicates("gene_symbol").reset_index(drop=True)
+    result["rank"] = np.arange(1, len(result) + 1)
+    result["dataset_id"] = dataset_id
+    return result
+
+
+def aggregate_reference_panel_ranks_loaded(
+    source_ranking: pd.DataFrame,
+    reference_rankings: list[pd.DataFrame],
+    *,
+    panel_size: int = 64,
+    source_weight: float = 0.55,
+    reference_weight: float = 0.45,
+    min_reference_support: int = 1,
+    gene_universe: str = "source",
+    restrict_gene_symbols: list[str] | set[str] | None = None,
+) -> dict[str, Any]:
+    """Aggregate current source/reference rankings without reading rank files."""
+    source = _normalize_loaded_rank(source_ranking, "source")
+    references = [_normalize_loaded_rank(frame, f"reference_{index + 1}") for index, frame in enumerate(reference_rankings)]
+    restrict = {_clean_gene_symbol(gene) for gene in (restrict_gene_symbols or []) if _clean_gene_symbol(gene)}
+    source_scores = _rank_scores(source, "rank_score").rename(columns={"score": "source_score"})
+    if gene_universe == "source":
+        universe = set(source_scores["gene_symbol"])
+    elif gene_universe == "intersection":
+        universe = set(source_scores["gene_symbol"])
+        for frame in references:
+            universe &= set(frame["gene_symbol"])
+    else:
+        universe = set(source_scores["gene_symbol"])
+        for frame in references:
+            universe |= set(frame["gene_symbol"])
+    if restrict:
+        universe &= restrict
+    merged = source_scores.copy()
+    for index, frame in enumerate(references):
+        scores = _rank_scores(frame, "rank_score").rename(columns={"score": f"reference_{index + 1}_score"})
+        merged = merged.merge(scores, on="gene_symbol", how="outer")
+    merged = merged[merged["gene_symbol"].isin(universe)].copy()
+    ref_columns = [column for column in merged.columns if column.startswith("reference_") and column.endswith("_score")]
+    merged["reference_support"] = merged[ref_columns].notna().sum(axis=1)
+    merged["mean_reference_score"] = merged[ref_columns].mean(axis=1, skipna=True).fillna(0.0)
+    merged["source_score"] = merged["source_score"].fillna(0.0)
+    merged = merged[merged["reference_support"] >= int(min_reference_support)].copy()
+    merged["integrated_score"] = float(source_weight) * merged["source_score"] + float(reference_weight) * merged["mean_reference_score"]
+    merged = merged.sort_values(["integrated_score", "source_score", "mean_reference_score", "reference_support", "gene_symbol"], ascending=[False, False, False, False, True])
+    merged.insert(0, "integrated_rank", np.arange(1, len(merged) + 1))
+    source_top = source_scores.sort_values(["source_score", "gene_symbol"], ascending=[False, True]).head(panel_size)["gene_symbol"].tolist()
+    integrated_top = merged.head(panel_size)["gene_symbol"].tolist()
+    return {
+        "source_ranking": source,
+        "integrated_ranking": merged,
+        "source_panel_genes": source_top,
+        "integrated_panel_genes": integrated_top,
+        "comparison": {
+            "panel_size": int(panel_size), "n_source_genes": int(len(source_scores)),
+            "n_reference_datasets": len(references), "n_integrated_ranked_genes": int(len(merged)),
+            "min_reference_support": int(min_reference_support),
+            "source_weight": float(source_weight), "reference_weight": float(reference_weight),
+            "overlap_count": len(set(source_top) & set(integrated_top)),
+            "jaccard": jaccard_loaded(set(source_top), set(integrated_top)),
+        },
+    }
+
+
+def jaccard_loaded(left: set[str], right: set[str]) -> float:
+    union = left | right
+    return len(left & right) / len(union) if union else float("nan")
+
+
 def aggregate_reference_panel_ranks(
     output_dir: str | Path,
     source_adata_file: str | Path | None = None,

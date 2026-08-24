@@ -214,6 +214,48 @@ def evaluate_panel_coordinate_regression(
     return payload
 
 
+def spatial_coordinate_evaluation_loaded(
+    adata: ad.AnnData,
+    panel_genes: list[str],
+    *,
+    panel_size: int = 64,
+    seed: int = 42,
+    test_size: float = 0.2,
+    alpha: float = 1.0,
+    output_dir: str | Path | None = None,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Evaluate spatial coordinate prediction without re-reading a panel or H5AD."""
+    x, shared = _matrix(adata, list(panel_genes[:panel_size]))
+    coords = _coordinates(adata)
+    if x.shape[0] != coords.shape[0]:
+        raise ValueError("Expression matrix and coordinate array have incompatible shapes.")
+    indices = np.arange(x.shape[0])
+    train_idx, test_idx = train_test_split(indices, test_size=test_size, random_state=seed)
+    model = Ridge(alpha=alpha, random_state=seed).fit(x[train_idx], coords[train_idx])
+    prediction = model.predict(x[test_idx])
+    residual = coords[test_idx] - prediction
+    pred_flat, truth_flat = prediction.reshape(-1), coords[test_idx].reshape(-1)
+    metrics = {
+        "spatial_mse": float(mean_squared_error(coords[test_idx], prediction)),
+        "spatial_mae": float(mean_absolute_error(coords[test_idx], prediction)),
+        "spatial_distance_mae": float(np.mean(np.sqrt(np.sum(np.square(residual), axis=1)))),
+        "spatial_distance_median": float(np.median(np.sqrt(np.sum(np.square(residual), axis=1)))),
+        "spatial_pearson": float(np.corrcoef(pred_flat, truth_flat)[0, 1]) if np.std(pred_flat) and np.std(truth_flat) else float("nan"),
+    }
+    predictions = pd.DataFrame({
+        "cell_index": np.asarray(adata.obs_names)[test_idx],
+        "truth_x": coords[test_idx, 0], "truth_y": coords[test_idx, 1],
+        "prediction_x": prediction[:, 0], "prediction_y": prediction[:, 1],
+    })
+    result = {"panel_size": int(panel_size), "train_cells": int(len(train_idx)), "test_cells": int(len(test_idx)), "shared_genes": shared, "metrics": metrics}
+    if output_dir is not None:
+        output_dir = ensure_dir(output_dir)
+        write_json(output_dir / "coordinate_regression_result.json", result)
+        pd.DataFrame([{"metric": key, "value": value} for key, value in metrics.items()]).to_csv(output_dir / "coordinate_regression_summary.tsv", sep="\t", index=False)
+        predictions.to_csv(output_dir / "coordinate_predictions.tsv", sep="\t", index=False)
+    return result, predictions
+
+
 def evaluate_panel_cell_type_classification(
     adata_file: str | Path,
     panel_path: str | Path,
@@ -292,3 +334,89 @@ def evaluate_panel_cell_type_classification(
     summary.to_csv(out_dir / "cell_type_classification_summary.tsv", sep="\t", index=False)
     pd.DataFrame(report).transpose().to_csv(out_dir / "cell_type_classification_report.tsv", sep="\t")
     return payload
+
+
+def cell_type_evaluation_loaded(
+    adata: ad.AnnData,
+    panel_genes: list[str],
+    *,
+    panel_size: int = 64,
+    label_column: str = "Cell_Type",
+    test_size: float = 0.2,
+    seed: int = 42,
+    max_iter: int = 1000,
+    output_dir: str | Path | None = None,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Evaluate cell identity from in-memory MERFISH and panel objects."""
+    if label_column not in adata.obs.columns:
+        raise KeyError(f"Dataset does not contain label column `{label_column}`.")
+    x, shared = _matrix(adata, list(panel_genes[:panel_size]))
+    labels = adata.obs[label_column].astype(str).to_numpy()
+    valid = pd.notna(labels) & (labels != "") & (labels != "nan")
+    x, labels = x[valid], labels[valid]
+    if len(np.unique(labels)) < 2:
+        raise ValueError(f"Need at least two classes in `{label_column}` for classification.")
+    encoder = LabelEncoder(); y = encoder.fit_transform(labels)
+    indices = np.arange(x.shape[0])
+    n_classes = len(encoder.classes_)
+    if n_classes >= len(y):
+        raise ValueError("Need more observations than classes for a stratified evaluation split.")
+    split_fraction = max(test_size, n_classes / len(y))
+    train_idx, test_idx = train_test_split(indices, test_size=split_fraction, random_state=seed, stratify=y)
+    model = make_pipeline(StandardScaler(), LogisticRegression(class_weight="balanced", max_iter=max_iter, n_jobs=1, random_state=seed, solver="lbfgs"))
+    model.fit(x[train_idx], y[train_idx]); prediction = model.predict(x[test_idx])
+    metrics = {
+        "cell_type_accuracy": float(accuracy_score(y[test_idx], prediction)),
+        "cell_type_balanced_accuracy": float(balanced_accuracy_score(y[test_idx], prediction)),
+        "cell_type_macro_f1": float(f1_score(y[test_idx], prediction, average="macro")),
+        "cell_type_weighted_f1": float(f1_score(y[test_idx], prediction, average="weighted")),
+    }
+    predictions = pd.DataFrame({"truth": encoder.inverse_transform(y[test_idx]), "prediction": encoder.inverse_transform(prediction)})
+    result = {"panel_size": int(panel_size), "label_column": label_column, "train_cells": int(len(train_idx)), "test_cells": int(len(test_idx)), "shared_genes": shared, "classes": [str(item) for item in encoder.classes_], "metrics": metrics}
+    if output_dir is not None:
+        output_dir = ensure_dir(output_dir)
+        write_json(output_dir / "cell_type_classification_result.json", result)
+        pd.DataFrame([{"metric": key, "value": value} for key, value in metrics.items()]).to_csv(output_dir / "cell_type_classification_summary.tsv", sep="\t", index=False)
+        predictions.to_csv(output_dir / "cell_type_predictions.tsv", sep="\t", index=False)
+    return result, predictions
+
+
+def mean_expression_loaded(adata: ad.AnnData) -> dict[str, float]:
+    """Return mean expression keyed by normalized gene symbol from loaded data."""
+    matrix = adata.X
+    values = np.asarray(matrix.mean(axis=0)).ravel() if sparse.issparse(matrix) else np.asarray(matrix).mean(axis=0)
+    return {gene: float(value) for gene, value in zip(_gene_symbols(adata), values) if gene}
+
+
+def prepare_agent_adata(
+    adata: ad.AnnData,
+    gene_universe: list[str] | set[str],
+    *,
+    label_column: str | None = None,
+    require_spatial: bool = False,
+    max_cells: int | None = None,
+    seed: int = 1,
+) -> ad.AnnData:
+    """Prepare a source/reference object in memory for Agent panel training."""
+    symbols = _gene_symbols(adata)
+    first = {gene: index for index, gene in enumerate(symbols) if gene}
+    genes = [gene for gene in gene_universe if gene in first]
+    label = label_column or next((name for name in ("cell_type", "Cell_Type", "Cell_Type_final", "celltype", "subclass") if name in adata.obs), None)
+    if label is None:
+        raise KeyError("No usable cell-type label column found")
+    labels = adata.obs[label].astype(str)
+    valid = ~labels.str.strip().str.lower().isin({"", "nan", "none", "unknown", "unassigned", "na"})
+    rows = np.flatnonzero(valid.to_numpy())
+    if max_cells and len(rows) > max_cells:
+        rows = np.sort(np.random.default_rng(seed).choice(rows, max_cells, replace=False))
+    prepared = adata[rows, [first[gene] for gene in genes]].copy()
+    prepared.var_names = genes
+    prepared.var = pd.DataFrame(index=pd.Index(genes))
+    prepared.obs["celltype"] = prepared.obs[label].astype(str)
+    coords = _coordinates(prepared)
+    if require_spatial and coords is None:
+        raise KeyError("Spatial reference has no coordinates")
+    if coords is not None:
+        prepared.obsm["spatial"] = coords
+    prepared.X = prepared.X.tocsr().astype(np.float32) if sparse.issparse(prepared.X) else np.asarray(prepared.X, dtype=np.float32)
+    return prepared
