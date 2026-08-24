@@ -128,6 +128,7 @@ OUTPUT_ROOT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials"))
 CASE_OUTPUT = OUTPUT_ROOT / {spec['output']!r}
 EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
 DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
+REUSE_EXISTING = os.environ.get("SMITH_TUTORIAL_REUSE_EXISTING", "0") == "1"
 WORKFLOW_ENV = os.environ.copy()
 WORKFLOW_ENV["PYTHONPATH"] = os.pathsep.join(
     [str(ROOT), str(ROOT / "src"), WORKFLOW_ENV.get("PYTHONPATH", "")]
@@ -148,7 +149,9 @@ for relative in inputs:
         raise FileNotFoundError(f"Missing {{path}}. Run scripts/download_tutorial_data.py first.")
     input_checksums[relative] = sha256_file(path)
 '''
-    command = f'''command = [sys.executable, str(ROOT / {spec['workflow']!r}), "--data-root", str(DATA_ROOT), "--output-dir", str(CASE_OUTPUT), "--device", DEVICE, "--epochs", str(EPOCHS)] + {spec['arguments']!r} + ["--force"]
+    command = f'''command = [sys.executable, str(ROOT / {spec['workflow']!r}), "--data-root", str(DATA_ROOT), "--output-dir", str(CASE_OUTPUT), "--device", DEVICE, "--epochs", str(EPOCHS)] + {spec['arguments']!r}
+if not REUSE_EXISTING:
+    command.append("--force")
 completed = subprocess.run(
     command, cwd=ROOT, env=WORKFLOW_ENV, text=True,
     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -253,6 +256,10 @@ def main() -> None:
     parser.add_argument("--output-root", default="outputs/tutorials")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--reuse-existing", action="store_true",
+        help="Reuse model outputs from a prior clean run while rebuilding downstream analyses.",
+    )
     args = parser.parse_args()
     selected = {args.only: SPECS[args.only]} if args.only else SPECS
     old_environment = os.environ.copy()
@@ -261,6 +268,7 @@ def main() -> None:
             "SMITH_TUTORIAL_DATA": str(Path(args.data_root).expanduser().resolve()),
             "SMITH_TUTORIAL_OUTPUT": str(Path(args.output_root).expanduser().resolve()),
             "SMITH_TUTORIAL_EPOCHS": str(args.epochs), "SMITH_TUTORIAL_DEVICE": args.device,
+            "SMITH_TUTORIAL_REUSE_EXISTING": "1" if args.reuse_existing else "0",
         })
     try:
         for spec in selected.values():
