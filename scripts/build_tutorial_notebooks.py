@@ -141,6 +141,30 @@ def sha256_file(path):
             digest.update(block)
     return digest.hexdigest()
 '''
+    if spec["case"] == "02_regulatory_activity":
+        setup += '''
+
+FIGURE3_PLOTTER = ROOT / "reproducibility/workflows/regulatory_activity/plot_figure3.py"
+
+def render_figure3_panel(panel, *plot_arguments, width=500):
+    figure_dir = CASE_OUTPUT / "figures"
+    command = [
+        sys.executable, str(FIGURE3_PLOTTER),
+        "--values", str(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv"),
+        "--output-dir", str(figure_dir),
+        "--panels", panel,
+        *[str(argument) for argument in plot_arguments],
+    ]
+    completed = subprocess.run(
+        command, cwd=ROOT, env=WORKFLOW_ENV, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    )
+    if completed.returncode:
+        print(completed.stdout)
+        raise subprocess.CalledProcessError(completed.returncode, command)
+    filename = "figure3_method_legend.png" if panel == "legend" else f"figure3_{panel}.png"
+    display(Image(filename=str(figure_dir / filename), width=width))
+'''
     inspect = f'''inputs = {spec['inputs']!r}
 input_checksums = {{}}
 for relative in inputs:
@@ -234,17 +258,123 @@ for heading, relative, width in {spec['figure_panels']!r}:
 '''
     notebook = nbformat.v4.new_notebook()
     notebook.metadata.update(kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"}, language_info={"name": "python", "version": "3"})
-    notebook.cells = [
+    opening_cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\nThis notebook follows the biological workflow from real input data to a trained model, a newly selected panel, and manuscript-matched biological analyses. It does not read packaged aggregate results as tutorial inputs. [Open the editable source notebook on GitHub]({github})."),
         nbformat.v4.new_markdown_cell(f"## Biological question\n\n{spec['biology']}\n\n**How to read the endpoint:** {spec['analysis_role']}"),
         nbformat.v4.new_markdown_cell(f"## Step 0: Download the real input data\n\nDownload the versioned Zenodo archive and verify its checksums before training:\n\n```bash\npython scripts/download_tutorial_data.py \\\n  --case {spec['case']} \\\n  --data-root data/tutorials\n```\n\nThe notebook is pre-executed for documentation. Read the Docs does not download large data or train SMITH during documentation builds." + ("\n\nThe developmental-module and TF-pair tables in the archive are normalized from the source atlas Supplementary Table 5. Their preparation can be audited independently with:\n\n```bash\npython scripts/prepare_elegans_atlas_annotations.py --data-root data/tutorials\n```" if spec["case"] == "02_regulatory_activity" else "")),
         nbformat.v4.new_markdown_cell("## Configuration"), nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_markdown_cell(f"## Step 1: Inspect the biological input data\n\n{spec['data_role']}"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Step 2: Train SMITH and select a panel\n\n{spec['model_role']}\n\nThe command below starts from the H5AD inputs above and writes a fresh model ranking, panel, evaluation, and run manifest."), nbformat.v4.new_code_cell(command),
-        nbformat.v4.new_markdown_cell(f"## Step 3: Evaluate held-out biology\n\n{spec['analysis_role']}\n\nThe next cell recomputes one held-out prediction from the newly selected panel and writes truth/prediction files. The workflow also records split-level metrics and statistical metadata. No aggregate reference output is read."), nbformat.v4.new_code_cell(analysis),
-        nbformat.v4.new_markdown_cell("## Step 4: Render the manuscript panels\n\nOnly the manuscript figure images are rendered below. Intermediate tables and logs remain in the output directory but are not displayed."), nbformat.v4.new_code_cell(plotting),
-        nbformat.v4.new_markdown_cell(f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']} This quick hosted run is intentionally smaller than the paper-scale comparison, but it starts from the same real inputs and executes the same prediction and analysis functions."),
     ]
+    closing_cell = nbformat.v4.new_markdown_cell(
+        f"## Full manuscript command\n\nAppend the following paper-scale arguments to the workflow command:\n\n```text\n{spec['paper_command']}\n```\n\n{spec['scope']} This quick hosted run is intentionally smaller than the paper-scale comparison, but it starts from the same real inputs and executes the same prediction and analysis functions."
+    )
+    if spec["case"] == "02_regulatory_activity":
+        tf_recheck = '''import warnings
+from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
+
+panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panel_32/panels/SMITH_top32.tsv"
+recheck_dir = CASE_OUTPUT / "notebook_recheck/elegans_tf"
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+    _ = evaluate(
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad",
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
+        panel_file, recheck_dir, 32, neighbors=5,
+    )
+render_figure3_panel("c", width=430)'''
+        time_analysis = '''from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
+
+_ = write_statistical_analysis(
+    CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv",
+    CASE_OUTPUT / "figure_data",
+)
+render_figure3_panel("d", width=430)'''
+        mirna_recheck = '''import warnings
+from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
+
+panel_file = CASE_OUTPUT / "runs/elegans_mirna/split_1/seed_1/panel_32/panels/SMITH_top32.tsv"
+recheck_dir = CASE_OUTPUT / "notebook_recheck/elegans_mirna"
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+    _ = evaluate(
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad",
+        DATA_ROOT / "regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad",
+        panel_file, recheck_dir, 32, neighbors=5,
+    )
+render_figure3_panel("e", width=430)'''
+        notebook.cells = opening_cells + [
+            nbformat.v4.new_markdown_cell(
+                "## Preserving cell identity and developmental progression\n\n"
+                "### TF activity retains lineage identity\n\n"
+                "The selected TF panel is evaluated on held-out lineages with the same 5-nearest-neighbour classifier used for the manuscript comparison. Higher accuracy means that a compact regulatory panel still separates cell identities."
+            ),
+            nbformat.v4.new_code_cell(tf_recheck),
+            nbformat.v4.new_markdown_cell(
+                "### TF activity retains developmental order\n\n"
+                "Developmental time is predicted independently from the same held-out TF cells. Pearson correlation measures whether the panel preserves the continuous temporal trajectory rather than only discrete labels."
+            ),
+            nbformat.v4.new_code_cell(time_analysis),
+            nbformat.v4.new_markdown_cell(
+                "### miRNA activity retains lineage identity\n\n"
+                "The same held-out analysis is repeated in the miRNA activity space, where smaller panel sizes test whether post-transcriptional regulation contains sufficient lineage information."
+            ),
+            nbformat.v4.new_code_cell(mirna_recheck),
+            nbformat.v4.new_markdown_cell(
+                "### miRNA activity retains developmental order\n\n"
+                "The temporal endpoint asks whether the compact miRNA panel follows embryonic progression across held-out cells."
+            ),
+            nbformat.v4.new_code_cell('render_figure3_panel("f", width=430)'),
+            nbformat.v4.new_markdown_cell(
+                "### Methods used in the panel comparisons\n\n"
+                "The shared legend applies to the four benchmark panels immediately above."
+            ),
+            nbformat.v4.new_code_cell('render_figure3_panel("legend", width=900)'),
+            nbformat.v4.new_markdown_cell(
+                "## Developmental regulatory programs\n\n"
+                "### Spatiotemporal TF modules\n\n"
+                "The atlas annotation organizes regulators by tissue system and temporal module. This establishes the biological programs whose coverage is tested in the next analysis."
+            ),
+            nbformat.v4.new_code_cell(
+                'render_figure3_panel("g", "--modules", DATA_ROOT / "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv")'
+            ),
+            nbformat.v4.new_markdown_cell(
+                "### Coverage of developmental modules\n\n"
+                "For each newly selected panel, the miss rate is the fraction of annotated modules with no selected TF. A lower value therefore indicates broader coverage of known developmental programs."
+            ),
+            nbformat.v4.new_code_cell(
+                'render_figure3_panel("h", "--module-coverage", CASE_OUTPUT / "figure_data/figure3_h_module_miss_rate.tsv")'
+            ),
+            nbformat.v4.new_markdown_cell(
+                "## Regulatory reconstruction and modality transfer\n\n"
+                "### Reconstruction of TF co-activity\n\n"
+                "The trained reconstruction head predicts held-out TF activity from the selected regulators. Agreement is measured within muscle, neuronal, pharyngeal and skin lineages using atlas-defined TF pairs."
+            ),
+            nbformat.v4.new_code_cell(
+                'render_figure3_panel("i", "--coactivity", CASE_OUTPUT / "figure_data/figure3_i_coactivity.tsv")'
+            ),
+            nbformat.v4.new_markdown_cell(
+                "### Conservation of regulatory structure across modalities\n\n"
+                "Shared TFs are aggregated over matched lineages in scRNA-seq and TF-activity data, then biclustered using the TF-activity correlation matrix. Similar block structure indicates that inferred regulatory activity preserves transcriptomic organization."
+            ),
+            nbformat.v4.new_code_cell(
+                'render_figure3_panel("j", "--correlation", CASE_OUTPUT / "figure_data/figure3_j_tf_scrna_correlation.tsv")'
+            ),
+            nbformat.v4.new_markdown_cell(
+                "### Transfer from scRNA-seq into TF activity\n\n"
+                "Panels selected from scRNA-seq are evaluated on held-out TF-activity lineages. The comparison with TF-selected panels tests whether gene choice transfers across molecular representations without losing cell identity."
+            ),
+            nbformat.v4.new_code_cell(
+                'render_figure3_panel("k", "--transfer", CASE_OUTPUT / "figure_data/figure3_k_transfer.tsv")'
+            ),
+            closing_cell,
+        ]
+    else:
+        notebook.cells = opening_cells + [
+            nbformat.v4.new_markdown_cell(f"## Step 3: Evaluate held-out biology\n\n{spec['analysis_role']}\n\nThe next cell recomputes one held-out prediction from the newly selected panel and writes truth/prediction files. The workflow also records split-level metrics and statistical metadata. No aggregate reference output is read."), nbformat.v4.new_code_cell(analysis),
+            nbformat.v4.new_markdown_cell("## Step 4: Render the manuscript panels\n\nOnly the manuscript figure images are rendered below. Intermediate tables and logs remain in the output directory but are not displayed."), nbformat.v4.new_code_cell(plotting),
+            closing_cell,
+        ]
     return notebook
 
 

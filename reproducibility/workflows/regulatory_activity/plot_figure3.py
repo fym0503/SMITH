@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterable
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -242,43 +243,67 @@ def plot(
     coactivity_path: str | Path | None = None,
     correlation_path: str | Path | None = None,
     transfer_path: str | Path | None = None,
+    panels: Iterable[str] | None = None,
 ) -> dict[str, dict[str, str]]:
     configure()
     data = pd.read_csv(values_path, sep="\t")
     output_dir = Path(output_dir)
+    paper_paths = {
+        "g": modules_path,
+        "h": module_coverage_path,
+        "i": coactivity_path,
+        "j": correlation_path,
+        "k": transfer_path,
+    }
+    if panels is None:
+        selected = {*PANEL_SPECS, "legend"}
+        selected.update(letter for letter, path in paper_paths.items() if path is not None)
+    else:
+        selected = set(panels)
+    unknown = selected - {*PANEL_SPECS, "g", "h", "i", "j", "k", "legend"}
+    if unknown:
+        raise ValueError(f"Unknown Figure 3 panels: {sorted(unknown)}")
     outputs: dict[str, dict[str, str]] = {}
     methods: list[str] = []
     for letter, spec in PANEL_SPECS.items():
+        if letter not in selected:
+            continue
         fig, ax = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
         methods = _draw_bar_panel(ax, data, spec)
         fig.text(0.015, 0.985, letter, ha="left", va="top", fontsize=10, weight="bold")
         fig.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
         outputs[f"figure3_{letter}"] = save_figure(fig, output_dir / f"figure3_{letter}")
         plt.close(fig)
-    outputs["method_legend"] = save_method_legend(methods, output_dir / "figure3_method_legend")
-    paper_inputs = (modules_path, module_coverage_path, coactivity_path, correlation_path, transfer_path)
-    if any(item is not None for item in paper_inputs) and not all(item is not None for item in paper_inputs):
-        raise ValueError("Figure 3g-k plotting requires modules, coverage, coactivity, correlation and transfer outputs")
-    if all(item is not None for item in paper_inputs):
-        module_table = pd.read_csv(modules_path, sep="\t")
+    if "legend" in selected:
+        if not methods:
+            methods = [method for method in METHOD_ORDER if method in set(data["method"])]
+        outputs["method_legend"] = save_method_legend(methods, output_dir / "figure3_method_legend")
+
+    missing = [letter for letter, path in paper_paths.items() if letter in selected and path is None]
+    if missing:
+        raise ValueError(f"Figure 3 panels {missing} require their corresponding analysis inputs")
+    if selected & set(paper_paths):
         panels = {
-            "g": lambda ax: _draw_module_schematic(ax, module_table),
+            "g": lambda ax: _draw_module_schematic(ax, pd.read_csv(modules_path, sep="\t")),
             "h": lambda ax: _draw_module_coverage(ax, pd.read_csv(module_coverage_path, sep="\t")),
             "i": lambda ax: _draw_coactivity(ax, pd.read_csv(coactivity_path, sep="\t")),
             "k": lambda ax: _draw_transfer(ax, pd.read_csv(transfer_path, sep="\t")),
         }
         for letter, draw in panels.items():
+            if letter not in selected:
+                continue
             fig, ax = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
             draw(ax)
             fig.text(0.015, 0.985, letter, ha="left", va="top", fontsize=10, weight="bold")
             fig.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
             outputs[f"figure3_{letter}"] = save_figure(fig, output_dir / f"figure3_{letter}")
             plt.close(fig)
-        correlation_data = pd.read_csv(correlation_path, sep="\t")
-        fig = _plot_tf_correlation(correlation_data, correlation_path)
-        fig.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
-        outputs["figure3_j"] = save_figure(fig, output_dir / "figure3_j")
-        plt.close(fig)
+        if "j" in selected:
+            correlation_data = pd.read_csv(correlation_path, sep="\t")
+            fig = _plot_tf_correlation(correlation_data, correlation_path)
+            fig.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
+            outputs["figure3_j"] = save_figure(fig, output_dir / "figure3_j")
+            plt.close(fig)
     return outputs
 
 
@@ -291,9 +316,15 @@ def main() -> None:
     parser.add_argument("--coactivity")
     parser.add_argument("--correlation")
     parser.add_argument("--transfer")
+    parser.add_argument(
+        "--panels",
+        default=None,
+        help="Comma-separated panels to render (c,d,e,f,g,h,i,j,k,legend).",
+    )
     args = parser.parse_args()
     print(json.dumps(plot(args.values, args.output_dir, modules_path=args.modules, module_coverage_path=args.module_coverage,
-                          coactivity_path=args.coactivity, correlation_path=args.correlation, transfer_path=args.transfer), indent=2))
+                          coactivity_path=args.coactivity, correlation_path=args.correlation, transfer_path=args.transfer,
+                          panels=args.panels.split(",") if args.panels else None), indent=2))
 
 
 if __name__ == "__main__":
