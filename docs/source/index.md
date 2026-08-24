@@ -14,22 +14,16 @@ quickstart
 
 ```{toctree}
 :maxdepth: 2
-:caption: Paper examples
+:caption: Core commands
 :hidden:
 
-tutorials/index
+cli
 ```
 
 ```{toctree}
 :maxdepth: 2
-:caption: Reference
+:caption: Paper examples
 :hidden:
 
-reference/cli
-smith_tool_readme
-agent/END_TO_END_EXAMPLES
-agent/AGENT_INTERACTION_MODES
-agent/NAMING_CONVENTIONS
-interface_readme
-baselines_readme
+tutorials/index
 ```

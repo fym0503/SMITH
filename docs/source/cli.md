@@ -1,4 +1,6 @@
-# Command-Line Reference
+# Command-line Reference
+
+Use this page when you already know which workflow you want to run and need the exact command names. The biological rationale and worked examples are in [Introduction](introduction/index) and [Paper examples](tutorials/index).
 
 ## Core optimizer
 
