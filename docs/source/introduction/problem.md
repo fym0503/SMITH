@@ -4,6 +4,14 @@
 
 Dissociated single-cell assays can describe molecular heterogeneity at high depth, but they remove cells from their native tissue. Imaging-based spatial profiling preserves location, allowing molecular states to be interpreted together with tissue architecture, cell-cell neighborhoods, and anatomical context. This distinction is central in systems where position shapes function, including developmental patterning, neural organization, immune niches, and disease-associated tissue remodeling.
 
+```{figure} ../_static/figures/panel_design_problem.png
+:alt: Target panel selection in imaging-based spatial molecular profiling
+:width: 100%
+:align: center
+
+Imaging-based spatial molecular profiling requires a target panel to be selected before data generation. The selected targets determine which molecular signals can be measured and which downstream biological analyses the experiment can support. Adapted from Figure 1a of the SMITH manuscript.
+```
+
 The same experimental design principle now spans several molecular layers. Targeted spatial transcriptomics measures selected messenger RNAs. Regulatory imaging assays can measure transcription-factor or miRNA activities. Translatomic assays can spatially resolve actively translated RNA. SMITH uses the term **molecular target** because the selectable unit is not restricted to a gene-expression measurement.
 
 ## Target selection is an irreversible bottleneck
