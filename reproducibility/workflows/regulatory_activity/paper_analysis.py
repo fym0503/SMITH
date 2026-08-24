@@ -255,8 +255,10 @@ def coactivity_reconstruction(
     try:
         train_names = [canonical_tf_name(gene) for gene in gene_symbols(train)]
         test_names = [canonical_tf_name(gene) for gene in gene_symbols(test)]
-        x_train, train_genes = _collapse_columns(_matrix(train), train_names)
-        x_test, test_genes = _collapse_columns(_matrix(test), test_names)
+        raw_train = _matrix(train).astype(np.float32)
+        raw_test = _matrix(test).astype(np.float32)
+        x_train, train_genes = _collapse_columns(raw_train, train_names)
+        x_test, test_genes = _collapse_columns(raw_test, test_names)
         common = sorted(set(train_genes) & set(test_genes))
         if len(common) < 3:
             raise ValueError("Training and test activity inputs have fewer than three shared TFs")
@@ -268,14 +270,24 @@ def coactivity_reconstruction(
         panel = list(dict.fromkeys(panel))
         if len(panel) < 2:
             raise ValueError("Generated panel has fewer than two TFs in the activity universe")
-        panel_positions = [common.index(gene) for gene in panel]
         if reconstruction_file:
             reconstructed = _load_reconstruction(reconstruction_file, common)
             backend = "persist_reconstruction_head"
         elif checkpoint_file and method == "SMITH":
-            reconstructed = _smith_reconstruction(x_test, panel_positions, checkpoint_file)
+            panel_positions = [index for index, gene in enumerate(test_names) if gene in set(panel)]
+            reconstructed_raw = _smith_reconstruction(raw_test, panel_positions, checkpoint_file)
+            reconstructed_collapsed, reconstructed_genes = _collapse_columns(
+                reconstructed_raw, test_names
+            )
+            reconstructed_index = {
+                gene: index for index, gene in enumerate(reconstructed_genes)
+            }
+            reconstructed = reconstructed_collapsed[
+                :, [reconstructed_index[gene] for gene in common]
+            ]
             backend = "smith_reconstruction_head"
         elif method == "ridge":
+            panel_positions = [common.index(gene) for gene in panel]
             decoder = Ridge(alpha=1.0).fit(x_train[:, panel_positions], x_train)
             reconstructed = decoder.predict(x_test[:, panel_positions])
             backend = "ridge_panel_decoder"
