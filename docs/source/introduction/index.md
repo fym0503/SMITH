@@ -1,12 +1,14 @@
 # Introduction
 
-Spatial biology asks not only which molecular states are present in a tissue, but also where those states occur and how neighboring cells organize into functional niches. Imaging-based spatial profiling addresses this question by measuring molecular signals together with cellular or subcellular position. Mature assays such as MERFISH and seqFISH profile targeted transcripts, while newer imaging strategies extend the same principle to transcription-factor activity, miRNA activity, and the translatome.
+Spatial biology asks where molecular states occur, not only which states are present. Imaging-based assays preserve tissue position while measuring selected molecular targets, including transcripts, transcription-factor activity, miRNA activity, and translation-related signals.
 
-These technologies share an important experimental constraint: the molecular targets must usually be chosen before imaging begins. Each target can require a dedicated probe set, barcode, reporter, or genetic tag, and the number of reliable measurements is limited by assay chemistry, imaging throughput, and decoding accuracy. A panel is therefore not a neutral subset of the molecular atlas. It determines which cell identities, tissue domains, developmental signals, and disease-associated programs remain observable in the completed experiment.
+The targets usually have to be chosen before imaging. Probe capacity, optical crowding, barcode design, imaging time, and decoding accuracy make a finite panel unavoidable. The panel therefore determines which cell identities, tissue domains, developmental programs, and disease-associated states can be observed later.
 
-**SMITH is a framework for selecting compact molecular target panels from existing single-cell and spatial references.** It treats panel design as a multi-objective problem. A shared stochastic gate learns which targets to retain, while objective-specific networks ask whether the gated data preserve complementary forms of biological information. Pareto multi-task optimization balances these objectives without requiring a manually fixed loss weighting.
+:::{admonition} Key idea
+:class: tip
 
-SMITH also treats existing atlases as design priors. A panel can be learned from a matched single-cell reference, an existing spatial study, an aligned single-cell and spatial representation, or a related molecular modality. This transfer view allows earlier experiments to inform new assays across studies, platforms, and molecular readouts. SMITH-Agent builds on the optimizer by organizing biological intent, reference retrieval, model execution, feasibility checks, and probe-level outputs into a reproducible workflow.
+A target panel is an experimental decision: it determines which biological signals can be measured in the completed assay.
+:::
 
 ```{figure} ../_static/figures/smith_framework.png
 :alt: SMITH framework for molecular target selection
@@ -16,12 +18,14 @@ SMITH also treats existing atlases as design priors. A panel can be learned from
 SMITH combines the experimental purpose, candidate targets, optional prior targets, and existing reference studies. Stochastic gates produce one target ranking while task-specific networks evaluate the biological information retained by the candidate panel. Adapted from Figure 1 of the SMITH manuscript.
 ```
 
-The framework is built around four ideas:
+SMITH treats panel design as a multi-objective learning problem. A shared stochastic gate ranks candidates, objective-specific networks test whether the gated data preserve complementary biology, and Pareto optimization balances those objectives without a manually fixed loss weighting. Existing single-cell, spatial, cross-study, and cross-modality references can all provide design information. **SMITH-Agent** adds reference retrieval, feasibility checks, and reporting around the core selector.
 
-1. **The panel is part of the biological question.** Informativeness depends on the intended analysis, not only on expression abundance or generic marker status.
-2. **Selection is learned jointly with biological objectives.** Targets receive high priority when they collectively preserve the signals needed for the experiment.
-3. **Competing objectives are balanced explicitly.** The optimizer searches for a common Pareto descent direction rather than hiding the trade-off in fixed loss weights.
-4. **Reference data are reusable design information.** Single-cell, spatial, cross-study, and cross-modality datasets can all contribute to a new panel.
+The introduction is organized around four questions:
+
+- **Problem:** What makes target selection a biological and experimental bottleneck?
+- **Model:** How does a differentiable gate turn a reference into a ranked panel?
+- **Optimization:** How are competing biological objectives balanced?
+- **Transfer:** How can an existing atlas inform a new assay?
 
 ::::{grid} 1 2 2 2
 :gutter: 2
@@ -30,28 +34,28 @@ The framework is built around four ideas:
 :link: problem
 :link-type: doc
 
-Why target selection is an experimental bottleneck and how SMITH defines biological information preservation.
+Why target selection determines the biology that remains observable.
 :::
 
 :::{grid-item-card} Model Principles
 :link: model
 :link-type: doc
 
-How the stochastic gate, shared representation, objective heads, and prior targets produce a ranked panel.
+How stochastic gates and objective heads produce a target ranking.
 :::
 
 :::{grid-item-card} Multi-objective Optimization
 :link: optimization
 :link-type: doc
 
-How Pareto gradient balancing trains one selector against several biological objectives.
+How Pareto gradient balancing handles competing objectives.
 :::
 
 :::{grid-item-card} Transfer and SMITH-Agent
 :link: transfer
 :link-type: doc
 
-How existing atlases inform new assays and how the agent turns a design intent into deployable outputs.
+How references are reused and design decisions are recorded.
 :::
 ::::
 
