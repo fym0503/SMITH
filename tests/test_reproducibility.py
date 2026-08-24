@@ -154,6 +154,26 @@ def test_executed_tutorials_include_rendered_figure_outputs():
         assert image_outputs, f"{path} has no rendered example figures"
 
 
+def test_regulatory_tutorial_interleaves_code_and_figures():
+    root = Path(__file__).resolve().parents[1]
+    notebook = nbformat.read(
+        root / "docs/source/tutorials/notebooks/regulatory_section/02_SMITH_Regulatory_Activity_source.ipynb",
+        as_version=4,
+    )
+    display_cells = [
+        index
+        for index, cell in enumerate(notebook.cells)
+        if cell.cell_type == "code" and "render_figure3_panel(" in str(cell.source)
+        and not str(cell.source).lstrip().startswith("from pathlib")
+    ]
+    assert len(display_cells) == 10
+    assert "Render the manuscript panels" not in "\n".join(str(cell.source) for cell in notebook.cells)
+    for index in display_cells:
+        assert notebook.cells[index - 1].cell_type == "markdown"
+        assert str(notebook.cells[index - 1].source).lstrip().startswith("#")
+        assert str(notebook.cells[index].source).count("render_figure3_panel(") == 1
+
+
 def test_ribomap_plot_has_no_placeholder_panel():
     root = Path(__file__).resolve().parents[1]
     plotter = (root / "reproducibility" / "workflows" / "ribomap_transfer" / "plot_figure4.py").read_text()
