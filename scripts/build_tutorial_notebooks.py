@@ -128,6 +128,10 @@ OUTPUT_ROOT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials"))
 CASE_OUTPUT = OUTPUT_ROOT / {spec['output']!r}
 EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
 DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
+WORKFLOW_ENV = os.environ.copy()
+WORKFLOW_ENV["PYTHONPATH"] = os.pathsep.join(
+    [str(ROOT), str(ROOT / "src"), WORKFLOW_ENV.get("PYTHONPATH", "")]
+)
 
 def sha256_file(path):
     digest = hashlib.sha256()
@@ -145,7 +149,10 @@ for relative in inputs:
     input_checksums[relative] = sha256_file(path)
 '''
     command = f'''command = [sys.executable, str(ROOT / {spec['workflow']!r}), "--data-root", str(DATA_ROOT), "--output-dir", str(CASE_OUTPUT), "--device", DEVICE, "--epochs", str(EPOCHS)] + {spec['arguments']!r} + ["--force"]
-completed = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+completed = subprocess.run(
+    command, cwd=ROOT, env=WORKFLOW_ENV, text=True,
+    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+)
 if completed.returncode:
     print(completed.stdout)
     raise subprocess.CalledProcessError(completed.returncode, command)
@@ -214,7 +221,10 @@ if not (recheck_dir / "predictions.tsv").is_file():
     plot_pairs = ", ".join([repr(plot_args[i]) if i % 2 == 0 else plot_args[i] for i in range(len(plot_args))])
     plotting = f'''figure_dir = CASE_OUTPUT / "figures"
 plot_command = [sys.executable, str(ROOT / {spec['plotter']!r}), {plot_pairs}, "--output-dir", str(figure_dir)]
-subprocess.run(plot_command, cwd=ROOT, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+subprocess.run(
+    plot_command, cwd=ROOT, env=WORKFLOW_ENV, check=True, text=True,
+    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+)
 for heading, relative, width in {spec['figure_panels']!r}:
     display(Markdown(f"### {{heading}}"))
     display(Image(filename=str(CASE_OUTPUT / relative), width=width))
