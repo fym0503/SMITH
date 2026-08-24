@@ -11,7 +11,6 @@ import pandas as pd
 from scipy import sparse
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, mean_absolute_error
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.preprocessing import StandardScaler
 
 from reproducibility.workflows.common import gene_symbols, read_panel, write_json
 
@@ -56,16 +55,13 @@ def evaluate(
     test = ad.read_h5ad(test_file)
     panel = read_panel(panel_file, panel_size)
     x_train, x_test, shared = _shared_matrices(train, test, panel)
-    scaler = StandardScaler()
-    x_train = scaler.fit_transform(x_train)
-    x_test = scaler.transform(x_test)
     n_neighbors = max(1, min(neighbors, len(x_train)))
 
     train_celltype = _column(train, CELLTYPE_COLUMNS)
     test_celltype = _column(test, CELLTYPE_COLUMNS)
     y_train = train.obs[train_celltype].astype(str).to_numpy()
     y_test = test.obs[test_celltype].astype(str).to_numpy()
-    classifier = KNeighborsClassifier(n_neighbors=n_neighbors, weights="distance")
+    classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
     classifier.fit(x_train, y_train)
     predicted_celltype = classifier.predict(x_test)
 

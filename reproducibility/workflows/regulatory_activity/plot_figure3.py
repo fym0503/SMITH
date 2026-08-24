@@ -58,27 +58,38 @@ PANEL_SPECS = {
 
 
 def _draw_module_schematic(ax, modules: pd.DataFrame) -> None:
-    grouped = modules.groupby("module_id")["gene_symbol"].apply(list)
-    names = list(grouped.index)
-    if not names:
+    required = {"tissue", "progenitor_lineage", "temporal_module", "gene_symbol"}
+    if not required.issubset(modules.columns):
+        raise ValueError(f"Module table lacks {sorted(required - set(modules.columns))}")
+    summary = (
+        modules.groupby(["tissue", "temporal_module"], observed=False)["gene_symbol"]
+        .nunique()
+        .unstack(fill_value=0)
+    )
+    if summary.empty:
         raise ValueError("No annotated modules available for Figure 3g")
-    for index, name in enumerate(names):
-        genes = grouped.loc[name]
-        y = len(names) - index
-        ax.scatter(np.arange(len(genes)), np.full(len(genes), y), s=18, color="#2f75b5", zorder=3)
-        ax.plot(np.arange(len(genes)), np.full(len(genes), y), color="#a8b7c7", lw=0.8, zorder=1)
-        ax.text(len(genes) + 0.15, y, str(name), va="center", fontsize=6)
-    ax.set_title("Annotated spatiotemporal modules", fontsize=8.5, pad=5)
-    ax.set_xlabel("TFs within module")
-    ax.set_yticks([])
-    ax.set_xlim(-0.5, max(len(values) for values in grouped) + 2)
-    ax.set_ylim(0.3, len(names) + 0.7)
+    temporal_order = [item for item in ("Early", "Middle", "Late") if item in summary.columns]
+    temporal_order.extend(item for item in summary.columns if item not in temporal_order)
+    summary = summary.reindex(columns=temporal_order)
+    image = ax.imshow(summary.to_numpy(), cmap="Blues", aspect="auto", vmin=0)
+    ax.set_xticks(np.arange(len(summary.columns)), summary.columns, rotation=35, ha="right")
+    ax.set_yticks(np.arange(len(summary.index)), [str(item).title() for item in summary.index])
+    ax.set_xlabel("Temporal module")
+    ax.set_ylabel("Tissue system")
+    ax.set_title("Spatiotemporal TF programs", fontsize=8.5, pad=5)
+    for row in range(summary.shape[0]):
+        for column in range(summary.shape[1]):
+            value = int(summary.iloc[row, column])
+            ax.text(column, row, value, ha="center", va="center", fontsize=6,
+                    color="white" if value > summary.to_numpy().max() * 0.55 else "black")
+    image.set_rasterized(True)
 
 
 def _draw_module_coverage(ax, data: pd.DataFrame) -> None:
     for method, frame in data.groupby("method"):
         summary = frame.groupby("panel_size")["module_miss_rate"].mean().sort_index()
-        ax.plot(summary.index, summary.values, marker="o", lw=1.2, label=method, color=METHOD_COLORS.get(method, "#777777"))
+        ax.scatter(summary.index, summary.values, s=20, label=method,
+                   color=METHOD_COLORS.get(method, "#777777"), edgecolor="black", linewidth=0.35)
     ax.set_title("Developmental module coverage", fontsize=8.5, pad=5)
     ax.set_xlabel("Panel size")
     ax.set_ylabel("Module miss rate")
@@ -87,34 +98,74 @@ def _draw_module_coverage(ax, data: pd.DataFrame) -> None:
 
 
 def _draw_coactivity(ax, data: pd.DataFrame) -> None:
-    grouped = data.groupby("lineage")["pearson"].mean().reindex(LINEAGE_NAMES).dropna()
-    ax.bar(np.arange(len(grouped)), grouped.values, color="#4f81bd", edgecolor="black", linewidth=0.4)
+    methods = [method for method in ("SMITH", "PERSIST") if method in set(data["method"])]
+    if not methods:
+        raise ValueError("Co-activity output contains neither SMITH nor PERSIST")
+    width = 0.72 / len(methods)
+    x = np.arange(len(LINEAGE_NAMES))
+    for method_index, method in enumerate(methods):
+        means, errors = [], []
+        for lineage in LINEAGE_NAMES:
+            values = data[(data["method"] == method) & (data["lineage"] == lineage)]["pearson"].dropna()
+            means.append(float(values.mean()) if len(values) else np.nan)
+            errors.append(float(values.sem()) if len(values) > 1 else 0.0)
+        positions = x - 0.36 + width / 2 + method_index * width
+        ax.bar(positions, means, width, yerr=errors, capsize=1.5,
+               color=METHOD_COLORS[method], edgecolor="black", linewidth=0.4, label=method)
     ax.set_title("TF co-activity reconstruction", fontsize=8.5, pad=5)
     ax.set_ylabel("Pearson agreement")
-    ax.set_xticks(np.arange(len(grouped)), [str(item).title() for item in grouped.index], rotation=25, ha="right")
+    ax.set_xticks(x, [item.title() for item in LINEAGE_NAMES], rotation=25, ha="right")
     ax.set_ylim(-1, 1)
+    ax.legend(frameon=False, fontsize=5.5)
 
 
-def _draw_tf_correlation(ax, data: pd.DataFrame) -> None:
+def _plot_tf_correlation(data: pd.DataFrame, metrics_path: str | Path):
     if data.empty:
         raise ValueError("TF/scRNA correlation output is empty")
-    value = float(data.iloc[0]["pearson"])
-    ax.text(0.5, 0.55, f"r = {value:.2f}", ha="center", va="center", fontsize=18, color="#2f75b5")
-    ax.text(0.5, 0.28, "TF-TF correlation structure\nscRNA versus activity atlas", ha="center", va="center", fontsize=7)
-    ax.set_title("Cross-modality TF structure", fontsize=8.5, pad=5)
-    ax.axis("off")
+    matrix_file = Path(metrics_path).parent / str(data.iloc[0]["matrix_file"])
+    if not matrix_file.is_file():
+        raise FileNotFoundError(f"Figure 3j matrix output is missing: {matrix_file}")
+    matrices = np.load(matrix_file, allow_pickle=False)
+    fig, axes = plt.subplots(1, 2, figsize=(4.7, 2.25), facecolor="white")
+    for ax, key, title in zip(axes, ("scrna", "tf"), ("scRNA-seq", "TF activity")):
+        image = ax.imshow(matrices[key], cmap="Blues", vmin=0, vmax=1, interpolation="nearest")
+        image.set_rasterized(True)
+        ax.set_title(title, fontsize=8.5, pad=4)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    axes[1].text(0.98, 0.02, f"corr = {float(data.iloc[0]['mean_rowwise_pearson']):.2f}",
+                 transform=axes[1].transAxes, ha="right", va="bottom", fontsize=7,
+                 bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8, "pad": 1.5})
+    fig.subplots_adjust(left=0.04, right=0.98, bottom=0.08, top=0.86, wspace=0.08)
+    return fig
 
 
 def _draw_transfer(ax, data: pd.DataFrame) -> None:
-    metric = "developmental_time_pearson"
+    metric = "cell_type_accuracy"
     if metric not in data:
         raise ValueError(f"Transfer output lacks {metric}")
-    grouped = data.groupby(["panel_size", "source_modality"])[metric].mean().unstack(fill_value=np.nan)
-    grouped.plot(kind="bar", ax=ax, color={"TF-to-TF": "#2f75b5", "scRNA-to-TF": "#e07a5f"}, edgecolor="black", linewidth=0.4)
-    ax.set_title("scRNA-to-TF panel transfer", fontsize=8.5, pad=5)
-    ax.set_xlabel("Panel size")
-    ax.set_ylabel("Developmental-time Pearson r")
-    ax.legend(frameon=False, fontsize=5.5)
+    sources = [source for source in ("TF-TF", "RNA-TF") if source in set(data["source_modality"])]
+    methods = [method for method in ("SMITH", "PERSIST-class") if method in set(data["method"])]
+    combinations = [(method, source) for method in methods for source in sources]
+    sizes = sorted(data["panel_size"].dropna().astype(int).unique())
+    width = 0.78 / max(len(combinations), 1)
+    colors = {("SMITH", "TF-TF"): "#2f75b5", ("SMITH", "RNA-TF"): "#e07a5f",
+              ("PERSIST-class", "TF-TF"): "#9ab7d5", ("PERSIST-class", "RNA-TF"): "#edb09e"}
+    y = np.arange(len(sizes))
+    for index, (method, source) in enumerate(combinations):
+        means = []
+        for size in sizes:
+            values = data[(data["method"] == method) & (data["source_modality"] == source)
+                          & (data["panel_size"] == size)][metric].dropna()
+            means.append(float(values.mean()) if len(values) else np.nan)
+        positions = y - 0.39 + width / 2 + index * width
+        ax.barh(positions, means, height=width, color=colors[(method, source)],
+                edgecolor="black", linewidth=0.35, label=f"{method}: {source}")
+    ax.set_title("Panel transfer into TF activity", fontsize=8.5, pad=5)
+    ax.set_xlabel("Cell-type accuracy")
+    ax.set_ylabel("Panel size")
+    ax.set_yticks(y, [str(size) for size in sizes])
+    ax.legend(frameon=False, fontsize=5.2, loc="lower right")
 
 
 def _draw_bar_panel(ax, data: pd.DataFrame, spec: dict) -> list[str]:
@@ -214,7 +265,6 @@ def plot(
             "g": lambda ax: _draw_module_schematic(ax, module_table),
             "h": lambda ax: _draw_module_coverage(ax, pd.read_csv(module_coverage_path, sep="\t")),
             "i": lambda ax: _draw_coactivity(ax, pd.read_csv(coactivity_path, sep="\t")),
-            "j": lambda ax: _draw_tf_correlation(ax, pd.read_csv(correlation_path, sep="\t")),
             "k": lambda ax: _draw_transfer(ax, pd.read_csv(transfer_path, sep="\t")),
         }
         for letter, draw in panels.items():
@@ -224,6 +274,11 @@ def plot(
             fig.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
             outputs[f"figure3_{letter}"] = save_figure(fig, output_dir / f"figure3_{letter}")
             plt.close(fig)
+        correlation_data = pd.read_csv(correlation_path, sep="\t")
+        fig = _plot_tf_correlation(correlation_data, correlation_path)
+        fig.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
+        outputs["figure3_j"] = save_figure(fig, output_dir / "figure3_j")
+        plt.close(fig)
     return outputs
 
 

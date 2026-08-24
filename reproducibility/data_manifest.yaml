@@ -20,6 +20,7 @@ cases:
     source: SMITH paper workspace split-generation output
     upstream_license: pending_verification
     processing_scripts:
+      - scripts/prepare_elegans_atlas_annotations.py
       - reproducibility/workflows/regulatory_activity/run_tutorial.py
       - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
       - reproducibility/workflows/regulatory_activity/paper_analysis.py
@@ -54,21 +55,29 @@ cases:
       - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/train.h5ad, bytes: 39937936, sha256: b29478519108c24d42b2c0a330b9b16ffbd5e0e4096d49810d6654d2a95b4926}
       - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/test.h5ad, bytes: 26763128, sha256: e4632f404242345e2e50fe8acb7519fc9a2d150528d96ba06e18405bf2e1b3b0}
     paper_inputs:
-      status: pending_archive_from_source_workspace
+      status: prepared_pending_zenodo_upload
       note: >-
-        Figure 3g-k requires these biological inputs. They are intentionally listed
-        separately until the source archive is uploaded and each checksum is verified;
-        the workflow fails explicitly when they are absent.
+        Figure 3g-k requires these biological inputs. The atlas tables were normalized
+        deterministically from official Supplementary Table 5 and the scRNA object was
+        checksum-verified on pc157. They remain separate until the Zenodo archive is uploaded.
+      annotation_source:
+        url: https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41592-021-01216-1/MediaObjects/41592_2021_1216_MOESM7_ESM.xlsx
+        bytes: 597658
+        sha256: 61c4b9c2075558223b5793ca0d5f0f9e32bddc7469d793e581ceb826d23643db
+        preparation_script: scripts/prepare_elegans_atlas_annotations.py
       files:
         - path: regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
-          source: original C. elegans TF activity atlas annotations
-          sha256: null
+          source: official Supplementary Table 5a
+          bytes: 152768
+          sha256: d39d6c693464b184386e4c614d31c7cd3296ed137b46d3a234101fe812aae111
         - path: regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
-          source: original annotated TF regulatory pairs
-          sha256: null
+          source: official Supplementary Table 5c
+          bytes: 1329105
+          sha256: 2f93647790211f438d3fec0d7201693fbde76ea49ed4831d62936658263555a1
         - path: regulatory_activity/elegans/reference/elegans_scrna.h5ad
-          source: original C. elegans scRNA reference
-          sha256: null
+          source: C. elegans scRNA reference used by the manuscript workspace
+          bytes: 745430695
+          sha256: 3e9e17fd2d43c7f4a11113320cdc54fd8eae1665e2f72341c85e85b18f6a367e
   03_ribomap_transfer:
     title: RIBOMap cross-study transfer
     archive_name: smith-tutorial-03-ribomap-2026.08.tar.gz

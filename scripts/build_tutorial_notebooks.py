@@ -23,7 +23,7 @@ SPECS = {
         "biology": "Which compact set of regulatory features is sufficient to preserve C. elegans cell identity and developmental progression? The TF and miRNA assays represent regulatory activity rather than a generic feature-selection benchmark: a useful panel should retain discrete lineage labels and the continuous developmental-time signal in held-out cells.",
         "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. The supplementary module and TF-pair annotations define the developmental programs and regulator relationships used in the manuscript analyses, while the scRNA H5AD supplies the independent reference for RNA-to-TF transfer. Training cells learn the activity representation; held-out cells test whether selected regulators still recover identity, age, and regulatory structure.",
         "model_role": "SMITH is trained on the training H5AD with reconstruction, cell-type classification, and developmental-time objectives. Its learned gene ranking is then truncated to the manuscript panel sizes; no packaged aggregate ranking is used.",
-        "analysis_role": "Cell-type accuracy asks whether the panel preserves discrete lineage information, while developmental-time correlation asks whether it preserves the ordered embryonic trajectory. The paper-specific analyses then ask three biological follow-up questions: does the panel retain annotated developmental modules, can selected targets reconstruct TF co-activity in muscle, neuron, pharynx and skin, and can a mature scRNA reference transfer a useful TF panel into activity profiling?",
+        "analysis_role": "Cell-type accuracy asks whether the panel preserves discrete lineage information, while developmental-time correlation asks whether it preserves the ordered embryonic trajectory. The paper-specific analyses then ask three biological follow-up questions: does the panel retain annotated developmental modules, can selected targets reconstruct TF co-activity in muscle, neuron, pharynx and skin, and can scRNA reference cells directly predict the identity of held-out TF-activity cells through a transferred panel?",
         "workflow": "reproducibility/workflows/regulatory_activity/run_tutorial.py",
         "plotter": "reproducibility/workflows/regulatory_activity/plot_figure3.py", "output": "regulatory",
         "inputs": [
@@ -167,7 +167,7 @@ from reproducibility.workflows.regulatory_activity.paper_analysis import (
     write_module_coverage,
 )
 
-panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panels/SMITH_top32.tsv"
+panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panel_32/panels/SMITH_top32.tsv"
 recheck_dir = CASE_OUTPUT / "notebook_recheck" / "elegans_tf"
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
@@ -224,7 +224,7 @@ for heading, relative, width in {spec['figure_panels']!r}:
     notebook.cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\nThis notebook follows the biological workflow from real input data to a trained model, a newly selected panel, and manuscript-matched biological analyses. It does not read packaged aggregate results as tutorial inputs. [Open the editable source notebook on GitHub]({github})."),
         nbformat.v4.new_markdown_cell(f"## Biological question\n\n{spec['biology']}\n\n**How to read the endpoint:** {spec['analysis_role']}"),
-        nbformat.v4.new_markdown_cell(f"## Step 0: Download the real input data\n\nDownload the versioned Zenodo archive and verify its checksums before training:\n\n```bash\npython scripts/download_tutorial_data.py \\\n  --case {spec['case']} \\\n  --data-root data/tutorials\n```\n\nThe notebook is pre-executed for documentation. Read the Docs does not download large data or train SMITH during documentation builds."),
+        nbformat.v4.new_markdown_cell(f"## Step 0: Download the real input data\n\nDownload the versioned Zenodo archive and verify its checksums before training:\n\n```bash\npython scripts/download_tutorial_data.py \\\n  --case {spec['case']} \\\n  --data-root data/tutorials\n```\n\nThe notebook is pre-executed for documentation. Read the Docs does not download large data or train SMITH during documentation builds." + ("\n\nThe developmental-module and TF-pair tables in the archive are normalized from the source atlas Supplementary Table 5. Their preparation can be audited independently with:\n\n```bash\npython scripts/prepare_elegans_atlas_annotations.py --data-root data/tutorials\n```" if spec["case"] == "02_regulatory_activity" else "")),
         nbformat.v4.new_markdown_cell("## Configuration"), nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_markdown_cell(f"## Step 1: Inspect the biological input data\n\n{spec['data_role']}"), nbformat.v4.new_code_cell(inspect),
         nbformat.v4.new_markdown_cell(f"## Step 2: Train SMITH and select a panel\n\n{spec['model_role']}\n\nThe command below starts from the H5AD inputs above and writes a fresh model ranking, panel, evaluation, and run manifest."), nbformat.v4.new_code_cell(command),

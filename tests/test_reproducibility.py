@@ -14,6 +14,7 @@ import yaml
 
 from smith.reproducibility import check_case, load_cases, run_case
 from scripts.download_tutorial_data import safe_extract
+from scripts.build_tutorial_archives import case_files
 from reproducibility.workflows.ribomap_transfer.analysis import (
     bh_adjust,
     jaccard_similarity,
@@ -25,6 +26,7 @@ from reproducibility.workflows.regulatory_activity.paper_analysis import (
     module_miss_rate,
     tf_scrna_correlation,
 )
+from reproducibility.workflows.regulatory_activity.plot_figure3 import plot as plot_figure3
 
 
 EXPECTED_CASES = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
@@ -71,8 +73,12 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
             assert item["bytes"] > 0
             assert len(item["sha256"]) == 64
     paper_inputs = manifest["cases"]["02_regulatory_activity"]["paper_inputs"]
-    assert paper_inputs["status"] == "pending_archive_from_source_workspace"
+    assert paper_inputs["status"] == "prepared_pending_zenodo_upload"
     assert len(paper_inputs["files"]) == 3
+    assert all(item["bytes"] > 0 and len(item["sha256"]) == 64 for item in paper_inputs["files"])
+    assert len(case_files(manifest["cases"]["02_regulatory_activity"])) == (
+        len(manifest["cases"]["02_regulatory_activity"]["files"]) + 3
+    )
 
 
 def test_safe_extract_rejects_path_traversal(tmp_path: Path):
@@ -208,8 +214,13 @@ def test_regulatory_module_miss_rate_uses_selected_panel_only():
 def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_path: Path):
     rng = np.random.default_rng(4)
     genes = ["TF1", "TF2", "TF3", "TF4"]
-    train_obs = pd.DataFrame({"cell_type": ["muscle"] * 8 + ["neuron"] * 8})
-    test_obs = pd.DataFrame({"cell_type": ["muscle"] * 8 + ["neuron"] * 8})
+    lineages = [f"lineage_{index // 2}" for index in range(16)]
+    train_obs = pd.DataFrame({
+        "cell_type": ["muscle"] * 8 + ["neuron"] * 8,
+        "cell_name": lineages,
+        "random_precise_lineage": lineages,
+    })
+    test_obs = train_obs.copy()
     train = ad.AnnData(rng.normal(size=(16, 4)).astype("float32"), obs=train_obs, var=pd.DataFrame(index=genes))
     test = ad.AnnData(rng.normal(size=(16, 4)).astype("float32"), obs=test_obs, var=pd.DataFrame(index=genes))
     train_file, test_file = tmp_path / "train.h5ad", tmp_path / "test.h5ad"
@@ -220,9 +231,65 @@ def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_p
     pair_file = tmp_path / "pairs.tsv"
     pd.DataFrame({"gene_a": ["TF1", "TF2"], "gene_b": ["TF3", "TF4"]}).to_csv(pair_file, sep="\t", index=False)
     coactivity_file = tmp_path / "coactivity.tsv"
-    coactivity_reconstruction(train_file, test_file, panel_file, coactivity_file, pair_file=pair_file)
+    coactivity_reconstruction(
+        train_file, test_file, panel_file, coactivity_file, pair_file=pair_file, method="ridge"
+    )
     coactivity = pd.read_csv(coactivity_file, sep="\t")
     assert set(coactivity["lineage"]) == {"muscle", "neuron"}
     correlation_file = tmp_path / "correlation.tsv"
-    tf_scrna_correlation(train_file, test_file, correlation_file)
-    assert pd.read_csv(correlation_file, sep="\t").iloc[0]["shared_genes"] == 4
+    tf_scrna_correlation(train_file, test_file, correlation_file, n_clusters=2)
+    correlation = pd.read_csv(correlation_file, sep="\t").iloc[0]
+    assert correlation["shared_genes"] == 4
+    assert correlation["shared_lineages"] == 8
+    assert (tmp_path / correlation["matrix_file"]).is_file()
+
+
+def test_figure3_plotter_consumes_generated_analysis_outputs(tmp_path: Path):
+    values = []
+    for dataset, sizes in (("elegans_tf", (32, 64, 128)), ("elegans_mirna", (16, 24, 32))):
+        for size in sizes:
+            values.append({
+                "dataset": dataset, "split": "split_1", "panel_size": size,
+                "method": "SMITH", "cell_type_accuracy": 0.65,
+                "developmental_time_pearson": 0.9,
+            })
+    values_path = tmp_path / "values.tsv"
+    pd.DataFrame(values).to_csv(values_path, sep="\t", index=False)
+
+    modules_path = tmp_path / "modules.tsv"
+    pd.DataFrame([
+        {"module_id": "muscle|M|early", "tissue": "muscle", "progenitor_lineage": "M",
+         "temporal_module": "early", "gene_symbol": "TF1"},
+        {"module_id": "neuron|AB|late", "tissue": "neuron", "progenitor_lineage": "AB",
+         "temporal_module": "late", "gene_symbol": "TF2"},
+    ]).to_csv(modules_path, sep="\t", index=False)
+    coverage_path = tmp_path / "coverage.tsv"
+    pd.DataFrame([
+        {"method": "SMITH", "panel_size": size, "module_miss_rate": 0.4 - size / 200}
+        for size in (16, 24, 32)
+    ]).to_csv(coverage_path, sep="\t", index=False)
+    coactivity_path = tmp_path / "coactivity.tsv"
+    pd.DataFrame([
+        {"method": method, "lineage": lineage, "pearson": 0.5}
+        for method in ("SMITH", "PERSIST") for lineage in ("muscle", "neuron", "pharynx", "skin")
+    ]).to_csv(coactivity_path, sep="\t", index=False)
+    matrix_path = tmp_path / "figure3_j_correlation_matrices.npz"
+    np.savez_compressed(matrix_path, genes=np.array(["TF1", "TF2"]), tf=np.eye(2), scrna=np.eye(2))
+    correlation_path = tmp_path / "correlation.tsv"
+    pd.DataFrame([{
+        "mean_rowwise_pearson": 0.38, "matrix_file": matrix_path.name,
+    }]).to_csv(correlation_path, sep="\t", index=False)
+    transfer_path = tmp_path / "transfer.tsv"
+    pd.DataFrame([
+        {"method": method, "source_modality": source, "panel_size": size, "cell_type_accuracy": 0.6}
+        for method in ("SMITH", "PERSIST-class") for source in ("TF-TF", "RNA-TF")
+        for size in (32, 64, 128)
+    ]).to_csv(transfer_path, sep="\t", index=False)
+
+    outputs = plot_figure3(
+        values_path, tmp_path / "figures", modules_path=modules_path,
+        module_coverage_path=coverage_path, coactivity_path=coactivity_path,
+        correlation_path=correlation_path, transfer_path=transfer_path,
+    )
+    assert {f"figure3_{letter}" for letter in "cdefghijk"}.issubset(outputs)
+    assert all(Path(outputs[f"figure3_{letter}"]["png"]).is_file() for letter in "cdefghijk")

@@ -1,5 +1,5 @@
 schema_version: 1
-audited_on: 2026-08-18
+audited_on: 2026-08-24
 host: pc157
 repository: /workspace/fanyimin/SMITH_unified
 purpose: >-
@@ -17,8 +17,32 @@ scripts:
     path: /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/scripts/evaluate_elegans_split_metrics.py
     sha256: 98cec17e6a5f4fc96b732e6eae267199814fcf83d5e6c6c1b3e6b5d801c1042f
     data: same fixed lineage-aware train/test splits
-    parameters: "knn_neighbors=5; identifier=cell_name; gene_case=upper"
+    parameters: "KNN classification=unscaled panel expression with uniform 5-NN; time regression=unscaled panel expression with distance-weighted 5-NN; identifier=cell_name; gene_case=upper"
     portable_mapping: reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/analysis/analyze_elegans_tf_scrna_coexpression.py
+    sha256: 23cc0b26bd904ded479707ce68b2534f806c9485cc1cbab89763ebe0cd3d7509
+    data: full TF-activity H5AD + C. elegans scRNA reference
+    parameters: "266 shared TFs; 984 shared lineage identifiers; lineage means; absolute Pearson matrices; 6x6 spectral biclustering; mean rowwise correlation"
+    portable_mapping: reproducibility/workflows/regulatory_activity/paper_analysis.py::tf_scrna_correlation
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/run_elegans_scrna_to_tf_transfer.py
+    sha256: baf4b1f5d23343e9495c08bc6874cc392b82fe0ee0a51fdbb317b113f967a1a6
+    data: elegans_scrna.h5ad -> lineage-aware TF train/test splits
+    parameters: "shared TF universe; total-count normalization; log1p; gene-wise min-max; tasks=recon,cls,time; panel_sizes=32,64,128"
+    portable_mapping: reproducibility/workflows/regulatory_activity/run_tutorial.py::_prepare_scrna_source + transfer evaluation
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/evaluate_tf_domain_models_on_scrna_selected_panels.py
+    sha256: c284ad242ddf6b8fef077b6b9ae908cca0514e026ecec5314e4d4538bed86a6c
+    data: scRNA-selected TF panels evaluated on TF-activity train/test splits
+    parameters: "KNN cell-type and developmental-time evaluation; panel_sizes=32,64,128"
+    portable_mapping: reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+  - case: 02_regulatory_activity
+    path: /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/GPS_tools-main/baselines/persist/run_unsup.py
+    sha256: 7cd8ae6a7f076ccaebfc3dedfa858b8e0b63f3e7727ff502cdfb9181789eec41
+    data: TF-activity training split
+    parameters: "unsupervised reconstruction loss; validation_fraction=0.25; seed=1"
+    portable_mapping: reproducibility/workflows/regulatory_activity/run_persist_reconstruction_backend.py
   - case: 03_ribomap_transfer
     path: /workspace/fanyimin/SMITH_unified/code/workflows/run_ribomap_cross_study.py
     sha256: 311d8b626c34248acccbb0f328641f0ca4a0a3e3ed0a7dbe6d71daad0a5e2583
@@ -45,8 +69,13 @@ scripts:
     portable_mapping: reproducibility/workflows/ribomap_transfer/analysis.py
 source_data:
   regulatory_activity: /workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/cell_name_splits
+  regulatory_activity_scrna: /workspace/fanyimin/SMITH_unified/data/SMITH_data_elegans/data/elegans_scrna.h5ad
+  regulatory_activity_atlas_annotations:
+    url: https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41592-021-01216-1/MediaObjects/41592_2021_1216_MOESM7_ESM.xlsx
+    sha256: 61c4b9c2075558223b5793ca0d5f0f9e32bddc7469d793e581ceb826d23643db
   ribomap_transfer: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data
 notes:
   - Cluster absolute paths are recorded for audit only and are not used by the package.
   - No aggregate CSV is a tutorial input.
-  - Figure 3g-k module, TF-pair and scRNA source files were not reachable during the 2026-08-24 audit; their archive status is recorded in data_manifest.yaml and the portable workflow fails explicitly until checksums are supplied.
+  - Figure 3h-i annotation inputs are normalized from official Supplementary Table 5; no cluster-side implementation of those two panels was found.
+  - Figure 3j and 3k were mapped to the exact cluster-side implementations above; the portable workflow uses the same lineage aggregation, normalization and held-out endpoints.

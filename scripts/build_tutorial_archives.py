@@ -20,6 +20,12 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def case_files(case: dict) -> list[dict]:
+    specs = list(case.get("files", []))
+    specs.extend(case.get("paper_inputs", {}).get("files", []))
+    return specs
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build a local tutorial archive before an authorized Zenodo upload.")
     parser.add_argument("--case", required=True)
@@ -33,7 +39,7 @@ def main() -> None:
     output = Path(args.output_dir).resolve() / case["archive_name"]
     output.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(output, "w:gz") as archive:
-        for spec in case["files"]:
+        for spec in case_files(case):
             source = data_root / spec["path"]
             if not source.is_file():
                 raise FileNotFoundError(source)

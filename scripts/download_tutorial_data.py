@@ -57,8 +57,6 @@ def verify_files(case: dict, data_root: Path) -> list[str]:
     specs = list(case.get("files", []))
     paper_inputs = case.get("paper_inputs", {})
     for spec in paper_inputs.get("files", []):
-        # Pending source-workspace inputs are documented but cannot be verified
-        # or fetched until their Zenodo checksum is recorded.
         if spec.get("bytes") is not None and spec.get("sha256"):
             specs.append(spec)
     for spec in specs:
