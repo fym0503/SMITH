@@ -20,10 +20,14 @@ from reproducibility.workflows.ribomap_transfer.analysis import (
     jaccard_similarity,
     ribomap_bias,
 )
-from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon
+from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon, statistical_analysis
+from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate_loaded
 from reproducibility.workflows.regulatory_activity.paper_analysis import (
+    coactivity_from_objects,
     coactivity_reconstruction,
+    module_coverage,
     module_miss_rate,
+    tf_scrna_correlation_from_objects,
     tf_scrna_correlation,
 )
 from reproducibility.workflows.regulatory_activity.plot_figure3 import plot as plot_figure3
@@ -102,9 +106,18 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
     for path in sources:
         notebook = nbformat.read(path, as_version=4)
         text = "\n".join(str(cell.source) for cell in notebook.cells)
-        assert "run_tutorial.py" in text
-        assert "plot_figure" in text
-        assert "run_manifest.json" in text
+        if path.name.startswith("02_SMITH_Regulatory"):
+            assert "run_tutorial.py" in text  # Paper-scale command only.
+            assert "subprocess.run" not in text
+            assert "run_smith(" in text
+            assert "evaluate_loaded(" in text
+            assert "run_manifest.json\").read" not in text
+            assert "pd.read_csv(FIGURE_DATA" not in text
+            assert "pd.read_csv(CASE_OUTPUT" not in text
+        else:
+            assert "run_tutorial.py" in text
+            assert "plot_figure" in text
+            assert "run_manifest.json" in text
         assert "reference_outputs" not in text
         assert "verify_fixture" not in text
         assert "Provenance Analysis" not in text
@@ -128,7 +141,7 @@ def test_tutorial_sources_target_manuscript_panels():
         assert figure in text
         assert "Reproduce SMITH Figure" not in text
         assert plotter in text or "_draw_bar_panel" in text
-        assert "quick hosted run" in text
+        assert "quick hosted run" in text or "executed tutorial uses one real lineage split" in text
         assert "--output-dir" in text
         assert "pd.DataFrame" not in text
         assert "display(df" not in text
@@ -231,6 +244,18 @@ def test_regulatory_paired_test_uses_split_as_pairing_unit():
     assert result.iloc[0]["n_pairs"] == 2
 
 
+def test_regulatory_statistical_analysis_accepts_current_results():
+    values = pd.DataFrame([
+        {"dataset": "elegans_tf", "split": split, "panel_size": 32, "method": method,
+         "cell_type_accuracy": score, "developmental_time_pearson": score}
+        for split, scores in (("split_1", (0.8, 0.6)), ("split_2", (0.9, 0.7)))
+        for method, score in zip(("SMITH", "PERSIST-class"), scores, strict=True)
+    ])
+    result = statistical_analysis(values)
+    assert set(result["metric"]) == {"cell_type_accuracy", "developmental_time_pearson"}
+    assert set(result["n_pairs"]) == {2}
+
+
 def test_regulatory_module_miss_rate_uses_selected_panel_only():
     modules = pd.DataFrame([
         {"module_id": "muscle_early", "gene_symbol": "MyoD"},
@@ -238,6 +263,43 @@ def test_regulatory_module_miss_rate_uses_selected_panel_only():
         {"module_id": "neuron_late", "gene_symbol": "UNC-30"},
     ])
     assert module_miss_rate(["myod"], modules) == pytest.approx(0.5)
+
+
+def test_regulatory_in_memory_panel_evaluation_and_coverage(tmp_path: Path):
+    genes = ["TF1", "TF2", "TF3"]
+    train_obs = pd.DataFrame({
+        "cell_type": ["a", "a", "b", "b"],
+        "absolute_time": [1.0, 2.0, 3.0, 4.0],
+    }, index=[f"train_{index}" for index in range(4)])
+    test_obs = pd.DataFrame({
+        "cell_type": ["a", "b"], "absolute_time": [1.5, 3.5],
+    }, index=["test_a", "test_b"])
+    train = ad.AnnData(
+        np.array([[0, 0, 1], [0.1, 0, 1], [1, 1, 0], [0.9, 1, 0]], dtype="float32"),
+        obs=train_obs, var=pd.DataFrame(index=genes),
+    )
+    test = ad.AnnData(
+        np.array([[0.05, 0, 1], [0.95, 1, 0]], dtype="float32"),
+        obs=test_obs, var=pd.DataFrame(index=genes),
+    )
+    payload, celltype, time = evaluate_loaded(
+        train, test, ["TF1", "TF2"], 2, neighbors=1, output_dir=tmp_path,
+    )
+    assert payload["metrics"]["cell_type_accuracy"] == pytest.approx(1.0)
+    assert celltype["prediction"].tolist() == ["a", "b"]
+    assert len(time) == 2
+    assert (tmp_path / "metrics.json").is_file()
+
+    modules = pd.DataFrame([
+        {"module_id": "module_a", "gene_symbol": "TF1"},
+        {"module_id": "module_b", "gene_symbol": "TF3"},
+    ])
+    panels = pd.DataFrame([{
+        "dataset": "elegans_tf", "panel_size": 2, "method": "SMITH",
+        "panel_genes": ["TF1", "TF2"],
+    }])
+    coverage = module_coverage(panels, modules)
+    assert coverage.iloc[0]["module_miss_rate"] == pytest.approx(0.5)
 
 
 def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_path: Path):
@@ -258,7 +320,12 @@ def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_p
     panel_file = tmp_path / "panel.tsv"
     pd.DataFrame({"gene_symbol": ["TF1", "TF2"]}).to_csv(panel_file, sep="\t", index=False)
     pair_file = tmp_path / "pairs.tsv"
-    pd.DataFrame({"gene_a": ["TF1", "TF2"], "gene_b": ["TF3", "TF4"]}).to_csv(pair_file, sep="\t", index=False)
+    pair_table = pd.DataFrame({"gene_a": ["TF1", "TF2"], "gene_b": ["TF3", "TF4"]})
+    pair_table.to_csv(pair_file, sep="\t", index=False)
+    in_memory_coactivity = coactivity_from_objects(
+        train, test, ["TF1", "TF2"], pairs=pair_table, method="ridge"
+    )
+    assert set(in_memory_coactivity["lineage"]) == {"muscle", "neuron"}
     coactivity_file = tmp_path / "coactivity.tsv"
     coactivity_reconstruction(
         train_file, test_file, panel_file, coactivity_file, pair_file=pair_file, method="ridge"
@@ -271,6 +338,10 @@ def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_p
     assert correlation["shared_genes"] == 4
     assert correlation["shared_lineages"] == 8
     assert (tmp_path / correlation["matrix_file"]).is_file()
+    in_memory_correlation, matrices = tf_scrna_correlation_from_objects(train, test, n_clusters=2)
+    assert in_memory_correlation.iloc[0]["shared_genes"] == 4
+    assert matrices["tf"].shape == (4, 4)
+    assert matrices["scrna"].shape == (4, 4)
 
 
 def test_figure3_plotter_consumes_generated_analysis_outputs(tmp_path: Path):

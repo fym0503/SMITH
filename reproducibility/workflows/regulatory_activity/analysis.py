@@ -58,13 +58,19 @@ def paired_wilcoxon(
     return pd.DataFrame(rows)
 
 
+def statistical_analysis(values: pd.DataFrame, comparator: str = "PERSIST-class") -> pd.DataFrame:
+    """Compute manuscript paired tests directly from current split-level results."""
+    rows = [
+        paired_wilcoxon(values, metric, comparator=comparator)
+        for metric in ("cell_type_accuracy", "developmental_time_pearson")
+    ]
+    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+
 def write_statistical_analysis(values_path: str | Path, output_dir: str | Path) -> Path:
     """Write split-level paired-test metadata; missing baselines are explicit."""
     values = pd.read_csv(values_path, sep="\t")
-    rows = []
-    for metric in ("cell_type_accuracy", "developmental_time_pearson"):
-        rows.append(paired_wilcoxon(values, metric))
-    result = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+    result = statistical_analysis(values)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "figure3_c_f_paired_tests.tsv"

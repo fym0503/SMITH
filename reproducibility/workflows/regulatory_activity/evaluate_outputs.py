@@ -42,18 +42,17 @@ def _shared_matrices(train: ad.AnnData, test: ad.AnnData, panel: list[str]) -> t
     return np.asarray(x_train, dtype=np.float32), np.asarray(x_test, dtype=np.float32), shared
 
 
-def evaluate(
-    train_file: str | Path,
-    test_file: str | Path,
-    panel_file: str | Path,
-    output_dir: str | Path,
+def evaluate_loaded(
+    train: ad.AnnData,
+    test: ad.AnnData,
+    panel_genes: list[str],
     panel_size: int,
     time_column: str | None = None,
     neighbors: int = 5,
-) -> dict:
-    train = ad.read_h5ad(train_file)
-    test = ad.read_h5ad(test_file)
-    panel = read_panel(panel_file, panel_size)
+    output_dir: str | Path | None = None,
+) -> tuple[dict, pd.DataFrame, pd.DataFrame]:
+    """Evaluate an in-memory panel without re-reading any generated artifact."""
+    panel = list(panel_genes[:panel_size])
     x_train, x_test, shared = _shared_matrices(train, test, panel)
     n_neighbors = max(1, min(neighbors, len(x_train)))
 
@@ -82,9 +81,6 @@ def evaluate(
         "developmental_time_mae": float(mean_absolute_error(t_test, predicted_time)),
     }
     payload = {
-        "train_file": str(Path(train_file).resolve()),
-        "test_file": str(Path(test_file).resolve()),
-        "panel_file": str(Path(panel_file).resolve()),
         "panel_size_requested": int(panel_size),
         "panel_size_evaluated": len(shared),
         "shared_genes": shared,
@@ -95,18 +91,44 @@ def evaluate(
         "n_train": int(len(x_train)),
         "n_test": int(len(x_test)),
     }
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    write_json(output_dir / "metrics.json", payload)
-    pd.DataFrame([{"metric": key, "value": value} for key, value in metrics.items()]).to_csv(
-        output_dir / "metrics.tsv", sep="\t", index=False
+    time_predictions = pd.DataFrame({"truth": t_test, "prediction": predicted_time})
+    celltype_predictions = pd.DataFrame({"truth": y_test, "prediction": predicted_celltype})
+    if output_dir is not None:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        write_json(output_dir / "metrics.json", payload)
+        pd.DataFrame([{"metric": key, "value": value} for key, value in metrics.items()]).to_csv(
+            output_dir / "metrics.tsv", sep="\t", index=False
+        )
+        time_predictions.to_csv(output_dir / "developmental_time_predictions.tsv", sep="\t", index=False)
+        celltype_predictions.to_csv(output_dir / "cell_type_predictions.tsv", sep="\t", index=False)
+    return payload, celltype_predictions, time_predictions
+
+
+def evaluate(
+    train_file: str | Path,
+    test_file: str | Path,
+    panel_file: str | Path,
+    output_dir: str | Path,
+    panel_size: int,
+    time_column: str | None = None,
+    neighbors: int = 5,
+) -> dict:
+    """File-based CLI wrapper around :func:`evaluate_loaded`."""
+    train = ad.read_h5ad(train_file)
+    test = ad.read_h5ad(test_file)
+    panel = read_panel(panel_file, panel_size)
+    payload, _, _ = evaluate_loaded(
+        train, test, panel, panel_size, time_column=time_column, neighbors=neighbors, output_dir=output_dir
     )
-    pd.DataFrame({"truth": t_test, "prediction": predicted_time}).to_csv(
-        output_dir / "developmental_time_predictions.tsv", sep="\t", index=False
+    payload.update(
+        {
+            "train_file": str(Path(train_file).resolve()),
+            "test_file": str(Path(test_file).resolve()),
+            "panel_file": str(Path(panel_file).resolve()),
+        }
     )
-    pd.DataFrame({"truth": y_test, "prediction": predicted_celltype}).to_csv(
-        output_dir / "cell_type_predictions.tsv", sep="\t", index=False
-    )
+    write_json(Path(output_dir) / "metrics.json", payload)
     return payload
 
 

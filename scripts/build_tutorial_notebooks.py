@@ -110,7 +110,370 @@ SPECS = {
 }
 
 
+def build_regulatory_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNode:
+    """Build Figure 3 as a single in-memory data-to-result analysis."""
+    github = (
+        "https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/"
+        f"{spec['folder']}/{spec['stem']}_source.ipynb"
+    )
+    setup = f'''from pathlib import Path
+import hashlib, os, sys
+import anndata as ad
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy import sparse
+from IPython.display import display
+
+from reproducibility.workflows.common import ranked_genes, run_smith, write_json, write_panel_genes
+from reproducibility.workflows.figure_style import configure
+from reproducibility.workflows.regulatory_activity.analysis import statistical_analysis
+from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate_loaded
+from reproducibility.workflows.regulatory_activity.paper_analysis import (
+    coactivity_from_objects, module_coverage, tf_scrna_correlation_from_objects,
+)
+from reproducibility.workflows.regulatory_activity.plot_figure3 import (
+    PANEL_SPECS, _draw_bar_panel, _draw_module_coverage,
+    _draw_module_schematic, _draw_transfer,
+)
+
+def find_repository(start):
+    for candidate in (start, *start.parents):
+        if (candidate / "pyproject.toml").exists() and (candidate / "reproducibility").exists():
+            return candidate
+    raise RuntimeError("Run this notebook inside a SMITH repository checkout.")
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+ROOT = find_repository(Path.cwd().resolve())
+sys.path.insert(0, str(ROOT / "src"))
+DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).expanduser().resolve()
+OUTPUT_ROOT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).expanduser().resolve()
+CASE_OUTPUT = OUTPUT_ROOT / "regulatory"
+FIGURE_DATA = CASE_OUTPUT / "figure_data"
+EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
+DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
+MAX_CELLS = int(os.environ.get("SMITH_TUTORIAL_MAX_CELLS", "3000"))
+BATCH_SIZE = int(os.environ.get("SMITH_TUTORIAL_BATCH_SIZE", "1024"))
+FIGURE_DATA.mkdir(parents=True, exist_ok=True)
+configure()
+'''
+    inspect = f'''relative_inputs = {spec['inputs']!r}
+input_paths = {{name: DATA_ROOT / name for name in relative_inputs}}
+for name, path in input_paths.items():
+    if not path.is_file():
+        raise FileNotFoundError(f"Missing {{path}}. Run scripts/download_tutorial_data.py first.")
+input_checksums = {{name: sha256_file(path) for name, path in input_paths.items()}}
+
+tf_train = ad.read_h5ad(input_paths[relative_inputs[0]])
+tf_test = ad.read_h5ad(input_paths[relative_inputs[1]])
+mirna_train = ad.read_h5ad(input_paths[relative_inputs[2]])
+mirna_test = ad.read_h5ad(input_paths[relative_inputs[3]])
+modules = pd.read_csv(input_paths[relative_inputs[4]], sep="\\t")
+tf_pairs = pd.read_csv(input_paths[relative_inputs[5]], sep="\\t")
+scrna = ad.read_h5ad(input_paths[relative_inputs[6]])
+
+if "cell_name" in tf_train.obs and "cell_name" in tf_test.obs:
+    leaked = set(tf_train.obs["cell_name"].astype(str)) & set(tf_test.obs["cell_name"].astype(str))
+    if leaked:
+        raise ValueError(f"Lineage-aware split contains {{len(leaked)}} shared cell identifiers")
+'''
+    training = '''benchmark_sizes = {"elegans_tf": (32, 64, 128), "elegans_mirna": (16, 24, 32)}
+training_sizes = {"elegans_tf": (16, 24, 32, 64, 128), "elegans_mirna": (16, 24, 32)}
+loaded_data = {
+    "elegans_tf": (tf_train, tf_test),
+    "elegans_mirna": (mirna_train, mirna_test),
+}
+training_runs = {"elegans_tf": {}, "elegans_mirna": {}}
+panel_records = []
+
+for dataset, sizes in training_sizes.items():
+    train_adata, _ = loaded_data[dataset]
+    for panel_size in sizes:
+        run_dir = CASE_OUTPUT / "runs" / dataset / "split_1" / "seed_1" / f"panel_{panel_size}" / "SMITH"
+        result = run_smith(
+            adata_file=input_paths[
+                "regulatory_activity/elegans/splits/" + dataset + "/split_1/train.h5ad"
+            ],
+            output_dir=run_dir,
+            tasks="recon,cls,standard_coordination,time" if dataset == "elegans_tf" else "recon,cls,time",
+            task_name=f"{dataset}_split_1_panel{panel_size}_seed1",
+            panel_size=panel_size, epochs=EPOCHS, device=DEVICE, seed=1,
+            batch_size=BATCH_SIZE, time_label="absolute_time", max_cells=MAX_CELLS,
+            sampling_strategy="celltype",
+            save_model=dataset == "elegans_tf" and panel_size == 32,
+            force=True, include_in_memory=True,
+        )
+        panel_path = run_dir.parent / "panels" / f"SMITH_top{panel_size}.tsv"
+        write_panel_genes(result["panel_genes"], panel_path)
+        training_runs[dataset][panel_size] = result
+        panel_records.append({
+            "dataset": dataset, "split": "split_1", "training_seed": 1,
+            "method": "SMITH", "panel_size": panel_size,
+            "panel_genes": result["panel_genes"], "panel_file": str(panel_path),
+        })
+'''
+    evaluation = '''benchmark_rows = []
+predictions = {}
+for dataset, sizes in benchmark_sizes.items():
+    train_adata, test_adata = loaded_data[dataset]
+    for panel_size in sizes:
+        run = training_runs[dataset][panel_size]
+        evaluation_dir = Path(run["output_dir"]) / "evaluation"
+        metrics, celltype_prediction, time_prediction = evaluate_loaded(
+            train_adata, test_adata, run["panel_genes"], panel_size,
+            time_column="absolute_time", neighbors=5, output_dir=evaluation_dir,
+        )
+        benchmark_rows.append({
+            "dataset": dataset, "split": "split_1", "training_seed": 1,
+            "method": "SMITH", "panel_size": panel_size, **metrics["metrics"],
+        })
+        predictions[(dataset, panel_size)] = {
+            "cell_type": celltype_prediction, "developmental_time": time_prediction,
+        }
+
+benchmark_values = pd.json_normalize(benchmark_rows)
+benchmark_values.to_csv(FIGURE_DATA / "figure3_c_f_values.tsv", sep="\\t", index=False)
+paired_tests = statistical_analysis(benchmark_values)
+paired_tests.to_csv(FIGURE_DATA / "figure3_c_f_paired_tests.tsv", sep="\\t", index=False)
+tf_values = benchmark_values.loc[benchmark_values["dataset"] == "elegans_tf"]
+mirna_values = benchmark_values.loc[benchmark_values["dataset"] == "elegans_mirna"]
+'''
+
+    def bar_cell(variable: str, panel: str) -> str:
+        return f'''figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
+_draw_bar_panel(axis, {variable}, PANEL_SPECS["{panel}"])
+figure.text(0.015, 0.985, "{panel}", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
+display(figure)
+plt.close(figure)'''
+
+    cells = [
+        nbformat.v4.new_markdown_cell(
+            f"# {spec['title']}\n\n"
+            "This tutorial starts from the real activity and atlas inputs, trains SMITH, and passes the "
+            "newly generated panels through every downstream analysis in memory. Files written under the "
+            "output directory are provenance artifacts, not inputs to later notebook cells. "
+            f"[Open the editable source notebook on GitHub]({github})."
+        ),
+        nbformat.v4.new_markdown_cell(
+            f"## Biological question\n\n{spec['biology']}\n\n**Biological endpoints:** {spec['analysis_role']}"
+        ),
+        nbformat.v4.new_markdown_cell(
+            "## Download the real input data\n\n"
+            "```bash\npython scripts/download_tutorial_data.py \\\n+  --case 02_regulatory_activity \\\n+  --data-root data/tutorials\n```\n\n"
+            "Read the Docs displays this executed notebook; it does not train the model during the documentation build."
+        ),
+        nbformat.v4.new_markdown_cell("## Configuration"),
+        nbformat.v4.new_code_cell(setup),
+        nbformat.v4.new_markdown_cell(f"## Load the activity atlases and biological annotations\n\n{spec['data_role']}"),
+        nbformat.v4.new_code_cell(inspect),
+        nbformat.v4.new_markdown_cell(
+            f"## Train SMITH and generate panels\n\n{spec['model_role']} The returned ranking and panel genes remain in memory; their files are written only so the run can be audited."
+        ),
+        nbformat.v4.new_code_cell(training),
+        nbformat.v4.new_markdown_cell(
+            "## Evaluate held-out cell identity and developmental time\n\n"
+            "The classifier and time regressor operate directly on each newly selected panel. Their predictions are retained in memory and also saved for provenance."
+        ),
+        nbformat.v4.new_code_cell(evaluation),
+        nbformat.v4.new_markdown_cell(
+            "### TF activity retains lineage identity\n\nCell-type accuracy measures whether the compact TF panel separates held-out cell identities."
+        ),
+        nbformat.v4.new_code_cell(bar_cell("tf_values", "c")),
+        nbformat.v4.new_markdown_cell(
+            "### TF activity retains developmental order\n\nPearson correlation measures whether the same panel preserves the continuous developmental trajectory."
+        ),
+        nbformat.v4.new_code_cell(bar_cell("tf_values", "d")),
+        nbformat.v4.new_markdown_cell(
+            "### miRNA activity retains lineage identity\n\nThe analysis asks whether a smaller post-transcriptional panel still resolves held-out cell types."
+        ),
+        nbformat.v4.new_code_cell(bar_cell("mirna_values", "e")),
+        nbformat.v4.new_markdown_cell(
+            "### miRNA activity retains developmental order\n\nThe temporal endpoint tests whether selected miRNA activities follow embryonic progression."
+        ),
+        nbformat.v4.new_code_cell(bar_cell("mirna_values", "f")),
+        nbformat.v4.new_markdown_cell(
+            "## Developmental regulatory programs\n\n### Spatiotemporal TF modules\n\n"
+            "The atlas groups regulators by tissue and developmental phase, defining the programs whose representation is tested next."
+        ),
+        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_module_schematic(axis, modules)
+figure.text(0.015, 0.985, "g", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell(
+            "### Coverage of developmental modules\n\n"
+            "For each current TF panel, the miss rate is the fraction of annotated modules containing no selected TF."
+        ),
+        nbformat.v4.new_code_cell('''coverage_panels = pd.json_normalize([
+    row for row in panel_records
+    if row["dataset"] == "elegans_tf" and row["panel_size"] in (16, 24, 32)
+])
+coverage_panels["panel_genes"] = [
+    training_runs["elegans_tf"][int(size)]["panel_genes"]
+    for size in coverage_panels["panel_size"]
+]
+coverage = module_coverage(coverage_panels, modules)
+coverage.to_csv(FIGURE_DATA / "figure3_h_module_miss_rate.tsv", sep="\\t", index=False)
+
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_module_coverage(axis, coverage)
+figure.text(0.015, 0.985, "h", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell(
+            "## Regulatory reconstruction and modality transfer\n\n### Reconstruction of TF co-activity\n\n"
+            "The reconstruction head learned during the current 32-TF training run predicts held-out activity. Atlas TF pairs then quantify agreement within four lineages."
+        ),
+        nbformat.v4.new_code_cell('''tf32 = training_runs["elegans_tf"][32]
+coactivity = coactivity_from_objects(
+    tf_train, tf_test, tf32["panel_genes"], pairs=tf_pairs,
+    checkpoint_file=tf32["checkpoint_file"], method="SMITH", seed=1,
+)
+coactivity.to_csv(FIGURE_DATA / "figure3_i_coactivity.tsv", sep="\\t", index=False)
+
+lineages = ["muscle", "neuron", "pharynx", "skin"]
+means = [coactivity.loc[coactivity["lineage"] == lineage, "pearson"].mean() for lineage in lineages]
+errors = [coactivity.loc[coactivity["lineage"] == lineage, "pearson"].sem() if sum(coactivity["lineage"] == lineage) > 1 else 0.0 for lineage in lineages]
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+axis.bar(np.arange(len(lineages)), means, yerr=errors, capsize=1.5, color="#2f75b5", edgecolor="black", linewidth=0.4)
+axis.set(title="TF co-activity reconstruction", ylabel="Pearson agreement")
+axis.set_xticks(np.arange(len(lineages)), [name.title() for name in lineages], rotation=25, ha="right")
+axis.set_ylim(-1, 1)
+figure.text(0.015, 0.985, "i", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell(
+            "### Conservation of regulatory structure across modalities\n\n"
+            "Shared TFs are aggregated over matched lineages in scRNA-seq and TF activity. Biclustering exposes whether the two modalities retain similar regulatory blocks."
+        ),
+        nbformat.v4.new_code_cell('''tf_combined = ad.concat([tf_train, tf_test], axis=0, join="inner", merge="same", index_unique=None)
+tf_combined.var_names = tf_train.var_names.copy()
+correlation, correlation_matrices = tf_scrna_correlation_from_objects(scrna, tf_combined)
+correlation.to_csv(FIGURE_DATA / "figure3_j_tf_scrna_correlation.tsv", sep="\\t", index=False)
+np.savez_compressed(FIGURE_DATA / "figure3_j_correlation_matrices.npz", **correlation_matrices)
+
+figure, axes = plt.subplots(1, 2, figsize=(4.7, 2.25), facecolor="white")
+for axis, key, title in zip(axes, ("scrna", "tf"), ("scRNA-seq", "TF activity")):
+    image = axis.imshow(correlation_matrices[key], cmap="Blues", vmin=0, vmax=1, interpolation="nearest")
+    image.set_rasterized(True)
+    axis.set_title(title, fontsize=8.5, pad=4)
+    axis.set_xticks([]); axis.set_yticks([])
+axes[1].text(0.98, 0.02, f"corr = {float(correlation.iloc[0]['mean_rowwise_pearson']):.2f}", transform=axes[1].transAxes, ha="right", va="bottom", fontsize=7, bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8, "pad": 1.5})
+figure.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.04, right=0.98, bottom=0.08, top=0.86, wspace=0.08)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell(
+            "### Transfer from scRNA-seq into TF activity\n\n"
+            "A new panel is now learned from the loaded scRNA-seq reference, then evaluated directly on the held-out TF-activity split."
+        ),
+        nbformat.v4.new_code_cell('''source_names = scrna.var["gene_short_name"].astype(str).str.upper() if "gene_short_name" in scrna.var else scrna.var_names.astype(str).str.upper()
+scrna_for_training = scrna.copy()
+scrna_for_training.var_names = pd.Index(source_names)
+scrna_for_training.var_names_make_unique()
+if "gene_short_name" in scrna_for_training.var:
+    scrna_for_training.var = scrna_for_training.var.rename(columns={"gene_short_name": "gene_short_name_orig"})
+if "cell_type" not in scrna_for_training.obs and "cell.type" in scrna_for_training.obs:
+    scrna_for_training.obs["cell_type"] = scrna_for_training.obs["cell.type"].astype(str)
+if "absolute_time" not in scrna_for_training.obs and "embryo.time" in scrna_for_training.obs:
+    scrna_for_training.obs["absolute_time"] = pd.to_numeric(scrna_for_training.obs["embryo.time"], errors="coerce")
+valid_labels = scrna_for_training.obs["cell_type"].astype(str).str.strip()
+valid_time = pd.to_numeric(scrna_for_training.obs["absolute_time"], errors="coerce")
+keep_cells = valid_labels.ne("") & ~valid_labels.str.lower().isin({"nan", "none"}) & valid_time.notna()
+scrna_for_training = scrna_for_training[keep_cells.to_numpy()].copy()
+scrna_for_training.obs["cell_type"] = valid_labels.loc[keep_cells].to_numpy()
+scrna_for_training.obs["absolute_time"] = valid_time.loc[keep_cells].to_numpy()
+shared_tf = sorted(set(scrna_for_training.var_names) & set(tf_test.var_names.astype(str).str.upper()))
+scrna_for_training = scrna_for_training[:, scrna_for_training.var_names.isin(shared_tf)].copy()
+counts = scrna_for_training.layers["counts"] if "counts" in scrna_for_training.layers else scrna_for_training.X
+counts = counts.toarray() if sparse.issparse(counts) else np.asarray(counts)
+totals = counts.sum(axis=1, keepdims=True); totals[totals == 0] = 1.0
+normalized = np.log1p(counts.astype(np.float32) * (1e4 / totals))
+minimum = normalized.min(axis=0); span = normalized.max(axis=0) - minimum; span[span == 0] = 1.0
+scrna_for_training.X = ((normalized - minimum) / span).astype(np.float32)
+
+transfer_run = run_smith(
+    adata_file=None, adata=scrna_for_training,
+    output_dir=CASE_OUTPUT / "runs/transfer_scRNA/seed_1/SMITH",
+    tasks="recon,cls,time", task_name="elegans_scrna_to_tf_seed1",
+    panel_size=128, epochs=EPOCHS, device=DEVICE, seed=1,
+    batch_size=BATCH_SIZE, time_label="absolute_time", max_cells=MAX_CELLS,
+    sampling_strategy="celltype", force=True, include_in_memory=True,
+)
+transfer_rows = []
+for panel_size in (32, 64, 128):
+    panel_genes = ranked_genes(transfer_run["ranking_frame"], panel_size)
+    panel_path = Path(transfer_run["output_dir"]) / "panels" / f"RNA_TF_top{panel_size}.tsv"
+    write_panel_genes(panel_genes, panel_path)
+    metrics, celltype_prediction, time_prediction = evaluate_loaded(
+        tf_train, tf_test, panel_genes, panel_size, time_column="absolute_time", neighbors=5,
+        output_dir=Path(transfer_run["output_dir"]) / "evaluation" / f"top{panel_size}",
+    )
+    transfer_rows.append({
+        "split": "split_1", "training_seed": 1, "method": "SMITH",
+        "source_modality": "RNA-TF", "panel_size": panel_size, **metrics["metrics"],
+    })
+for row in benchmark_rows:
+    if row["dataset"] == "elegans_tf":
+        transfer_rows.append({**row, "source_modality": "TF-TF"})
+transfer = pd.json_normalize(transfer_rows)
+transfer.to_csv(FIGURE_DATA / "figure3_k_transfer.tsv", sep="\\t", index=False)
+
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_transfer(axis, transfer)
+figure.text(0.015, 0.985, "k", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell(
+            "## Record the run\n\nThe manifest records the inputs and artifacts after all analyses finish. It is never read as an analysis input."
+        ),
+        nbformat.v4.new_code_cell('''def serializable_run(run):
+    return {key: value for key, value in run.items() if key not in {"ranking_frame", "panel_genes"}}
+
+write_json(CASE_OUTPUT / "run_manifest.json", {
+    "case": "02_regulatory_activity",
+    "inputs": [{"path": name, "sha256": digest} for name, digest in input_checksums.items()],
+    "configuration": {"epochs": EPOCHS, "device": DEVICE, "max_cells": MAX_CELLS, "seed": 1},
+    "training_runs": [
+        serializable_run(run)
+        for dataset_runs in training_runs.values() for run in dataset_runs.values()
+    ] + [serializable_run(transfer_run)],
+    "outputs": {
+        "benchmark": str(FIGURE_DATA / "figure3_c_f_values.tsv"),
+        "module_coverage": str(FIGURE_DATA / "figure3_h_module_miss_rate.tsv"),
+        "coactivity": str(FIGURE_DATA / "figure3_i_coactivity.tsv"),
+        "tf_scrna_correlation": str(FIGURE_DATA / "figure3_j_tf_scrna_correlation.tsv"),
+        "transfer": str(FIGURE_DATA / "figure3_k_transfer.tsv"),
+    },
+})'''),
+        nbformat.v4.new_markdown_cell(
+            "## Full manuscript command\n\nThe command-line workflow remains the entry point for all five splits and manuscript baselines:\n\n"
+            "```bash\npython reproducibility/workflows/regulatory_activity/run_tutorial.py \\\n+  --data-root data/tutorials \\\n+  --output-dir outputs/paper/regulatory \\\n+  --datasets elegans_tf,elegans_mirna \\\n+  --splits split_1,split_2,split_3,split_4,split_5 \\\n+  --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros \\\n+  --paper-analyses --epochs 200\n```\n\n"
+            "The executed tutorial uses one real lineage split and one seed so that the complete data-to-result path remains practical to rerun."
+        ),
+    ]
+    notebook = nbformat.v4.new_notebook(cells=cells)
+    notebook.metadata.update(
+        kernelspec={"display_name": "Python 3", "language": "python", "name": "python3"},
+        language_info={"name": "python", "version": "3"},
+    )
+    return notebook
+
+
 def build_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNode:
+    if spec["case"] == "02_regulatory_activity":
+        return build_regulatory_notebook(spec, epochs, device)
     github = f"https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/{spec['folder']}/{spec['stem']}_source.ipynb"
     setup = f'''from pathlib import Path
 import hashlib, json, os, subprocess, sys

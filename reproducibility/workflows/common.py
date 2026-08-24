@@ -110,6 +110,32 @@ def write_top_panel(ranking_path: str | Path, output_path: str | Path, panel_siz
     return output_path
 
 
+def ranked_genes(ranking: pd.DataFrame, panel_size: int | None = None) -> list[str]:
+    """Return unique normalized genes from an in-memory SMITH ranking."""
+    gene_column = next(
+        (name for name in ranking.columns if str(name).lower() in {"marker", "gene", "gene_symbol", "target"}),
+        ranking.columns[0],
+    )
+    genes: list[str] = []
+    for value in ranking[gene_column]:
+        gene = clean_gene(value)
+        if gene and gene not in genes:
+            genes.append(gene)
+    return genes[:panel_size] if panel_size else genes
+
+
+def write_panel_genes(genes: list[str], output_path: str | Path) -> Path:
+    """Persist an in-memory panel without reading a ranking file again."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"rank": range(1, len(genes) + 1), "gene_symbol": genes}).to_csv(
+        output_path,
+        sep="\t" if output_path.suffix.lower() == ".tsv" else ",",
+        index=False,
+    )
+    return output_path
+
+
 def panel_positions(adata: ad.AnnData, panel: list[str]) -> tuple[list[int], list[str]]:
     first = {}
     for index, gene in enumerate(gene_symbols(adata)):
@@ -140,7 +166,7 @@ def run_command(command: list[str], log_path: str | Path, cwd: str | Path | None
 
 def run_smith(
     *,
-    adata_file: str | Path,
+    adata_file: str | Path | None,
     output_dir: str | Path,
     tasks: str,
     task_name: str,
@@ -157,11 +183,19 @@ def run_smith(
     balance_cap: int = 500,
     save_model: bool = False,
     force: bool = False,
+    adata: ad.AnnData | None = None,
+    include_in_memory: bool = False,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
     if force and output_dir.exists():
         shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if adata is not None:
+        input_snapshot = output_dir / "input_snapshot.h5ad"
+        adata.write_h5ad(input_snapshot)
+        adata_file = input_snapshot
+    if adata_file is None:
+        raise ValueError("run_smith requires adata_file or an in-memory AnnData object")
     saving_dir = output_dir / "ranking"
     log_dir = output_dir / "training_logs"
     existing = list(saving_dir.glob("epoch_*.csv"))
@@ -171,8 +205,17 @@ def run_smith(
         else:
             ranking = latest_epoch_csv(saving_dir)
             checkpoints = list(saving_dir.glob("*-rep-epoch*.pt"))
-            return {"status": "skipped_existing", "ranking_csv": str(ranking), "output_dir": str(output_dir),
-                    "checkpoint_file": str(checkpoints[-1]) if checkpoints else None}
+            result: dict[str, Any] = {
+                "status": "skipped_existing",
+                "ranking_csv": str(ranking),
+                "output_dir": str(output_dir),
+                "checkpoint_file": str(checkpoints[-1]) if checkpoints else None,
+            }
+            if include_in_memory:
+                ranking_frame = pd.read_csv(ranking)
+                result["ranking_frame"] = ranking_frame
+                result["panel_genes"] = ranked_genes(ranking_frame, panel_size)
+            return result
 
     record = max(1, int(epochs))
     command = [
@@ -208,7 +251,7 @@ def run_smith(
     pd.read_csv(ranking).head(panel_size).to_csv(panel_path, index=False)
     epoch = int(ranking.stem.split("_", 1)[1])
     checkpoint = saving_dir / f"{tasks.replace(',', '-')}-seed{seed}-{task_name}-rep-epoch{epoch}.pt"
-    return {
+    result = {
         "status": "completed",
         "ranking_csv": str(ranking),
         "panel_csv": str(panel_path),
@@ -216,3 +259,8 @@ def run_smith(
         "command": command,
         "checkpoint_file": str(checkpoint) if checkpoint.is_file() else None,
     }
+    if include_in_memory:
+        ranking_frame = pd.read_csv(ranking)
+        result["ranking_frame"] = ranking_frame
+        result["panel_genes"] = ranked_genes(ranking_frame, panel_size)
+    return result
