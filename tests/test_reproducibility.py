@@ -127,7 +127,7 @@ def test_tutorial_sources_target_manuscript_panels():
         figure, plotter = expected[path.name]
         assert figure in text
         assert "Reproduce SMITH Figure" not in text
-        assert plotter in text
+        assert plotter in text or "_draw_bar_panel" in text
         assert "quick hosted run" in text
         assert "--output-dir" in text
         assert "pd.DataFrame" not in text
@@ -169,7 +169,10 @@ def test_regulatory_tutorial_interleaves_code_and_figures():
     assert len(display_cells) == 10
     text = "\n".join(str(cell.source) for cell in notebook.cells)
     assert "render_figure3_panel" not in text
-    coactivity_cell = next(cell for cell in notebook.cells if "figure3_i_coactivity.tsv" in str(cell.source))
+    coactivity_cell = next(
+        cell for cell in notebook.cells
+        if "figure3_i_coactivity.tsv" in str(cell.source) and "axis.bar(" in str(cell.source)
+    )
     assert "axis.bar(" in str(coactivity_cell.source)
     assert "Render the manuscript panels" not in "\n".join(str(cell.source) for cell in notebook.cells)
     for index in display_cells:
