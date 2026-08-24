@@ -18,6 +18,8 @@ from reproducibility.workflows.figure_style import (
     save_method_legend,
 )
 
+LINEAGE_NAMES = ("muscle", "neuron", "pharynx", "skin")
+
 
 PANEL_SPECS = {
     "c": {
@@ -53,6 +55,66 @@ PANEL_SPECS = {
         "ylim": (0.8, 1.0),
     },
 }
+
+
+def _draw_module_schematic(ax, modules: pd.DataFrame) -> None:
+    grouped = modules.groupby("module_id")["gene_symbol"].apply(list)
+    names = list(grouped.index)
+    if not names:
+        raise ValueError("No annotated modules available for Figure 3g")
+    for index, name in enumerate(names):
+        genes = grouped.loc[name]
+        y = len(names) - index
+        ax.scatter(np.arange(len(genes)), np.full(len(genes), y), s=18, color="#2f75b5", zorder=3)
+        ax.plot(np.arange(len(genes)), np.full(len(genes), y), color="#a8b7c7", lw=0.8, zorder=1)
+        ax.text(len(genes) + 0.15, y, str(name), va="center", fontsize=6)
+    ax.set_title("Annotated spatiotemporal modules", fontsize=8.5, pad=5)
+    ax.set_xlabel("TFs within module")
+    ax.set_yticks([])
+    ax.set_xlim(-0.5, max(len(values) for values in grouped) + 2)
+    ax.set_ylim(0.3, len(names) + 0.7)
+
+
+def _draw_module_coverage(ax, data: pd.DataFrame) -> None:
+    for method, frame in data.groupby("method"):
+        summary = frame.groupby("panel_size")["module_miss_rate"].mean().sort_index()
+        ax.plot(summary.index, summary.values, marker="o", lw=1.2, label=method, color=METHOD_COLORS.get(method, "#777777"))
+    ax.set_title("Developmental module coverage", fontsize=8.5, pad=5)
+    ax.set_xlabel("Panel size")
+    ax.set_ylabel("Module miss rate")
+    ax.set_ylim(0, 1)
+    ax.legend(frameon=False, fontsize=5.5)
+
+
+def _draw_coactivity(ax, data: pd.DataFrame) -> None:
+    grouped = data.groupby("lineage")["pearson"].mean().reindex(LINEAGE_NAMES).dropna()
+    ax.bar(np.arange(len(grouped)), grouped.values, color="#4f81bd", edgecolor="black", linewidth=0.4)
+    ax.set_title("TF co-activity reconstruction", fontsize=8.5, pad=5)
+    ax.set_ylabel("Pearson agreement")
+    ax.set_xticks(np.arange(len(grouped)), [str(item).title() for item in grouped.index], rotation=25, ha="right")
+    ax.set_ylim(-1, 1)
+
+
+def _draw_tf_correlation(ax, data: pd.DataFrame) -> None:
+    if data.empty:
+        raise ValueError("TF/scRNA correlation output is empty")
+    value = float(data.iloc[0]["pearson"])
+    ax.text(0.5, 0.55, f"r = {value:.2f}", ha="center", va="center", fontsize=18, color="#2f75b5")
+    ax.text(0.5, 0.28, "TF-TF correlation structure\nscRNA versus activity atlas", ha="center", va="center", fontsize=7)
+    ax.set_title("Cross-modality TF structure", fontsize=8.5, pad=5)
+    ax.axis("off")
+
+
+def _draw_transfer(ax, data: pd.DataFrame) -> None:
+    metric = "developmental_time_pearson"
+    if metric not in data:
+        raise ValueError(f"Transfer output lacks {metric}")
+    grouped = data.groupby(["panel_size", "source_modality"])[metric].mean().unstack(fill_value=np.nan)
+    grouped.plot(kind="bar", ax=ax, color={"TF-to-TF": "#2f75b5", "scRNA-to-TF": "#e07a5f"}, edgecolor="black", linewidth=0.4)
+    ax.set_title("scRNA-to-TF panel transfer", fontsize=8.5, pad=5)
+    ax.set_xlabel("Panel size")
+    ax.set_ylabel("Developmental-time Pearson r")
+    ax.legend(frameon=False, fontsize=5.5)
 
 
 def _draw_bar_panel(ax, data: pd.DataFrame, spec: dict) -> list[str]:
@@ -120,7 +182,16 @@ def _draw_bar_panel(ax, data: pd.DataFrame, spec: dict) -> list[str]:
     return methods
 
 
-def plot(values_path: str | Path, output_dir: str | Path) -> dict[str, dict[str, str]]:
+def plot(
+    values_path: str | Path,
+    output_dir: str | Path,
+    *,
+    modules_path: str | Path | None = None,
+    module_coverage_path: str | Path | None = None,
+    coactivity_path: str | Path | None = None,
+    correlation_path: str | Path | None = None,
+    transfer_path: str | Path | None = None,
+) -> dict[str, dict[str, str]]:
     configure()
     data = pd.read_csv(values_path, sep="\t")
     output_dir = Path(output_dir)
@@ -134,15 +205,40 @@ def plot(values_path: str | Path, output_dir: str | Path) -> dict[str, dict[str,
         outputs[f"figure3_{letter}"] = save_figure(fig, output_dir / f"figure3_{letter}")
         plt.close(fig)
     outputs["method_legend"] = save_method_legend(methods, output_dir / "figure3_method_legend")
+    paper_inputs = (modules_path, module_coverage_path, coactivity_path, correlation_path, transfer_path)
+    if any(item is not None for item in paper_inputs) and not all(item is not None for item in paper_inputs):
+        raise ValueError("Figure 3g-k plotting requires modules, coverage, coactivity, correlation and transfer outputs")
+    if all(item is not None for item in paper_inputs):
+        module_table = pd.read_csv(modules_path, sep="\t")
+        panels = {
+            "g": lambda ax: _draw_module_schematic(ax, module_table),
+            "h": lambda ax: _draw_module_coverage(ax, pd.read_csv(module_coverage_path, sep="\t")),
+            "i": lambda ax: _draw_coactivity(ax, pd.read_csv(coactivity_path, sep="\t")),
+            "j": lambda ax: _draw_tf_correlation(ax, pd.read_csv(correlation_path, sep="\t")),
+            "k": lambda ax: _draw_transfer(ax, pd.read_csv(transfer_path, sep="\t")),
+        }
+        for letter, draw in panels.items():
+            fig, ax = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+            draw(ax)
+            fig.text(0.015, 0.985, letter, ha="left", va="top", fontsize=10, weight="bold")
+            fig.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+            outputs[f"figure3_{letter}"] = save_figure(fig, output_dir / f"figure3_{letter}")
+            plt.close(fig)
     return outputs
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export manuscript Figure 3c-f as separate panels.")
+    parser = argparse.ArgumentParser(description="Export manuscript Figure 3c-k as separate panels.")
     parser.add_argument("--values", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--modules")
+    parser.add_argument("--module-coverage")
+    parser.add_argument("--coactivity")
+    parser.add_argument("--correlation")
+    parser.add_argument("--transfer")
     args = parser.parse_args()
-    print(json.dumps(plot(args.values, args.output_dir), indent=2))
+    print(json.dumps(plot(args.values, args.output_dir, modules_path=args.modules, module_coverage_path=args.module_coverage,
+                          coactivity_path=args.coactivity, correlation_path=args.correlation, transfer_path=args.transfer), indent=2))
 
 
 if __name__ == "__main__":

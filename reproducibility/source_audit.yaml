@@ -4,7 +4,7 @@ host: pc157
 repository: /workspace/fanyimin/SMITH_unified
 purpose: >-
   Frozen audit of the cluster implementations used to align the portable
-  Figure 3c-f and Figure 4c-h tutorials. These files are provenance only;
+  Figure 3c-k and Figure 4c-h tutorials. These files are provenance only;
   tutorials execute the checked-in portable workflows.
 scripts:
   - case: 02_regulatory_activity
@@ -49,3 +49,4 @@ source_data:
 notes:
   - Cluster absolute paths are recorded for audit only and are not used by the package.
   - No aggregate CSV is a tutorial input.
+  - Figure 3g-k module, TF-pair and scRNA source files were not reachable during the 2026-08-24 audit; their archive status is recorded in data_manifest.yaml and the portable workflow fails explicitly until checksums are supplied.

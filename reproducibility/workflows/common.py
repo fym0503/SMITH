@@ -155,6 +155,7 @@ def run_smith(
     sampling_strategy: str = "random",
     balance_mode: str = "capped",
     balance_cap: int = 500,
+    save_model: bool = False,
     force: bool = False,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir).resolve()
@@ -165,8 +166,13 @@ def run_smith(
     log_dir = output_dir / "training_logs"
     existing = list(saving_dir.glob("epoch_*.csv"))
     if existing and not force:
-        ranking = latest_epoch_csv(saving_dir)
-        return {"status": "skipped_existing", "ranking_csv": str(ranking), "output_dir": str(output_dir)}
+        if save_model and not list(saving_dir.glob("*-rep-epoch*.pt")):
+            force = True
+        else:
+            ranking = latest_epoch_csv(saving_dir)
+            checkpoints = list(saving_dir.glob("*-rep-epoch*.pt"))
+            return {"status": "skipped_existing", "ranking_csv": str(ranking), "output_dir": str(output_dir),
+                    "checkpoint_file": str(checkpoints[-1]) if checkpoints else None}
 
     record = max(1, int(epochs))
     command = [
@@ -193,15 +199,20 @@ def run_smith(
         command.extend(["--time_label", time_label])
     if max_cells:
         command.extend(["--max_cells", str(max_cells)])
+    if save_model:
+        command.append("--save")
     write_json(output_dir / "command.json", {"command": command})
     run_command(command, output_dir / "training.log")
     ranking = latest_epoch_csv(saving_dir)
     panel_path = output_dir / f"panel_top{panel_size}.csv"
     pd.read_csv(ranking).head(panel_size).to_csv(panel_path, index=False)
+    epoch = int(ranking.stem.split("_", 1)[1])
+    checkpoint = saving_dir / f"{tasks.replace(',', '-')}-seed{seed}-{task_name}-rep-epoch{epoch}.pt"
     return {
         "status": "completed",
         "ranking_csv": str(ranking),
         "panel_csv": str(panel_path),
         "output_dir": str(output_dir),
         "command": command,
+        "checkpoint_file": str(checkpoint) if checkpoint.is_file() else None,
     }

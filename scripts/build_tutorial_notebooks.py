@@ -19,11 +19,11 @@ SPECS = {
     "02_regulatory_activity": {
         "case": "02_regulatory_activity",
         "folder": "regulatory_section", "stem": "02_SMITH_Regulatory_Activity",
-        "title": "Regulatory activity and developmental identity in C. elegans", "figure": "Figure 3c-f",
+        "title": "Regulatory programs and cross-modality transfer in C. elegans", "figure": "Figure 3c-k",
         "biology": "Which compact set of regulatory features is sufficient to preserve C. elegans cell identity and developmental progression? The TF and miRNA assays represent regulatory activity rather than a generic feature-selection benchmark: a useful panel should retain discrete lineage labels and the continuous developmental-time signal in held-out cells.",
-        "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. Training cells are used to learn the activity representation; held-out cells test whether the selected regulators still recover biological identity and age.",
+        "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. The supplementary module and TF-pair annotations define the developmental programs and regulator relationships used in the manuscript analyses, while the scRNA H5AD supplies the independent reference for RNA-to-TF transfer. Training cells learn the activity representation; held-out cells test whether selected regulators still recover identity, age, and regulatory structure.",
         "model_role": "SMITH is trained on the training H5AD with reconstruction, cell-type classification, and developmental-time objectives. Its learned gene ranking is then truncated to the manuscript panel sizes; no packaged aggregate ranking is used.",
-        "analysis_role": "Cell-type accuracy asks whether the panel preserves discrete lineage information. Developmental-time Pearson correlation asks whether it preserves the ordered trajectory between stages. Together they distinguish a panel that merely separates classes from one that also captures progression.",
+        "analysis_role": "Cell-type accuracy asks whether the panel preserves discrete lineage information, while developmental-time correlation asks whether it preserves the ordered embryonic trajectory. The paper-specific analyses then ask three biological follow-up questions: does the panel retain annotated developmental modules, can selected targets reconstruct TF co-activity in muscle, neuron, pharynx and skin, and can a mature scRNA reference transfer a useful TF panel into activity profiling?",
         "workflow": "reproducibility/workflows/regulatory_activity/run_tutorial.py",
         "plotter": "reproducibility/workflows/regulatory_activity/plot_figure3.py", "output": "regulatory",
         "inputs": [
@@ -31,19 +31,27 @@ SPECS = {
             "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
             "regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad",
             "regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad",
+            "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv",
+            "regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv",
+            "regulatory_activity/elegans/reference/elegans_scrna.h5ad",
         ],
-        "arguments": ["--datasets", "elegans_tf,elegans_mirna", "--splits", "split_1", "--methods", "SMITH", "--seeds", "1", "--max-cells", "3000"],
-        "plot_arguments": ["--values", "figure_data/figure3_c_f_values.tsv"],
-        "tables": ["figure_data/figure3_c_f_summary.tsv", "figure_data/figure3_c_f_paired_tests.tsv"],
+        "arguments": ["--datasets", "elegans_tf,elegans_mirna", "--splits", "split_1", "--methods", "SMITH", "--seeds", "1", "--max-cells", "3000", "--paper-analyses", "--module-file", "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv", "--regulatory-pair-file", "regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv", "--scrna-file", "regulatory_activity/elegans/reference/elegans_scrna.h5ad"],
+        "plot_arguments": ["--values", "figure_data/figure3_c_f_values.tsv", "--modules", "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv", "--module-coverage", "figure_data/figure3_h_module_miss_rate.tsv", "--coactivity", "figure_data/figure3_i_coactivity.tsv", "--correlation", "figure_data/figure3_j_tf_scrna_correlation.tsv", "--transfer", "figure_data/figure3_k_transfer.tsv"],
+        "tables": ["figure_data/figure3_c_f_summary.tsv", "figure_data/figure3_c_f_paired_tests.tsv", "figure_data/figure3_h_module_miss_rate.tsv", "figure_data/figure3_i_coactivity.tsv", "figure_data/figure3_j_tf_scrna_correlation.tsv", "figure_data/figure3_k_transfer.tsv"],
         "figure_panels": [
             ("Figure 3c - TF cell-type accuracy", "figures/figure3_c.png", 430),
             ("Figure 3d - TF developmental-time correlation", "figures/figure3_d.png", 430),
             ("Figure 3e - miRNA cell-type accuracy", "figures/figure3_e.png", 430),
             ("Figure 3f - miRNA developmental-time correlation", "figures/figure3_f.png", 430),
+            ("Figure 3g - annotated developmental modules", "figures/figure3_g.png", 500),
+            ("Figure 3h - developmental module miss rate", "figures/figure3_h.png", 500),
+            ("Figure 3i - TF co-activity reconstruction", "figures/figure3_i.png", 500),
+            ("Figure 3j - scRNA/TF correlation structure", "figures/figure3_j.png", 500),
+            ("Figure 3k - scRNA-to-TF panel transfer", "figures/figure3_k.png", 500),
             ("Shared method legend", "figures/figure3_method_legend.png", 900),
         ],
         "paper_command": "--splits split_1,split_2,split_3,split_4,split_5 --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --epochs 200",
-        "scope": "This executed page uses one real TF split, one real miRNA split and SMITH only to keep the hosted example tractable. The paper command above regenerates Figure 3c-f with all five lineage-aware splits and manuscript baselines. Figure 3h-k additionally require versioned module, TF-pair and scRNA-to-TF transfer inputs and are not represented by substitute plots.",
+        "scope": "This executed page uses one real TF split, one real miRNA split and one scRNA-to-TF transfer split. The paper command above regenerates Figure 3c-k with all five lineage-aware splits and manuscript baselines. The module, TF-pair and scRNA inputs are versioned biological inputs; the workflow stops with an explicit error if they are absent.",
     },
     "03_ribomap_transfer": {
         "case": "03_ribomap_transfer",
@@ -153,6 +161,11 @@ for relative in {spec['tables']!r}:
 
 from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
+from reproducibility.workflows.regulatory_activity.paper_analysis import (
+    coactivity_reconstruction,
+    tf_scrna_correlation,
+    write_module_coverage,
+)
 
 panel_file = CASE_OUTPUT / "runs/elegans_tf/split_1/seed_1/panels/SMITH_top32.tsv"
 recheck_dir = CASE_OUTPUT / "notebook_recheck" / "elegans_tf"
@@ -164,6 +177,10 @@ with warnings.catch_warnings():
         panel_file, recheck_dir, 32, neighbors=5,
     )
 write_statistical_analysis(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", CASE_OUTPUT / "figure_data")
+paper_outputs = manifest["outputs"]
+required_paper_outputs = ("module_coverage", "coactivity", "tf_scrna_correlation", "transfer")
+if any(key not in paper_outputs or not Path(paper_outputs[key]).is_file() for key in required_paper_outputs):
+    raise FileNotFoundError("The paper-specific Figure 3g-k outputs were not generated")
 if not (recheck_dir / "cell_type_predictions.tsv").is_file() or not (recheck_dir / "developmental_time_predictions.tsv").is_file():
     raise FileNotFoundError("Held-out prediction files were not generated")
 '''
@@ -191,7 +208,9 @@ if not (recheck_dir / "predictions.tsv").is_file():
 '''
     plot_args = []
     for index in range(0, len(spec["plot_arguments"]), 2):
-        plot_args.extend([spec["plot_arguments"][index], f"str(CASE_OUTPUT / {spec['plot_arguments'][index + 1]!r})"])
+        relative = spec["plot_arguments"][index + 1]
+        root_name = "DATA_ROOT" if relative.startswith("regulatory_activity/") else "CASE_OUTPUT"
+        plot_args.extend([spec["plot_arguments"][index], f"str({root_name} / {relative!r})"])
     plot_pairs = ", ".join([repr(plot_args[i]) if i % 2 == 0 else plot_args[i] for i in range(len(plot_args))])
     plotting = f'''figure_dir = CASE_OUTPUT / "figures"
 plot_command = [sys.executable, str(ROOT / {spec['plotter']!r}), {plot_pairs}, "--output-dir", str(figure_dir)]

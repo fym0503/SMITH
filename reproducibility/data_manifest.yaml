@@ -22,7 +22,8 @@ cases:
     processing_scripts:
       - reproducibility/workflows/regulatory_activity/run_tutorial.py
       - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
-    preparation: Five lineage-aware TF splits and five lineage-aware miRNA splits used for Figure 3c-f; no aggregate result tables are included as inputs.
+      - reproducibility/workflows/regulatory_activity/paper_analysis.py
+    preparation: Five lineage-aware TF splits and five lineage-aware miRNA splits used for Figure 3c-f, plus separately versioned inputs for the manuscript-specific Figure 3g-k analyses; no aggregate result tables are included as inputs.
     files:
       - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
         bytes: 171431555
@@ -52,6 +53,22 @@ cases:
       - {path: regulatory_activity/elegans/splits/elegans_mirna/split_4/test.h5ad, bytes: 26329428, sha256: 55417820eade3131cd1fa035bd8257bc8db91244d5d9faf557d1045d494531c8}
       - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/train.h5ad, bytes: 39937936, sha256: b29478519108c24d42b2c0a330b9b16ffbd5e0e4096d49810d6654d2a95b4926}
       - {path: regulatory_activity/elegans/splits/elegans_mirna/split_5/test.h5ad, bytes: 26763128, sha256: e4632f404242345e2e50fe8acb7519fc9a2d150528d96ba06e18405bf2e1b3b0}
+    paper_inputs:
+      status: pending_archive_from_source_workspace
+      note: >-
+        Figure 3g-k requires these biological inputs. They are intentionally listed
+        separately until the source archive is uploaded and each checksum is verified;
+        the workflow fails explicitly when they are absent.
+      files:
+        - path: regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
+          source: original C. elegans TF activity atlas annotations
+          sha256: null
+        - path: regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
+          source: original annotated TF regulatory pairs
+          sha256: null
+        - path: regulatory_activity/elegans/reference/elegans_scrna.h5ad
+          source: original C. elegans scRNA reference
+          sha256: null
   03_ribomap_transfer:
     title: RIBOMap cross-study transfer
     archive_name: smith-tutorial-03-ribomap-2026.08.tar.gz

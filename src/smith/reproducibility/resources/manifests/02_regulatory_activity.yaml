@@ -2,10 +2,10 @@ id: 02_regulatory_activity
 order: 2
 title: Developmental regulatory activity panels
 manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
-figure: Figure 3c-f
+figure: Figure 3c-k
 runtime: 10-60 minutes depending on cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from five real TF and five real miRNA lineage-aware splits, selects panels, evaluates held-out identity/time, and rebuilds Figure 3c-f.
+summary: Starts from real TF and miRNA lineage-aware splits, selects panels, evaluates held-out identity/time, and rebuilds the manuscript's Figure 3c-k regulatory analyses.
 claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
 inputs:
   - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
@@ -24,13 +24,16 @@ inputs:
     kind: data
     bytes: 27111860
     sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
-outputs: [runs/*/SMITH/ranking/epoch_*.csv, figure_data/figure3_c_f_values.tsv, figures/figure3_c.*, figures/figure3_d.*, figures/figure3_e.*, figures/figure3_f.*, run_manifest.json]
-reproduced_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f]
-not_reproduced:
-  Figure 3h-k: Requires versioned developmental-module, TF-pair and scRNA-to-TF transfer inputs.
+outputs: [runs/*/SMITH/ranking/epoch_*.csv, figure_data/figure3_c_f_values.tsv, figure_data/figure3_h_module_miss_rate.tsv, figure_data/figure3_i_coactivity.tsv, figure_data/figure3_j_tf_scrna_correlation.tsv, figure_data/figure3_k_transfer.tsv, figures/figure3_c.*, figures/figure3_d.*, figures/figure3_e.*, figures/figure3_f.*, figures/figure3_g.*, figures/figure3_h.*, figures/figure3_i.*, figures/figure3_j.*, figures/figure3_k.*, run_manifest.json]
+reproduced_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f, Figure 3g, Figure 3h, Figure 3i, Figure 3j, Figure 3k]
+required_paper_inputs:
+  - regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
+  - regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
+  - regulatory_activity/elegans/reference/elegans_scrna.h5ad
 full_workflow:
   availability: public_data_external_download
-  data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity]
+  data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity, elegans_tf_modules, elegans_tf_regulatory_pairs]
   source_scripts:
     - reproducibility/workflows/regulatory_activity/run_tutorial.py
     - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+    - reproducibility/workflows/regulatory_activity/paper_analysis.py

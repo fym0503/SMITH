@@ -5,6 +5,7 @@ import tarfile
 from dataclasses import replace
 from pathlib import Path
 
+import anndata as ad
 import nbformat
 import numpy as np
 import pandas as pd
@@ -19,6 +20,11 @@ from reproducibility.workflows.ribomap_transfer.analysis import (
     ribomap_bias,
 )
 from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon
+from reproducibility.workflows.regulatory_activity.paper_analysis import (
+    coactivity_reconstruction,
+    module_miss_rate,
+    tf_scrna_correlation,
+)
 
 
 EXPECTED_CASES = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
@@ -64,6 +70,9 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
             assert item["path"].endswith(".h5ad")
             assert item["bytes"] > 0
             assert len(item["sha256"]) == 64
+    paper_inputs = manifest["cases"]["02_regulatory_activity"]["paper_inputs"]
+    assert paper_inputs["status"] == "pending_archive_from_source_workspace"
+    assert len(paper_inputs["files"]) == 3
 
 
 def test_safe_extract_rejects_path_traversal(tmp_path: Path):
@@ -98,7 +107,7 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
 def test_tutorial_sources_target_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
     expected = {
-        "02_SMITH_Regulatory_Activity_source.ipynb": ("Regulatory activity and developmental identity in C. elegans", "plot_figure3.py"),
+        "02_SMITH_Regulatory_Activity_source.ipynb": ("Regulatory programs and cross-modality transfer in C. elegans", "plot_figure3.py"),
         "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Cross-modality brain panel transfer to RIBOMap", "plot_figure4.py"),
         "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver cell identity in MERFISH", "plot_figure6.py"),
     }
@@ -150,7 +159,7 @@ def test_plotters_export_independent_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
     notebook_builder = (root / "scripts" / "build_tutorial_notebooks.py").read_text()
     expected = {
-        "regulatory_activity/plot_figure3.py": ["figure3_c", "figure3_d", "figure3_e", "figure3_f"],
+        "regulatory_activity/plot_figure3.py": ["figure3_c", "figure3_d", "figure3_e", "figure3_f", "figure3_g", "figure3_h", "figure3_i", "figure3_j", "figure3_k"],
         "ribomap_transfer/plot_figure4.py": [
             "figure4_c", "figure4_d", "figure4_e", "figure4_f", "figure4_g", "figure4_h"
         ],
@@ -185,3 +194,35 @@ def test_regulatory_paired_test_uses_split_as_pairing_unit():
     result = paired_wilcoxon(values.rename(columns={"metric": "cell_type_accuracy"}), "cell_type_accuracy")
     assert len(result) == 1
     assert result.iloc[0]["n_pairs"] == 2
+
+
+def test_regulatory_module_miss_rate_uses_selected_panel_only():
+    modules = pd.DataFrame([
+        {"module_id": "muscle_early", "gene_symbol": "MyoD"},
+        {"module_id": "muscle_early", "gene_symbol": "HLH-1"},
+        {"module_id": "neuron_late", "gene_symbol": "UNC-30"},
+    ])
+    assert module_miss_rate(["myod"], modules) == pytest.approx(0.5)
+
+
+def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_path: Path):
+    rng = np.random.default_rng(4)
+    genes = ["TF1", "TF2", "TF3", "TF4"]
+    train_obs = pd.DataFrame({"cell_type": ["muscle"] * 8 + ["neuron"] * 8})
+    test_obs = pd.DataFrame({"cell_type": ["muscle"] * 8 + ["neuron"] * 8})
+    train = ad.AnnData(rng.normal(size=(16, 4)).astype("float32"), obs=train_obs, var=pd.DataFrame(index=genes))
+    test = ad.AnnData(rng.normal(size=(16, 4)).astype("float32"), obs=test_obs, var=pd.DataFrame(index=genes))
+    train_file, test_file = tmp_path / "train.h5ad", tmp_path / "test.h5ad"
+    train.write_h5ad(train_file)
+    test.write_h5ad(test_file)
+    panel_file = tmp_path / "panel.tsv"
+    pd.DataFrame({"gene_symbol": ["TF1", "TF2"]}).to_csv(panel_file, sep="\t", index=False)
+    pair_file = tmp_path / "pairs.tsv"
+    pd.DataFrame({"gene_a": ["TF1", "TF2"], "gene_b": ["TF3", "TF4"]}).to_csv(pair_file, sep="\t", index=False)
+    coactivity_file = tmp_path / "coactivity.tsv"
+    coactivity_reconstruction(train_file, test_file, panel_file, coactivity_file, pair_file=pair_file)
+    coactivity = pd.read_csv(coactivity_file, sep="\t")
+    assert set(coactivity["lineage"]) == {"muscle", "neuron"}
+    correlation_file = tmp_path / "correlation.tsv"
+    tf_scrna_correlation(train_file, test_file, correlation_file)
+    assert pd.read_csv(correlation_file, sep="\t").iloc[0]["shared_genes"] == 4
