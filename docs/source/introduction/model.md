@@ -1,6 +1,16 @@
 # Model Principles
 
-**SMITH learns target selection and biological prediction in one model.** A **stochastic gate** acts on candidate targets, a **shared representation** summarizes the gated measurements, and **objective-specific heads** test which biological signals remain recoverable.
+**SMITH learns target selection and biological prediction in one model.** A stochastic gate acts on candidate targets, a shared representation summarizes the gated measurements, and objective-specific heads test which biological signals remain recoverable.
+
+## Model overview (c)
+
+```{figure} ../_static/figures/model_overview_c.png
+:alt: Overview of SMITH target panel selection and multi-task learning
+:width: 100%
+:align: center
+
+SMITH starts from the experimental purpose, candidate targets, prior targets, and existing single-cell or spatial studies. Stochastic gates transform the candidate universe into a shared representation, while multiple biological objectives guide the final selected panel. Adapted from Figure 1c of the SMITH manuscript.
+```
 
 :::{admonition} Key idea
 :class: tip
@@ -8,15 +18,17 @@
 One shared gate learns a target ranking; the objective heads tell the gate what information the experiment must preserve.
 :::
 
-```{figure} ../_static/figures/stochastic_gates.png
+## Stochastic gates (d)
+
+```{figure} ../_static/figures/stochastic_gates_d.png
 :alt: Stochastic gates used for differentiable molecular target selection
-:width: 100%
+:width: 90%
 :align: center
 
-Each candidate target has a learnable gate weight. Noise during training makes selection stochastic and differentiable; the optimized weights define the final target ranking. Adapted from Figure 1d of the SMITH manuscript.
+Each candidate target has a learnable gate weight. Noise makes the selector stochastic and differentiable during training; the learned weights define the final target ranking. Adapted from Figure 1d of the SMITH manuscript.
 ```
 
-## 1. Differentiable target selection
+### Differentiable target selection
 
 Let $x_{ij}$ be target $j$ in observation $i$, and let $w_j$ be its learnable weight. SMITH samples
 
@@ -35,7 +47,17 @@ The gated matrix $Z$ enters the prediction heads. **Low-weight targets** are mas
 
 SMITH does not force exactly $M$ gates to be active during training. After optimization, targets are ranked by $w_j$ and the **highest-ranked $M$ form the requested panel**. One ranking can therefore be inspected at several panel sizes.
 
-## 2. Shared representation and objective heads
+## Multi-task learning (e)
+
+```{figure} ../_static/figures/multitask_learning_e.png
+:alt: Multi-task learning and Pareto gradient selection in SMITH
+:width: 70%
+:align: center
+
+The shared selector receives gradients from several biological objectives. A Frank-Wolfe minimum-norm update finds a common direction when profile, cell-type, spatial, and temporal objectives disagree. Adapted from Figure 1e of the SMITH manuscript.
+```
+
+### Shared representation and objective heads
 
 The gated measurements first pass through a shared representation. Each biological objective has its own head and loss:
 
