@@ -266,7 +266,9 @@ def coactivity_reconstruction(
         test_index = {gene: index for index, gene in enumerate(test_genes)}
         x_train = x_train[:, [train_index[gene] for gene in common]]
         x_test = x_test[:, [test_index[gene] for gene in common]]
-        panel = [canonical_tf_name(gene) for gene in read_panel(panel_file) if canonical_tf_name(gene) in common]
+        raw_panel = read_panel(panel_file)
+        requested_panel_size = len(raw_panel)
+        panel = [canonical_tf_name(gene) for gene in raw_panel if canonical_tf_name(gene) in common]
         panel = list(dict.fromkeys(panel))
         if len(panel) < 2:
             raise ValueError("Generated panel has fewer than two TFs in the activity universe")
@@ -339,7 +341,8 @@ def coactivity_reconstruction(
                     "split": "test",
                     "lineage": lineage,
                     "method": method,
-                    "panel_size": len(panel),
+                    "panel_size": requested_panel_size,
+                    "n_canonical_panel_tfs": len(panel),
                     "pair_scope": "annotated" if pair_file else "all",
                     "backend": backend,
                     "n_cells": int(mask.sum()),

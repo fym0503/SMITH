@@ -405,9 +405,10 @@ def run(args: argparse.Namespace) -> dict:
                     panel_size,
                 )
                 for split in splits:
+                    target_train = data_base / "elegans_tf" / split / "train.h5ad"
                     target_test = data_base / "elegans_tf" / split / "test.h5ad"
                     result = evaluate(
-                        prepared_scrna,
+                        target_train,
                         target_test,
                         panel,
                         transfer_dir / "evaluation" / split / f"top{panel_size}",
@@ -443,7 +444,7 @@ def run(args: argparse.Namespace) -> dict:
                 )
                 for split in splits:
                     result = evaluate(
-                        prepared_scrna,
+                        data_base / "elegans_tf" / split / "train.h5ad",
                         data_base / "elegans_tf" / split / "test.h5ad",
                         panel,
                         source_dir / "evaluation" / split,

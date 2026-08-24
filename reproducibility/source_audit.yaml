@@ -30,11 +30,11 @@ scripts:
     sha256: baf4b1f5d23343e9495c08bc6874cc392b82fe0ee0a51fdbb317b113f967a1a6
     data: elegans_scrna.h5ad -> lineage-aware TF train/test splits
     parameters: "shared TF universe; total-count normalization; log1p; gene-wise min-max; tasks=recon,cls,time; panel_sizes=32,64,128"
-    portable_mapping: reproducibility/workflows/regulatory_activity/run_tutorial.py::_prepare_scrna_source + transfer evaluation
+    portable_mapping: reproducibility/workflows/regulatory_activity/run_tutorial.py::_prepare_scrna_source + scRNA panel training
   - case: 02_regulatory_activity
     path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/evaluate_tf_domain_models_on_scrna_selected_panels.py
     sha256: c284ad242ddf6b8fef077b6b9ae908cca0514e026ecec5314e4d4538bed86a6c
-    data: scRNA-selected TF panels evaluated on TF-activity train/test splits
+    data: scRNA-selected TF panels evaluated within TF-activity train/test splits
     parameters: "KNN cell-type and developmental-time evaluation; panel_sizes=32,64,128"
     portable_mapping: reproducibility/workflows/regulatory_activity/evaluate_outputs.py
   - case: 02_regulatory_activity
