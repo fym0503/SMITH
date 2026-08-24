@@ -114,6 +114,9 @@ def build_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNod
     github = f"https://github.com/fym0503/SMITH/blob/main/docs/source/tutorials/notebooks/{spec['folder']}/{spec['stem']}_source.ipynb"
     setup = f'''from pathlib import Path
 import hashlib, json, os, subprocess, sys
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from IPython.display import Image, Markdown, display
 
 def find_repository(start):
@@ -144,26 +147,12 @@ def sha256_file(path):
     if spec["case"] == "02_regulatory_activity":
         setup += '''
 
-FIGURE3_PLOTTER = ROOT / "reproducibility/workflows/regulatory_activity/plot_figure3.py"
-
-def render_figure3_panel(panel, *plot_arguments, width=500):
-    figure_dir = CASE_OUTPUT / "figures"
-    command = [
-        sys.executable, str(FIGURE3_PLOTTER),
-        "--values", str(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv"),
-        "--output-dir", str(figure_dir),
-        "--panels", panel,
-        *[str(argument) for argument in plot_arguments],
-    ]
-    completed = subprocess.run(
-        command, cwd=ROOT, env=WORKFLOW_ENV, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    )
-    if completed.returncode:
-        print(completed.stdout)
-        raise subprocess.CalledProcessError(completed.returncode, command)
-    filename = "figure3_method_legend.png" if panel == "legend" else f"figure3_{panel}.png"
-    display(Image(filename=str(figure_dir / filename), width=width))
+from reproducibility.workflows.figure_style import configure
+from reproducibility.workflows.regulatory_activity.plot_figure3 import (
+    PANEL_SPECS, _draw_bar_panel, _draw_coactivity, _draw_module_coverage,
+    _draw_module_schematic, _draw_transfer, _plot_tf_correlation,
+)
+configure()
 '''
     inspect = f'''inputs = {spec['inputs']!r}
 input_checksums = {{}}
@@ -282,14 +271,26 @@ with warnings.catch_warnings():
         DATA_ROOT / "regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad",
         panel_file, recheck_dir, 32, neighbors=5,
     )
-render_figure3_panel("c", width=430)'''
+tf_values = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", sep="\t")
+figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
+_draw_bar_panel(axis, tf_values, PANEL_SPECS["c"])
+figure.text(0.015, 0.985, "c", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
+display(figure)
+plt.close(figure)'''
         time_analysis = '''from reproducibility.workflows.regulatory_activity.analysis import write_statistical_analysis
 
 _ = write_statistical_analysis(
     CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv",
     CASE_OUTPUT / "figure_data",
 )
-render_figure3_panel("d", width=430)'''
+tf_values = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", sep="\t")
+figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
+_draw_bar_panel(axis, tf_values, PANEL_SPECS["d"])
+figure.text(0.015, 0.985, "d", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
+display(figure)
+plt.close(figure)'''
         mirna_recheck = '''import warnings
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate
 
@@ -302,7 +303,13 @@ with warnings.catch_warnings():
         DATA_ROOT / "regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad",
         panel_file, recheck_dir, 32, neighbors=5,
     )
-render_figure3_panel("e", width=430)'''
+mirna_values = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", sep="\t")
+figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
+_draw_bar_panel(axis, mirna_values, PANEL_SPECS["e"])
+figure.text(0.015, 0.985, "e", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
+display(figure)
+plt.close(figure)'''
         notebook.cells = opening_cells + [
             nbformat.v4.new_markdown_cell(
                 "## Preserving cell identity and developmental progression\n\n"
@@ -324,49 +331,103 @@ render_figure3_panel("e", width=430)'''
                 "### miRNA activity retains developmental order\n\n"
                 "The temporal endpoint asks whether the compact miRNA panel follows embryonic progression across held-out cells."
             ),
-            nbformat.v4.new_code_cell('render_figure3_panel("f", width=430)'),
+            nbformat.v4.new_code_cell('''mirna_values = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_c_f_values.tsv", sep="\\t")
+figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
+_draw_bar_panel(axis, mirna_values, PANEL_SPECS["f"])
+figure.text(0.015, 0.985, "f", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "### Methods used in the panel comparisons\n\n"
                 "The shared legend applies to the four benchmark panels immediately above."
             ),
-            nbformat.v4.new_code_cell('render_figure3_panel("legend", width=900)'),
+            nbformat.v4.new_code_cell('''from reproducibility.workflows.figure_style import METHOD_COLORS, METHOD_ORDER
+figure, axis = plt.subplots(figsize=(5.8, 0.55), facecolor="white")
+handles = [plt.Line2D([0], [0], marker="s", linestyle="", markersize=7, markerfacecolor=METHOD_COLORS[name], markeredgecolor="black", label=name) for name in METHOD_ORDER if name in set(tf_values["method"])]
+axis.legend(handles=handles, frameon=False, ncol=max(1, len(handles)), loc="center")
+axis.axis("off")
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "## Developmental regulatory programs\n\n"
                 "### Spatiotemporal TF modules\n\n"
                 "The atlas annotation organizes regulators by tissue system and temporal module. This establishes the biological programs whose coverage is tested in the next analysis."
             ),
-            nbformat.v4.new_code_cell(
-                'render_figure3_panel("g", "--modules", DATA_ROOT / "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv")'
-            ),
+            nbformat.v4.new_code_cell('''modules = pd.read_csv(DATA_ROOT / "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv", sep="\\t")
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_module_schematic(axis, modules)
+figure.text(0.015, 0.985, "g", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "### Coverage of developmental modules\n\n"
                 "For each newly selected panel, the miss rate is the fraction of annotated modules with no selected TF. A lower value therefore indicates broader coverage of known developmental programs."
             ),
-            nbformat.v4.new_code_cell(
-                'render_figure3_panel("h", "--module-coverage", CASE_OUTPUT / "figure_data/figure3_h_module_miss_rate.tsv")'
-            ),
+            nbformat.v4.new_code_cell('''module_coverage = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_h_module_miss_rate.tsv", sep="\\t")
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_module_coverage(axis, module_coverage)
+figure.text(0.015, 0.985, "h", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "## Regulatory reconstruction and modality transfer\n\n"
                 "### Reconstruction of TF co-activity\n\n"
                 "The trained reconstruction head predicts held-out TF activity from the selected regulators. Agreement is measured within muscle, neuronal, pharyngeal and skin lineages using atlas-defined TF pairs."
             ),
-            nbformat.v4.new_code_cell(
-                'render_figure3_panel("i", "--coactivity", CASE_OUTPUT / "figure_data/figure3_i_coactivity.tsv")'
-            ),
+            nbformat.v4.new_code_cell('''coactivity = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_i_coactivity.tsv", sep="\\t")
+lineages = ["muscle", "neuron", "pharynx", "skin"]
+methods = [name for name in ("SMITH", "PERSIST") if name in set(coactivity["method"])]
+colors = {"SMITH": "#2f75b5", "PERSIST": "#f2b134"}
+x = np.arange(len(lineages))
+bar_width = 0.72 / len(methods)
+
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+for method_index, method in enumerate(methods):
+    means, errors = [], []
+    for lineage in lineages:
+        values = coactivity.loc[
+            (coactivity["method"] == method) & (coactivity["lineage"] == lineage),
+            "pearson",
+        ].dropna()
+        means.append(values.mean())
+        errors.append(values.sem() if len(values) > 1 else 0.0)
+    positions = x - 0.36 + bar_width / 2 + method_index * bar_width
+    axis.bar(
+        positions, means, bar_width, yerr=errors, capsize=1.5,
+        color=colors[method], edgecolor="black", linewidth=0.4, label=method,
+    )
+
+axis.set(title="TF co-activity reconstruction", ylabel="Pearson agreement")
+axis.set_xticks(x, [name.title() for name in lineages], rotation=25, ha="right")
+axis.set_ylim(-1, 1)
+axis.legend(frameon=False, fontsize=5.5)
+figure.text(0.015, 0.985, "i", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "### Conservation of regulatory structure across modalities\n\n"
                 "Shared TFs are aggregated over matched lineages in scRNA-seq and TF-activity data, then biclustered using the TF-activity correlation matrix. Similar block structure indicates that inferred regulatory activity preserves transcriptomic organization."
             ),
-            nbformat.v4.new_code_cell(
-                'render_figure3_panel("j", "--correlation", CASE_OUTPUT / "figure_data/figure3_j_tf_scrna_correlation.tsv")'
-            ),
+            nbformat.v4.new_code_cell('''correlation = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_j_tf_scrna_correlation.tsv", sep="\\t")
+figure = _plot_tf_correlation(correlation, CASE_OUTPUT / "figure_data/figure3_j_tf_scrna_correlation.tsv")
+figure.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
+display(figure)
+plt.close(figure)'''),
             nbformat.v4.new_markdown_cell(
                 "### Transfer from scRNA-seq into TF activity\n\n"
                 "Panels selected from scRNA-seq are evaluated on held-out TF-activity lineages. The comparison with TF-selected panels tests whether gene choice transfers across molecular representations without losing cell identity."
             ),
-            nbformat.v4.new_code_cell(
-                'render_figure3_panel("k", "--transfer", CASE_OUTPUT / "figure_data/figure3_k_transfer.tsv")'
-            ),
+            nbformat.v4.new_code_cell('''transfer = pd.read_csv(CASE_OUTPUT / "figure_data/figure3_k_transfer.tsv", sep="\\t")
+figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
+_draw_transfer(axis, transfer)
+figure.text(0.015, 0.985, "k", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
+display(figure)
+plt.close(figure)'''),
             closing_cell,
         ]
     else:

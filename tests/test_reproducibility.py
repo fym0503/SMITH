@@ -130,10 +130,10 @@ def test_tutorial_sources_target_manuscript_panels():
         assert plotter in text
         assert "quick hosted run" in text
         assert "--output-dir" in text
-        assert "import pandas" not in text
         assert "pd.DataFrame" not in text
-        assert "pd.read_csv" not in text
-        assert "display(Image" in text
+        assert "display(df" not in text
+        assert "display(dataframe" not in text.lower()
+        assert "display(Image" in text or "display(figure" in text
 
 
 def test_executed_tutorials_include_rendered_figure_outputs():
@@ -163,15 +163,19 @@ def test_regulatory_tutorial_interleaves_code_and_figures():
     display_cells = [
         index
         for index, cell in enumerate(notebook.cells)
-        if cell.cell_type == "code" and "render_figure3_panel(" in str(cell.source)
+        if cell.cell_type == "code" and "display(figure)" in str(cell.source)
         and not str(cell.source).lstrip().startswith("from pathlib")
     ]
     assert len(display_cells) == 10
+    text = "\n".join(str(cell.source) for cell in notebook.cells)
+    assert "render_figure3_panel" not in text
+    coactivity_cell = next(cell for cell in notebook.cells if "figure3_i_coactivity.tsv" in str(cell.source))
+    assert "axis.bar(" in str(coactivity_cell.source)
     assert "Render the manuscript panels" not in "\n".join(str(cell.source) for cell in notebook.cells)
     for index in display_cells:
         assert notebook.cells[index - 1].cell_type == "markdown"
         assert str(notebook.cells[index - 1].source).lstrip().startswith("#")
-        assert str(notebook.cells[index].source).count("render_figure3_panel(") == 1
+        assert str(notebook.cells[index].source).count("display(figure)") == 1
 
 
 def test_ribomap_plot_has_no_placeholder_panel():
