@@ -17,6 +17,8 @@ from scripts.download_tutorial_data import safe_extract
 from scripts.build_tutorial_archives import case_files
 from reproducibility.workflows.ribomap_transfer.analysis import (
     bh_adjust,
+    bias_group,
+    bias_pairwise_tests,
     bias_table_from_objects,
     jaccard_similarity,
     jaccard_from_panel_records,
@@ -265,6 +267,35 @@ def test_ribomap_analysis_formulas_are_manuscript_defined():
     expected_star = (np.log1p(starmap_values) - np.mean(np.log1p(starmap_values))) / np.std(np.log1p(starmap_values))
     assert np.allclose(ribomap_bias(ribomap_values, starmap_values), expected_ribo - expected_star)
     assert np.allclose(bh_adjust([0.01, 0.04, 0.2]), [0.03, 0.06, 0.2])
+
+
+def test_ribomap_bias_groups_and_tests_match_figure4h():
+    assert bias_group("R", {"R", "S"}, {"S", "T"}) == "RIBOMap-only"
+    assert bias_group("S", {"R", "S"}, {"S", "T"}) == "Shared"
+    assert bias_group("T", {"R", "S"}, {"S", "T"}) == "STARmap-only"
+    assert bias_group("B", {"R", "S"}, {"S", "T"}) == "Background"
+
+    rows = []
+    groups = {
+        "RIBOMap-only": [3.0, 4.0, 5.0, 6.0],
+        "Shared": [1.0, 1.5, 2.0, 2.5],
+        "STARmap-only": [-2.0, -1.5, -1.0, -0.5],
+        "Background": [0.0, 0.2, 0.4, 0.6],
+    }
+    for group, values in groups.items():
+        rows.extend({"panel_size": 128, "group": group, "ribomap_bias": value} for value in values)
+    result = bias_pairwise_tests(pd.DataFrame(rows))
+    assert set(zip(result["group_a"], result["group_b"])) == {
+        ("RIBOMap-only", "STARmap-only"),
+        ("RIBOMap-only", "Background"),
+        ("STARmap-only", "Background"),
+        ("Shared", "Background"),
+    }
+    assert set(result["alternative"]) == {"two-sided"}
+    assert result["qvalue_bh"].notna().all()
+    primary = result[(result["group_a"] == "RIBOMap-only") & (result["group_b"] == "STARmap-only")].iloc[0]
+    assert primary["median_diff_a_minus_b"] > 0
+    assert primary["qvalue_bh"] >= primary["pvalue"]
 
 
 def test_ribomap_loaded_analysis_uses_current_objects():

@@ -19,7 +19,13 @@ def ribomap_notebook(spec: dict, epochs: int, device: str):
 import os, sys
 
 ROOT = Path.cwd().resolve()
-sys.path.insert(0, str(ROOT / "src"))
+for candidate in (ROOT, *ROOT.parents):
+    if (candidate / "reproducibility").is_dir() and (candidate / "scripts").is_dir():
+        ROOT = candidate
+        break
+else:
+    raise RuntimeError("Could not locate the SMITH repository root")
+sys.path.insert(0, str(ROOT))
 
 import anndata as ad
 import matplotlib.pyplot as plt
@@ -33,8 +39,12 @@ from reproducibility.workflows.ribomap_transfer.evaluate_outputs import prepare_
 from reproducibility.workflows.ribomap_transfer.analysis import bias_group, bias_table_from_objects, jaccard_from_panel_records, performance_paired_tests, bias_pairwise_tests
 from reproducibility.workflows.ribomap_transfer.plot_figure4 import _draw_performance, _draw_jaccard, _draw_bias
 
-DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
-CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "ribomap"
+def resolve_repo_path(value):
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+DATA_ROOT = resolve_repo_path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials"))
+CASE_OUTPUT = resolve_repo_path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")) / "ribomap"
 FIGURE_DATA = CASE_OUTPUT / "figure_data"
 EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
 DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
@@ -131,7 +141,14 @@ figure.text(0.015, 0.985, "g", ha="left", va="top", fontsize=10, weight="bold")
 figure.subplots_adjust(left=0.25, right=0.97, bottom=0.17, top=0.78)
 display(figure)
 plt.close(figure)"""),
-        nbformat.v4.new_markdown_cell("### Figure 4h: RIBOMap-specific expression bias"),
+        nbformat.v4.new_markdown_cell(
+            "### Figure 4h: modality-specific expression support\n\n"
+            "The bias score asks whether modality-matched selection retains genes with relatively stronger "
+            "RIBOMap signal. The displayed contrasts compare RIBOMap-only genes with STARmap-only and "
+            "background genes using two-sided Mann-Whitney tests, with Benjamini-Hochberg correction over "
+            "all six pairwise contrasts among the four gene groups. The hosted example uses reduced cell and "
+            "epoch limits; run the full-scale command below to reproduce manuscript-scale q values."
+        ),
         nbformat.v4.new_code_cell("""bias = bias_table_from_objects(ribomap_target, star_raw)
 bias_parts = []
 for size in (32, 64, 128):
@@ -154,7 +171,7 @@ figure.subplots_adjust(left=0.25, right=0.97, bottom=0.28, top=0.86)
 display(figure)
 plt.close(figure)"""),
         nbformat.v4.new_markdown_cell("## Record the run\n\nThe manifest is written after analysis and is never read by this notebook."),
-        nbformat.v4.new_code_cell("""write_json(CASE_OUTPUT / "run_manifest.json", {
+        nbformat.v4.new_code_cell("""_ = write_json(CASE_OUTPUT / "run_manifest.json", {
     "workflow": "03_ribomap_transfer", "inputs": relative_inputs,
     "configuration": {"epochs": EPOCHS, "device": DEVICE, "training_seeds": [1, 2], "panel_sizes": [32, 64, 128]},
     "outputs": {

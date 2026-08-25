@@ -9,6 +9,15 @@ import pandas as pd
 from scipy.stats import mannwhitneyu, wilcoxon
 
 
+BIAS_GROUP_ORDER = ("RIBOMap-only", "Shared", "STARmap-only", "Background")
+BIAS_REPORTED_COMPARISONS = (
+    ("RIBOMap-only", "STARmap-only"),
+    ("RIBOMap-only", "Background"),
+    ("STARmap-only", "Background"),
+    ("Shared", "Background"),
+)
+
+
 def jaccard_similarity(left: set[str], right: set[str]) -> float:
     union = left | right
     return float(len(left & right) / len(union)) if union else float("nan")
@@ -80,11 +89,11 @@ def bh_adjust(pvalues: list[float]) -> np.ndarray:
 
 def bias_group(gene: str, ribomap_panel: set[str], starmap_panel: set[str]) -> str:
     if gene in ribomap_panel - starmap_panel:
-        return "Deep-RIBOmap"
+        return "RIBOMap-only"
     if gene in ribomap_panel & starmap_panel:
         return "Shared"
     if gene in starmap_panel - ribomap_panel:
-        return "STARmap"
+        return "STARmap-only"
     return "Background"
 
 
@@ -112,28 +121,60 @@ def performance_paired_tests(values: pd.DataFrame, comparator: str = "PERSIST-cl
 
 
 def bias_pairwise_tests(values: pd.DataFrame) -> pd.DataFrame:
-    # Figure 4h follows the manuscript's two one-sided tests: Deep-RIBOmap
-    # genes are expected to have larger RIBOMap bias than Shared genes and
-    # than the Background, respectively. No BH correction is applied there.
-    comparisons = [("Deep-RIBOmap", "Shared"), ("Deep-RIBOmap", "Background")]
+    """Reproduce the Figure 4h Mann-Whitney tests and BH correction.
+
+    The manuscript figure reports four biologically relevant contrasts, but
+    its q values were adjusted over all six pairwise contrasts among the four
+    gene groups. Tests are two-sided, matching the frozen figure source data.
+    """
     rows = []
     for panel_size, frame in values.groupby("panel_size", observed=True):
-        for group_a, group_b in comparisons:
+        all_rows = []
+        all_comparisons = [
+            (group_a, group_b)
+            for index, group_a in enumerate(BIAS_GROUP_ORDER)
+            for group_b in BIAS_GROUP_ORDER[index + 1:]
+        ]
+        for group_a, group_b in all_comparisons:
             left = frame.loc[frame["group"] == group_a, "ribomap_bias"].dropna().to_numpy(float)
             right = frame.loc[frame["group"] == group_b, "ribomap_bias"].dropna().to_numpy(float)
             if len(left) < 2 or len(right) < 2:
                 statistic = pvalue = cliff = np.nan
             else:
-                statistic, pvalue = mannwhitneyu(left, right, alternative="greater")
+                statistic, pvalue = mannwhitneyu(
+                    left, right, alternative="two-sided", method="asymptotic"
+                )
                 right_sorted = np.sort(right)
                 greater = np.searchsorted(right_sorted, left, side="left").sum()
                 less = (len(right_sorted) - np.searchsorted(right_sorted, left, side="right")).sum()
                 cliff = (greater - less) / (len(left) * len(right))
-            rows.append({"panel_size": panel_size, "group_a": group_a, "group_b": group_b,
-                         "n_a": len(left), "n_b": len(right), "mannwhitney_u": statistic,
-                         "pvalue": pvalue, "cliffs_delta": cliff, "alternative": "greater"})
-    result = pd.DataFrame(rows)
-    return result
+            all_rows.append({
+                "panel_size": panel_size,
+                "group_a": group_a,
+                "group_b": group_b,
+                "n_a": len(left),
+                "n_b": len(right),
+                "median_a": float(np.median(left)) if len(left) else np.nan,
+                "median_b": float(np.median(right)) if len(right) else np.nan,
+                "median_diff_a_minus_b": (
+                    float(np.median(left) - np.median(right)) if len(left) and len(right) else np.nan
+                ),
+                "mannwhitney_u": statistic,
+                "pvalue": pvalue,
+                "cliffs_delta": cliff,
+                "alternative": "two-sided",
+            })
+
+        adjusted = np.full(len(all_rows), np.nan)
+        valid = [index for index, row in enumerate(all_rows) if np.isfinite(row["pvalue"])]
+        if valid:
+            adjusted[valid] = bh_adjust([all_rows[index]["pvalue"] for index in valid])
+        indexed_rows = {}
+        for row, qvalue in zip(all_rows, adjusted, strict=True):
+            row["qvalue_bh"] = qvalue
+            indexed_rows[(row["group_a"], row["group_b"])] = row
+        rows.extend(indexed_rows[comparison] for comparison in BIAS_REPORTED_COMPARISONS)
+    return pd.DataFrame(rows)
 
 
 def write_statistical_analysis(metrics_path: str | Path, bias_path: str | Path, output_dir: str | Path) -> dict[str, str]:
