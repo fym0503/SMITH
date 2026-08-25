@@ -30,7 +30,7 @@ from IPython import get_ipython
 get_ipython().run_line_magic("matplotlib", "inline")
 from reproducibility.workflows.common import ranked_genes, run_smith, write_json, write_panel_genes
 from reproducibility.workflows.ribomap_transfer.evaluate_outputs import prepare_shared_adata, evaluate_panel_loaded
-from reproducibility.workflows.ribomap_transfer.analysis import bias_table_from_objects, jaccard_from_panel_records, performance_paired_tests, bias_pairwise_tests
+from reproducibility.workflows.ribomap_transfer.analysis import bias_group, bias_table_from_objects, jaccard_from_panel_records, performance_paired_tests, bias_pairwise_tests
 from reproducibility.workflows.ribomap_transfer.plot_figure4 import _draw_performance, _draw_jaccard, _draw_bias
 
 DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
@@ -64,7 +64,7 @@ for source, source_adata in (("Deep-RIBOmap", deep_shared), ("STARmap", star_sha
             tasks="recon,cls,standard_coordination" if any(key in source_adata.obsm for key in ("spatial", "X_spatial")) else "recon,cls",
             task_name=f"{source}_to_RIBOMap", panel_size=128, epochs=EPOCHS,
             device=DEVICE, seed=training_seed, batch_size=128, max_cells=MAX_CELLS,
-            force=True, include_in_memory=True,
+            sampling_strategy="celltype_spatial", force=True, include_in_memory=True,
         )
         source_runs[source][training_seed] = trained
         for size in (32, 64, 128):
@@ -140,11 +140,7 @@ for size in (32, 64, 128):
     part = bias.copy()
     part["panel_size"], part["method"] = size, "SMITH"
     part["group"] = part["gene_symbol"].map(
-        lambda gene: "RIBOMap-only" if gene in deep - star else (
-            "Shared" if gene in deep & star else (
-                "STARmap-only" if gene in star - deep else "Background"
-            )
-        )
+        lambda gene: bias_group(gene, deep, star)
     )
     bias_parts.append(part)
 bias_values = pd.concat(bias_parts, ignore_index=True)

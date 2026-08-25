@@ -125,7 +125,7 @@ def _draw_bias(ax, bias: pd.DataFrame, tests: pd.DataFrame | None = None) -> Non
     frame = bias[bias["panel_size"] == 128]
     if "method" in frame:
         frame = frame[frame["method"] == "SMITH"]
-    order = ["RIBOMap-only", "Shared", "STARmap-only", "Background"]
+    order = ["Deep-RIBOmap", "Shared", "STARmap", "Background"]
     values = [frame.loc[frame["group"] == group, "ribomap_bias"].dropna().to_numpy() for group in order]
     parts = ax.violinplot(values, positions=range(4), showmeans=False, showmedians=False, showextrema=False)
     for body, color in zip(parts["bodies"], ["#3E7FAF", "#B7A6C9", "#E3A15B", "#BDBDBD"]):
@@ -145,7 +145,7 @@ def _draw_bias(ax, bias: pd.DataFrame, tests: pd.DataFrame | None = None) -> Non
             linewidths=0,
             zorder=4,
         )
-    comparisons = ((0, 2), (0, 3))
+    comparisons = ((0, 1), (0, 3))
     finite = np.concatenate([value[np.isfinite(value)] for value in values if len(value)])
     y_min, y_max = (float(finite.min()), float(finite.max())) if len(finite) else (-1.0, 1.0)
     span = max(1.0, y_max - y_min)
@@ -156,11 +156,11 @@ def _draw_bias(ax, bias: pd.DataFrame, tests: pd.DataFrame | None = None) -> Non
                 match = tests[(tests["panel_size"] == 128) & (tests["group_a"] == order[left]) &
                               (tests["group_b"] == order[right])]
                 row = match.iloc[0] if len(match) else None
-            qvalue = float(row["qvalue_bh"]) if row is not None else np.nan
+            pvalue = float(row["pvalue"]) if row is not None else np.nan
             y = y_max + span * (0.10 + 0.14 * comparison_index)
             height = 0.35
             ax.plot([left, left, right, right], [y, y + height, y + height, y], color="black", lw=0.5)
-            label = "q<0.001" if qvalue < 0.001 else (f"q={qvalue:.3f}" if np.isfinite(qvalue) else "q=n/a")
+            label = "p<0.001" if pvalue < 0.001 else (f"p={pvalue:.3f}" if np.isfinite(pvalue) else "p=n/a")
             ax.text((left + right) / 2, y + height, label, ha="center", va="bottom", fontsize=6.5)
     ax.axhline(0, color="#777777", lw=0.5)
     ax.set_ylim(y_min - span * 0.08, y_max + span * 0.42)

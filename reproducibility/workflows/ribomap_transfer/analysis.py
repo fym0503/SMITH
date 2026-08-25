@@ -80,11 +80,11 @@ def bh_adjust(pvalues: list[float]) -> np.ndarray:
 
 def bias_group(gene: str, ribomap_panel: set[str], starmap_panel: set[str]) -> str:
     if gene in ribomap_panel - starmap_panel:
-        return "RIBOMap-only"
+        return "Deep-RIBOmap"
     if gene in ribomap_panel & starmap_panel:
         return "Shared"
     if gene in starmap_panel - ribomap_panel:
-        return "STARmap-only"
+        return "STARmap"
     return "Background"
 
 
@@ -112,12 +112,10 @@ def performance_paired_tests(values: pd.DataFrame, comparator: str = "PERSIST-cl
 
 
 def bias_pairwise_tests(values: pd.DataFrame) -> pd.DataFrame:
-    comparisons = [
-        ("RIBOMap-only", "STARmap-only"),
-        ("RIBOMap-only", "Background"),
-        ("STARmap-only", "Background"),
-        ("Shared", "Background"),
-    ]
+    # Figure 4h follows the manuscript's two one-sided tests: Deep-RIBOmap
+    # genes are expected to have larger RIBOMap bias than Shared genes and
+    # than the Background, respectively. No BH correction is applied there.
+    comparisons = [("Deep-RIBOmap", "Shared"), ("Deep-RIBOmap", "Background")]
     rows = []
     for panel_size, frame in values.groupby("panel_size", observed=True):
         for group_a, group_b in comparisons:
@@ -126,19 +124,15 @@ def bias_pairwise_tests(values: pd.DataFrame) -> pd.DataFrame:
             if len(left) < 2 or len(right) < 2:
                 statistic = pvalue = cliff = np.nan
             else:
-                statistic, pvalue = mannwhitneyu(left, right, alternative="two-sided")
+                statistic, pvalue = mannwhitneyu(left, right, alternative="greater")
                 right_sorted = np.sort(right)
                 greater = np.searchsorted(right_sorted, left, side="left").sum()
                 less = (len(right_sorted) - np.searchsorted(right_sorted, left, side="right")).sum()
                 cliff = (greater - less) / (len(left) * len(right))
             rows.append({"panel_size": panel_size, "group_a": group_a, "group_b": group_b,
                          "n_a": len(left), "n_b": len(right), "mannwhitney_u": statistic,
-                         "pvalue": pvalue, "cliffs_delta": cliff, "alternative": "two-sided"})
+                         "pvalue": pvalue, "cliffs_delta": cliff, "alternative": "greater"})
     result = pd.DataFrame(rows)
-    result["qvalue_bh"] = np.nan
-    valid = result["pvalue"].notna()
-    if valid.any():
-        result.loc[valid, "qvalue_bh"] = bh_adjust(result.loc[valid, "pvalue"].tolist())
     return result
 
 
