@@ -1,7 +1,7 @@
 """Probe-design feasibility backends and result integration."""
 
 from .backends import ODTScrinshotBackend, OligoMinerBackend, PaintSHOPBackend, ProbeDealerBackend
-from .preflight import probe_backend_preflight
+from .preflight import probe_backend_preflight, probe_property_screen_loaded
 from smith_agent.schemas import BackendResult
 
 __all__ = [
@@ -11,4 +11,5 @@ __all__ = [
     "PaintSHOPBackend",
     "ProbeDealerBackend",
     "probe_backend_preflight",
+    "probe_property_screen_loaded",
 ]

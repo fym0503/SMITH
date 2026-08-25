@@ -312,6 +312,7 @@ import anndata as ad
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from IPython.display import display
 from IPython import get_ipython
 get_ipython().run_line_magic("matplotlib", "inline")
@@ -326,7 +327,7 @@ from smith_agent.panel_rank_aggregation import (
     aggregate_reference_panel_ranks_loaded,
     tune_reference_aggregation_loaded,
 )
-from smith_agent.feasibility.preflight import probe_backend_preflight
+from smith_agent.feasibility.preflight import probe_backend_preflight, probe_property_screen_loaded
 from smith_agent.config import load_agent_config
 from smith_agent.registry import load_registries
 from reproducibility.workflows.agent.plot_figure6 import _draw_violin_panel
@@ -359,6 +360,12 @@ gene_universe = list(dict.fromkeys(str(gene).upper() for gene in merfish.var_nam
 source = prepare_agent_adata(source_raw, gene_universe, max_cells=MAX_CELLS, seed=1)
 ref_a = prepare_agent_adata(ref_a_raw, gene_universe, require_spatial=True, max_cells=MAX_CELLS, seed=1)
 ref_b = prepare_agent_adata(ref_b_raw, gene_universe, require_spatial=True, max_cells=MAX_CELLS, seed=1)
+merfish_indices = np.arange(merfish.n_obs)
+tuning_index, evaluation_index = train_test_split(
+    merfish_indices, test_size=0.5, random_state=41, stratify=merfish.obs["Cell_Type"].astype(str),
+)
+merfish_tuning = merfish[np.sort(tuning_index)].copy()
+merfish_evaluation = merfish[np.sort(evaluation_index)].copy()
 '''
     plan_and_train = '''# The Agent plan is resolved from the package registries, then executed on these objects.
 agent_config = load_agent_config(ROOT / "configs/agent/agent.yaml")
@@ -393,7 +400,7 @@ aggregation = aggregate_reference_panel_ranks_loaded(
 )
 '''
     tuning = '''tuning = tune_reference_aggregation_loaded(
-    source_run["ranking_frame"], [item["ranking_frame"] for item in reference_runs], merfish,
+    source_run["ranking_frame"], [item["ranking_frame"] for item in reference_runs], merfish_tuning,
     panel_sizes=(32, 64, 128), source_weights=(0.25, 0.5, 0.75),
     label_column="Cell_Type", seed=42, min_reference_support=2,
     restrict_gene_symbols=gene_universe,
@@ -401,6 +408,7 @@ aggregation = aggregate_reference_panel_ranks_loaded(
 tuning_results = tuning["results"]
 tuning_results.to_csv(FIGURE_DATA / "agent_parameter_tuning.tsv", sep="\\t", index=False)
 best_agent_panel = tuning["best"]["panel_genes"]
+aggregation = tuning["best_aggregation"]
 for size in (32, 64, 128):
     write_panel_genes(tuning["best_aggregation"]["integrated_panel_genes"][:size], CASE_OUTPUT / "runs/seed_1/panels" / f"agent_tuned_{size}.tsv")
 figure, axis = plt.subplots(figsize=(3.0, 2.2), facecolor="white")
@@ -412,16 +420,16 @@ figure.tight_layout()
 display(figure)
 plt.close(figure)
 '''
-    evaluate = '''merfish_expression = mean_expression_loaded(merfish)
+    evaluate = '''merfish_expression = mean_expression_loaded(merfish_evaluation)
 rows = []
 for size in (32, 64, 128):
     for panel_name, genes in (("snRNA-seq", aggregation["source_panel_genes"][:size]), ("SMITH-Agent", aggregation["integrated_panel_genes"][:size])):
         classification, _ = cell_type_evaluation_loaded(
-            merfish, genes, panel_size=size, label_column="Cell_Type", seed=42,
+            merfish_evaluation, genes, panel_size=size, label_column="Cell_Type", seed=42,
             output_dir=CASE_OUTPUT / "evaluations" / f"{panel_name}_{size}" / "cell_type",
         )
         spatial, _ = spatial_coordinate_evaluation_loaded(
-            merfish, genes, panel_size=size, seed=42,
+            merfish_evaluation, genes, panel_size=size, seed=42,
             output_dir=CASE_OUTPUT / "evaluations" / f"{panel_name}_{size}" / "spatial",
         )
         rows.append({
@@ -473,15 +481,19 @@ figure.text(0.015, 0.985, "d", ha="left", va="top", fontsize=10, weight="bold")
 figure.subplots_adjust(left=0.27, right=0.97, bottom=0.22, top=0.94)
 display(figure)
 plt.close(figure)'''),
-        nbformat.v4.new_markdown_cell("## Probe feasibility preflight"),
+        nbformat.v4.new_markdown_cell("## Test probe feasibility for the selected panel\n\nThe tutorial resolves transcripts for the first 16 genes in the newly selected panel and runs the local ProbeDealer sequence-property screen. This estimates deployable candidate counts; transcriptome-wide specificity is reported only when OligoMiner/BLAST and PaintSHOP are configured."),
         nbformat.v4.new_code_cell('''probe_status = probe_backend_preflight(ROOT / "configs/agent/agent.yaml", package_root=ROOT)
-figure, axis = plt.subplots(figsize=(4.8, 1.9), facecolor="white")
+probe_screen = probe_property_screen_loaded(best_agent_panel, CASE_OUTPUT / "probe_feasibility", species="homo_sapiens", max_genes=16)
+probe_values = probe_screen["summary"].sort_values("final_probe_count")
+figure, axes = plt.subplots(1, 2, figsize=(7.2, 2.5), facecolor="white", gridspec_kw={"width_ratios": [1.5, 1]})
+axes[0].barh(probe_values["gene_symbol"], probe_values["final_probe_count"], color="#4c78a8")
+axes[0].axvline(20, color="#c53030", linestyle="--", linewidth=0.8)
+axes[0].set(xlabel="Property-filtered probe candidates", title="Selected-panel probe counts")
 labels = [f"{row['backend']} ({row['stage']})" for row in probe_status]
 values = [1 if row["available"] else 0 for row in probe_status]
-colors = ["#2f855a" if value else "#c53030" for value in values]
-axis.barh(labels, values, color=colors)
-axis.set_xlim(0, 1.25); axis.set_xticks([0, 1]); axis.set_xticklabels(["unavailable", "ready"])
-axis.set_title("Live probe-feasibility prerequisites", fontsize=9)
+axes[1].barh(labels, values, color=["#2f855a" if value else "#c53030" for value in values])
+axes[1].set_xlim(0, 1.2); axes[1].set_xticks([0, 1]); axes[1].set_xticklabels(["missing", "ready"])
+axes[1].set_title("Specificity backend status")
 figure.tight_layout()
 display(figure)
 plt.close(figure)'''),
@@ -490,7 +502,7 @@ plt.close(figure)'''),
     "workflow": "05_agent", "inputs": relative_inputs,
     "configuration": {"epochs": EPOCHS, "device": DEVICE, "panel_sizes": [32, 64, 128], "source_weights": [0.25, 0.5, 0.75]},
     "agent_plan": agent_plan, "outputs": {"figure6": str(FIGURE_DATA / "figure6_c_d_values.tsv"), "tuning": str(FIGURE_DATA / "agent_parameter_tuning.tsv")},
-    "probe_backend": {"status": "preflight_only", "backends": probe_status, "reason": "Run sequence generation only after configured external backends and reference indexes are available."},
+    "probe_backend": {"status": probe_screen["status"], "scope": probe_screen["scope"], "artifacts": probe_screen["artifacts"], "backends": probe_status, "reason": probe_screen["note"]},
 })'''),
         nbformat.v4.new_markdown_cell("## Full manuscript command\n\nThe CLI runs all five spatial references, repeated seeds, external baselines, probe backends, and the validation-guided HPO analysis:\n\n```bash\npython reproducibility/workflows/agent/run_tutorial.py --data-root data/tutorials --output-dir outputs/paper/agent --panel-sizes 32,64,128 --training-seeds 1,2,3,4,5\n```"),
     ]

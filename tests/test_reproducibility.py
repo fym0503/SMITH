@@ -145,6 +145,7 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "aggregate_reference_panel_ranks_loaded" in text
             assert "tune_reference_aggregation_loaded" in text
             assert "probe_backend_preflight" in text
+            assert "probe_property_screen_loaded" in text
             assert "agent_plan" in text
             assert "cell_type_evaluation_loaded" in text
             assert 'run_manifest.json").read' not in text
