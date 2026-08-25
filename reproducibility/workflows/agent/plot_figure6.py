@@ -30,7 +30,7 @@ def _draw_violin_panel(
     rng_seed: int,
 ) -> None:
     sizes = [32, 64, 128]
-    integrated = next(name for name in frame["panel"].unique() if name.startswith("snRNA-seq + "))
+    integrated = next(name for name in frame["panel"].unique() if name != "snRNA-seq")
     panels = ["snRNA-seq", integrated]
     colors = [SOURCE_COLOR, INTEGRATED_COLOR]
     edge_colors = [SOURCE_EDGE, INTEGRATED_EDGE]
