@@ -186,6 +186,8 @@ from reproducibility.workflows.common import run_smith, write_json, write_panel_
 from smith_agent.benchmarking import prepare_agent_adata, cell_type_evaluation_loaded, spatial_coordinate_evaluation_loaded, mean_expression_loaded
 from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded
 from reproducibility.workflows.agent.plot_figure6 import _draw_violin_panel
+from reproducibility.workflows.figure_style import configure
+configure()
 
 DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
 CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "agent"
