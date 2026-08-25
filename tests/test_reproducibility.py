@@ -32,7 +32,8 @@ from smith_agent.benchmarking import (
     prepare_agent_adata,
     spatial_coordinate_evaluation_loaded,
 )
-from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded
+from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded, tune_reference_aggregation_loaded
+from smith_agent.feasibility.preflight import probe_backend_preflight
 from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon, statistical_analysis
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate_loaded
 from reproducibility.workflows.regulatory_activity.paper_analysis import (
@@ -142,6 +143,9 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "run_tutorial.py" in text  # Full manuscript command only.
             assert "prepare_agent_adata" in text
             assert "aggregate_reference_panel_ranks_loaded" in text
+            assert "tune_reference_aggregation_loaded" in text
+            assert "probe_backend_preflight" in text
+            assert "agent_plan" in text
             assert "cell_type_evaluation_loaded" in text
             assert 'run_manifest.json").read' not in text
             assert "pd.read_csv(FIGURE_DATA" not in text
@@ -303,6 +307,32 @@ def test_agent_loaded_analysis_and_rank_aggregation():
     aggregated = aggregate_reference_panel_ranks_loaded(ranking, [ranking], panel_size=2)
     assert len(aggregated["source_panel_genes"]) == 2
     assert len(aggregated["integrated_panel_genes"]) == 2
+
+
+def test_agent_tuning_and_probe_preflight_use_live_objects():
+    rng = np.random.default_rng(11)
+    labels = np.repeat(["a", "b", "c"], 10)
+    genes = ["G1", "G2", "G3", "G4"]
+    target = ad.AnnData(
+        rng.poisson(1, (30, 4)).astype(float),
+        obs=pd.DataFrame({"Cell_Type": labels}),
+        var=pd.DataFrame(index=genes),
+    )
+    target.obsm["spatial"] = rng.normal(size=(30, 2))
+    ranking = pd.DataFrame({"gene_symbol": genes, "rank_score": [0.9, 0.8, 0.7, 0.6]})
+    tuned = tune_reference_aggregation_loaded(
+        ranking,
+        [ranking],
+        target,
+        panel_sizes=(2, 3),
+        source_weights=(0.25, 0.75),
+        label_column="Cell_Type",
+    )
+    assert len(tuned["results"]) == 4
+    assert tuned["best"]["panel_size"] in {2, 3}
+    statuses = probe_backend_preflight()
+    assert statuses
+    assert all({"backend", "available", "requirements", "reason"} <= set(row) for row in statuses)
 
 
 def test_regulatory_paired_test_uses_split_as_pairing_unit():

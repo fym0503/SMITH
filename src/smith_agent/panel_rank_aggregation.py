@@ -353,6 +353,79 @@ def jaccard_loaded(left: set[str], right: set[str]) -> float:
     return len(left & right) / len(union) if union else float("nan")
 
 
+def tune_reference_aggregation_loaded(
+    source_ranking: pd.DataFrame,
+    reference_rankings: list[pd.DataFrame],
+    target_adata: ad.AnnData,
+    *,
+    panel_sizes: tuple[int, ...] = (32, 64, 128),
+    source_weights: tuple[float, ...] = (0.25, 0.5, 0.75),
+    label_column: str = "Cell_Type",
+    seed: int = 42,
+    min_reference_support: int = 1,
+    restrict_gene_symbols: list[str] | set[str] | None = None,
+) -> dict[str, Any]:
+    """Tune the Agent's source/reference aggregation on held-out biology.
+
+    The candidate panels are constructed from the rankings returned by the
+    current SMITH runs.  No ranking or metric file is read.  The objective is
+    deliberately explicit: select the source/reference weight and panel size
+    that maximize held-out cell-type accuracy on the target AnnData.
+    """
+    from smith_agent.benchmarking import cell_type_evaluation_loaded
+
+    sizes = tuple(sorted({int(size) for size in panel_sizes if int(size) > 0}))
+    weights = tuple(sorted({float(weight) for weight in source_weights if 0.0 <= float(weight) <= 1.0}))
+    if not sizes or not weights:
+        raise ValueError("panel_sizes and source_weights must contain valid values")
+    rows: list[dict[str, Any]] = []
+    aggregations: dict[tuple[float, int], dict[str, Any]] = {}
+    for source_weight in weights:
+        aggregation = aggregate_reference_panel_ranks_loaded(
+            source_ranking,
+            reference_rankings,
+            panel_size=max(sizes),
+            source_weight=source_weight,
+            reference_weight=1.0 - source_weight,
+            min_reference_support=min_reference_support,
+            restrict_gene_symbols=restrict_gene_symbols,
+            gene_universe="source",
+        )
+        for size in sizes:
+            panel_genes = aggregation["integrated_panel_genes"][:size]
+            metrics, _ = cell_type_evaluation_loaded(
+                target_adata,
+                panel_genes,
+                panel_size=size,
+                seed=seed,
+                label_column=label_column,
+                output_dir=None,
+            )
+            row = {
+                "source_weight": source_weight,
+                "reference_weight": 1.0 - source_weight,
+                "panel_size": size,
+                "cell_type_accuracy": float(metrics["metrics"]["cell_type_accuracy"]),
+                "cell_type_balanced_accuracy": float(metrics["metrics"]["cell_type_balanced_accuracy"]),
+                "cell_type_macro_f1": float(metrics["metrics"]["cell_type_macro_f1"]),
+                "panel_genes": list(panel_genes),
+            }
+            rows.append(row)
+            aggregations[(source_weight, size)] = aggregation
+    results = pd.DataFrame(rows)
+    results = results.sort_values(
+        ["cell_type_accuracy", "cell_type_balanced_accuracy", "cell_type_macro_f1", "panel_size", "source_weight"],
+        ascending=[False, False, False, True, False],
+    ).reset_index(drop=True)
+    best = results.iloc[0].to_dict()
+    best["panel_genes"] = list(best["panel_genes"])
+    return {
+        "results": results,
+        "best": best,
+        "best_aggregation": aggregations[(float(best["source_weight"]), int(best["panel_size"]))],
+    }
+
+
 def aggregate_reference_panel_ranks(
     output_dir: str | Path,
     source_adata_file: str | Path | None = None,

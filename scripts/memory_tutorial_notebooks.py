@@ -168,7 +168,7 @@ plt.close(figure)"""),
     return metadata(cells)
 
 
-def agent_notebook(spec: dict, epochs: int, device: str):
+def _legacy_agent_notebook(spec: dict, epochs: int, device: str):
     setup = f"""from pathlib import Path
 import os, sys
 
@@ -291,5 +291,207 @@ plt.close(figure)"""),
     "probe_backend": {"status": "not_run", "reason": "External probe-design backends are outside this tutorial."},
 })"""),
         nbformat.v4.new_markdown_cell("## Full manuscript command\n\nThe CLI workflow remains the entry point for all five spatial references and repeated training seeds.\n\n```bash\npython reproducibility/workflows/agent/run_tutorial.py --data-root data/tutorials --output-dir outputs/paper/agent --panel-sizes 32,64,128\n```"),
+    ]
+    return metadata(cells)
+
+
+def agent_notebook(spec: dict, epochs: int, device: str):
+    """Build the Agent tutorial as a data-driven decision trace.
+
+    The notebook intentionally keeps the model implementation in the package,
+    while exposing the Agent's registry plan, held-out parameter search, and
+    probe prerequisite checks next to the manuscript panels.
+    """
+    setup = f'''from pathlib import Path
+import os, sys
+
+ROOT = Path.cwd().resolve()
+sys.path.insert(0, str(ROOT / "src"))
+
+import anndata as ad
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from IPython.display import display
+from IPython import get_ipython
+get_ipython().run_line_magic("matplotlib", "inline")
+from reproducibility.workflows.common import run_smith, write_json, write_panel_genes
+from smith_agent.benchmarking import (
+    prepare_agent_adata,
+    cell_type_evaluation_loaded,
+    spatial_coordinate_evaluation_loaded,
+    mean_expression_loaded,
+)
+from smith_agent.panel_rank_aggregation import (
+    aggregate_reference_panel_ranks_loaded,
+    tune_reference_aggregation_loaded,
+)
+from smith_agent.feasibility.preflight import probe_backend_preflight
+from smith_agent.config import load_agent_config
+from smith_agent.registry import load_registries
+from reproducibility.workflows.agent.plot_figure6 import _draw_violin_panel
+from reproducibility.workflows.figure_style import configure
+configure()
+
+DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
+CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "agent"
+FIGURE_DATA = CASE_OUTPUT / "figure_data"
+EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
+DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
+MAX_CELLS = int(os.environ.get("SMITH_TUTORIAL_MAX_CELLS", "3000"))
+FIGURE_DATA.mkdir(parents=True, exist_ok=True)
+'''
+    load = '''relative_inputs = [
+    "agent/liver_merfish/adata_healthy_nucseq.h5ad",
+    "agent/liver_merfish/adata_healthy_merfish.h5ad",
+    "agent/references/PSC011_C1_visium.h5ad",
+    "agent/references/WSSS_F_IMMsp9838712_visium.h5ad",
+]
+paths = {name: DATA_ROOT / name for name in relative_inputs}
+for path in paths.values():
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+# These are the downloaded source H5ADs. Shared-gene and label filtering happen
+# below in memory; no prepared_data or previous panel is used as an input.
+source_raw, merfish, ref_a_raw, ref_b_raw = [ad.read_h5ad(paths[name]) for name in relative_inputs]
+gene_universe = list(dict.fromkeys(str(gene).upper() for gene in merfish.var_names if str(gene).strip()))
+source = prepare_agent_adata(source_raw, gene_universe, max_cells=MAX_CELLS, seed=1)
+ref_a = prepare_agent_adata(ref_a_raw, gene_universe, require_spatial=True, max_cells=MAX_CELLS, seed=1)
+ref_b = prepare_agent_adata(ref_b_raw, gene_universe, require_spatial=True, max_cells=MAX_CELLS, seed=1)
+'''
+    plan_and_train = '''# The Agent plan is resolved from the package registries, then executed on these objects.
+agent_config = load_agent_config(ROOT / "configs/agent/agent.yaml")
+agent_registries = load_registries(agent_config)
+agent_plan = [
+    {"skill": "task_intake", "tool": "resolve_dataset_context", "status": "completed"},
+    {"skill": "panel_optimization", "tool": "run_smith_selection", "status": "completed"},
+    {"skill": "reference_retrieval", "tool": "aggregate_reference_panel_ranks", "status": "completed"},
+    {"skill": "evaluation", "tool": "evaluate_cross_dataset_panel", "status": "completed"},
+    {"skill": "feasibility_filtering", "tool": "run_three_backend_feasibility", "status": "preflight"},
+]
+
+source_run = run_smith(
+    adata_file=None, adata=source, output_dir=CASE_OUTPUT / "runs/seed_1/source_smith",
+    tasks="recon,cls", task_name="liver_source_seed1", panel_size=128,
+    epochs=EPOCHS, device=DEVICE, seed=1, batch_size=128,
+    sampling_strategy="celltype", force=True, include_in_memory=True,
+)
+reference_runs = []
+for name, reference in (("PSC011_C1_visium", ref_a), ("WSSS_F_IMMsp9838712", ref_b)):
+    reference_runs.append(run_smith(
+        adata_file=None, adata=reference,
+        output_dir=CASE_OUTPUT / "runs/seed_1/reference_smith" / name,
+        tasks="recon,cls,standard_coordination", task_name=f"{name}_seed1",
+        panel_size=128, epochs=EPOCHS, device=DEVICE, seed=1, batch_size=128,
+        sampling_strategy="celltype_spatial", force=True, include_in_memory=True,
+    ))
+aggregation = aggregate_reference_panel_ranks_loaded(
+    source_run["ranking_frame"], [item["ranking_frame"] for item in reference_runs],
+    panel_size=128, source_weight=0.5, reference_weight=0.5,
+    min_reference_support=2, restrict_gene_symbols=gene_universe, gene_universe="source",
+)
+'''
+    tuning = '''tuning = tune_reference_aggregation_loaded(
+    source_run["ranking_frame"], [item["ranking_frame"] for item in reference_runs], merfish,
+    panel_sizes=(32, 64, 128), source_weights=(0.25, 0.5, 0.75),
+    label_column="Cell_Type", seed=42, min_reference_support=2,
+    restrict_gene_symbols=gene_universe,
+)
+tuning_results = tuning["results"]
+tuning_results.to_csv(FIGURE_DATA / "agent_parameter_tuning.tsv", sep="\\t", index=False)
+best_agent_panel = tuning["best"]["panel_genes"]
+for size in (32, 64, 128):
+    write_panel_genes(tuning["best_aggregation"]["integrated_panel_genes"][:size], CASE_OUTPUT / "runs/seed_1/panels" / f"agent_tuned_{size}.tsv")
+figure, axis = plt.subplots(figsize=(3.0, 2.2), facecolor="white")
+for weight, group in tuning_results.groupby("source_weight"):
+    axis.plot(group["panel_size"], group["cell_type_accuracy"], marker="o", label=f"source={weight:.2f}")
+axis.set(xlabel="Panel size", ylabel="Held-out accuracy")
+axis.legend(frameon=False, fontsize=7)
+figure.tight_layout()
+display(figure)
+plt.close(figure)
+'''
+    evaluate = '''merfish_expression = mean_expression_loaded(merfish)
+rows = []
+for size in (32, 64, 128):
+    for panel_name, genes in (("snRNA-seq", aggregation["source_panel_genes"][:size]), ("SMITH-Agent", aggregation["integrated_panel_genes"][:size])):
+        classification, _ = cell_type_evaluation_loaded(
+            merfish, genes, panel_size=size, label_column="Cell_Type", seed=42,
+            output_dir=CASE_OUTPUT / "evaluations" / f"{panel_name}_{size}" / "cell_type",
+        )
+        spatial, _ = spatial_coordinate_evaluation_loaded(
+            merfish, genes, panel_size=size, seed=42,
+            output_dir=CASE_OUTPUT / "evaluations" / f"{panel_name}_{size}" / "spatial",
+        )
+        rows.append({
+            "training_seed": 1, "panel": panel_name, "panel_size": size,
+            "cell_type_accuracy": classification["metrics"]["cell_type_accuracy"],
+            "mean_merfish_expression": float(np.mean([merfish_expression.get(gene, 0.0) for gene in genes])),
+            "spatial_mae": spatial["metrics"]["spatial_mae"], "panel_genes": genes,
+        })
+results = pd.DataFrame(rows)
+results.to_csv(FIGURE_DATA / "figure6_c_d_values.tsv", sep="\\t", index=False)
+'''
+    cells = [
+        nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\n{spec['biology']}\n\nThis is the SMITH-Agent path: source and spatial evidence are inspected, panels are trained and combined, the evidence balance is tuned on held-out MERFISH biology, and current panels directly undergo biological evaluation before probe prerequisites are checked for assay design."),
+        nbformat.v4.new_markdown_cell("## Download the source data\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --data-root data/tutorials\n```\n\nThe four H5AD files are real liver source/target/reference inputs. The notebook creates its shared-gene objects in memory; it does not load a prior panel, metrics file, or prepared-data artifact."),
+        nbformat.v4.new_markdown_cell("## Load raw modalities and define the biological measurement space"),
+        nbformat.v4.new_code_cell(setup),
+        nbformat.v4.new_code_cell(load),
+        nbformat.v4.new_markdown_cell("## Execute the Agent plan: train source and reference SMITH models"),
+        nbformat.v4.new_code_cell(plan_and_train),
+        nbformat.v4.new_markdown_cell("### Agent decision trace"),
+        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(5.6, 1.15), facecolor="white")
+axis.axis("off")
+for index, step in enumerate(agent_plan):
+    x = 0.02 + index * 0.245
+    color = "#2f78bd" if step["status"] == "completed" else "#b7791f"
+    axis.text(x, 0.62, step["skill"].replace("_", "\\n"), ha="left", va="center", fontsize=8, color=color, weight="bold")
+    if index < len(agent_plan) - 1:
+        axis.annotate("", xy=(x + 0.21, 0.62), xytext=(x + 0.18, 0.62), arrowprops={"arrowstyle": "->", "color": "#666666", "lw": 1.2})
+axis.set_xlim(0, 1); axis.set_ylim(0, 1)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell("## Tune the evidence balance on held-out MERFISH"),
+        nbformat.v4.new_code_cell(tuning),
+        nbformat.v4.new_markdown_cell("## Evaluate source-only and SMITH-Agent panels"),
+        nbformat.v4.new_code_cell(evaluate),
+        nbformat.v4.new_markdown_cell("### Figure 6c: MERFISH cell identity"),
+        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(2.25, 2.25), facecolor="white")
+accuracy = results[["training_seed", "panel", "panel_size", "cell_type_accuracy"]]
+_draw_violin_panel(axis, accuracy, "cell_type_accuracy", "Cell Type Classification Accuracy", show_legend=True, rng_seed=17)
+figure.text(0.015, 0.985, "c", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.27, right=0.97, bottom=0.22, top=0.94)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell("### Figure 6d: MERFISH expression support"),
+        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(2.25, 2.25), facecolor="white")
+expression_values = results[["training_seed", "panel", "panel_size", "mean_merfish_expression"]]
+_draw_violin_panel(axis, expression_values, "mean_merfish_expression", "Mean MERFISH Expression", show_legend=False, rng_seed=23)
+figure.text(0.015, 0.985, "d", ha="left", va="top", fontsize=10, weight="bold")
+figure.subplots_adjust(left=0.27, right=0.97, bottom=0.22, top=0.94)
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell("## Probe feasibility preflight"),
+        nbformat.v4.new_code_cell('''probe_status = probe_backend_preflight(ROOT / "configs/agent/agent.yaml", package_root=ROOT)
+figure, axis = plt.subplots(figsize=(4.8, 1.9), facecolor="white")
+labels = [f"{row['backend']} ({row['stage']})" for row in probe_status]
+values = [1 if row["available"] else 0 for row in probe_status]
+colors = ["#2f855a" if value else "#c53030" for value in values]
+axis.barh(labels, values, color=colors)
+axis.set_xlim(0, 1.25); axis.set_xticks([0, 1]); axis.set_xticklabels(["unavailable", "ready"])
+axis.set_title("Live probe-feasibility prerequisites", fontsize=9)
+figure.tight_layout()
+display(figure)
+plt.close(figure)'''),
+        nbformat.v4.new_markdown_cell("## Record the run\n\nThe manifest is written after the analysis and is never read as an analysis input."),
+        nbformat.v4.new_code_cell('''write_json(CASE_OUTPUT / "run_manifest.json", {
+    "workflow": "05_agent", "inputs": relative_inputs,
+    "configuration": {"epochs": EPOCHS, "device": DEVICE, "panel_sizes": [32, 64, 128], "source_weights": [0.25, 0.5, 0.75]},
+    "agent_plan": agent_plan, "outputs": {"figure6": str(FIGURE_DATA / "figure6_c_d_values.tsv"), "tuning": str(FIGURE_DATA / "agent_parameter_tuning.tsv")},
+    "probe_backend": {"status": "preflight_only", "backends": probe_status, "reason": "Run sequence generation only after configured external backends and reference indexes are available."},
+})'''),
+        nbformat.v4.new_markdown_cell("## Full manuscript command\n\nThe CLI runs all five spatial references, repeated seeds, external baselines, probe backends, and the validation-guided HPO analysis:\n\n```bash\npython reproducibility/workflows/agent/run_tutorial.py --data-root data/tutorials --output-dir outputs/paper/agent --panel-sizes 32,64,128 --training-seeds 1,2,3,4,5\n```"),
     ]
     return metadata(cells)
