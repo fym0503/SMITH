@@ -17,6 +17,10 @@ def metadata(cells):
 def ribomap_notebook(spec: dict, epochs: int, device: str):
     setup = f"""from pathlib import Path
 import os, sys
+
+ROOT = Path.cwd().resolve()
+sys.path.insert(0, str(ROOT / "src"))
+
 import anndata as ad
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,8 +31,6 @@ from reproducibility.workflows.ribomap_transfer.evaluate_outputs import prepare_
 from reproducibility.workflows.ribomap_transfer.analysis import bias_table_from_objects, jaccard_from_panel_records, performance_paired_tests, bias_pairwise_tests
 from reproducibility.workflows.ribomap_transfer.plot_figure4 import _draw_performance, _draw_jaccard, _draw_bias
 
-ROOT = Path.cwd().resolve()
-sys.path.insert(0, str(ROOT / "src"))
 DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
 CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "ribomap"
 FIGURE_DATA = CASE_OUTPUT / "figure_data"
@@ -171,6 +173,10 @@ plt.close(figure)"""),
 def agent_notebook(spec: dict, epochs: int, device: str):
     setup = f"""from pathlib import Path
 import os, sys
+
+ROOT = Path.cwd().resolve()
+sys.path.insert(0, str(ROOT / "src"))
+
 import anndata as ad
 import matplotlib.pyplot as plt
 import numpy as np
@@ -181,8 +187,6 @@ from smith_agent.benchmarking import prepare_agent_adata, cell_type_evaluation_l
 from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded
 from reproducibility.workflows.agent.plot_figure6 import _draw_violin_panel
 
-ROOT = Path.cwd().resolve()
-sys.path.insert(0, str(ROOT / "src"))
 DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
 CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "agent"
 FIGURE_DATA = CASE_OUTPUT / "figure_data"
