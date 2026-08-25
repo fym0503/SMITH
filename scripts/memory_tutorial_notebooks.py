@@ -323,7 +323,13 @@ def agent_notebook(spec: dict, epochs: int, device: str):
 import os, sys
 
 ROOT = Path.cwd().resolve()
-sys.path.insert(0, str(ROOT / "src"))
+for candidate in (ROOT, *ROOT.parents):
+    if (candidate / "reproducibility").is_dir() and (candidate / "scripts").is_dir():
+        ROOT = candidate
+        break
+else:
+    raise RuntimeError("Could not locate the SMITH repository root")
+sys.path.insert(0, str(ROOT))
 
 import anndata as ad
 import matplotlib.pyplot as plt
@@ -351,8 +357,12 @@ from reproducibility.workflows.agent.plot_figure6 import _draw_violin_panel
 from reproducibility.workflows.figure_style import configure
 configure()
 
-DATA_ROOT = Path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials")).resolve()
-CASE_OUTPUT = Path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")).resolve() / "agent"
+def resolve_repo_path(value):
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+DATA_ROOT = resolve_repo_path(os.environ.get("SMITH_TUTORIAL_DATA", "data/tutorials"))
+CASE_OUTPUT = resolve_repo_path(os.environ.get("SMITH_TUTORIAL_OUTPUT", "outputs/tutorials")) / "agent"
 FIGURE_DATA = CASE_OUTPUT / "figure_data"
 EPOCHS = int(os.environ.get("SMITH_TUTORIAL_EPOCHS", {epochs!r}))
 DEVICE = os.environ.get("SMITH_TUTORIAL_DEVICE", {device!r})
@@ -515,7 +525,7 @@ figure.tight_layout()
 display(figure)
 plt.close(figure)'''),
         nbformat.v4.new_markdown_cell("## Record the run\n\nThe manifest is written after the analysis and is never read as an analysis input."),
-        nbformat.v4.new_code_cell('''write_json(CASE_OUTPUT / "run_manifest.json", {
+        nbformat.v4.new_code_cell('''_ = write_json(CASE_OUTPUT / "run_manifest.json", {
     "workflow": "05_agent", "inputs": relative_inputs,
     "configuration": {"epochs": EPOCHS, "device": DEVICE, "panel_sizes": [32, 64, 128], "source_weights": [0.25, 0.5, 0.75]},
     "agent_plan": agent_plan, "outputs": {"figure6": str(FIGURE_DATA / "figure6_c_d_values.tsv"), "tuning": str(FIGURE_DATA / "agent_parameter_tuning.tsv")},
