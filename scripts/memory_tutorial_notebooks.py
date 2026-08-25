@@ -476,7 +476,7 @@ results.to_csv(FIGURE_DATA / "figure6_c_d_values.tsv", sep="\\t", index=False)
         nbformat.v4.new_code_cell(load),
         nbformat.v4.new_markdown_cell("## Execute the Agent plan: train source and reference SMITH models"),
         nbformat.v4.new_code_cell(plan_and_train),
-        nbformat.v4.new_markdown_cell("### Agent decision trace"),
+        nbformat.v4.new_markdown_cell("### SMITH-Agent workflow stages"),
         nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(5.6, 1.15), facecolor="white")
 axis.axis("off")
 for index, step in enumerate(agent_plan):
