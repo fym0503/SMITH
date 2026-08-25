@@ -413,7 +413,10 @@ def prepare_agent_adata(
     prepared.var_names = genes
     prepared.var = pd.DataFrame(index=pd.Index(genes))
     prepared.obs["celltype"] = prepared.obs[label].astype(str)
-    coords = _coordinates(prepared)
+    try:
+        coords = _coordinates(prepared)
+    except KeyError:
+        coords = None
     if require_spatial and coords is None:
         raise KeyError("Spatial reference has no coordinates")
     if coords is not None:
