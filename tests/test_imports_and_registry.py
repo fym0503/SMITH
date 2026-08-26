@@ -1,5 +1,6 @@
 from importlib import resources
 from pathlib import Path
+import sys
 
 from smith_agent.config import load_agent_config
 from smith_agent.registry import load_registries
@@ -58,3 +59,31 @@ def test_model_entrypoint_resolves_from_packaged_resources(monkeypatch, tmp_path
 
     assert entrypoint == resource_root / "scripts" / "main.py"
     assert entrypoint.exists()
+
+
+def test_smith_selection_falls_back_to_current_python(monkeypatch, tmp_path):
+    from smith_agent.runtime import build_runtime
+    from smith_agent.tools import defaults
+
+    repo = Path(__file__).resolve().parents[1]
+    runtime = build_runtime(config_path=repo / "configs" / "agent" / "agent.yaml")
+    captured = {}
+
+    monkeypatch.setattr(defaults.shutil, "which", lambda _name: None)
+
+    def fake_run(config, execute=False):
+        captured["python_executable"] = config.python_executable
+        return {"status": "planned", "manifest_path": str(tmp_path / "manifest.json")}
+
+    monkeypatch.setattr(defaults, "run_smith_selection", fake_run)
+    defaults._handle_run_smith_selection(
+        runtime,
+        {
+            "adata_file": str(tmp_path / "input.h5ad"),
+            "tasks": "recon",
+            "task_name": "test",
+            "execute": False,
+        },
+    )
+
+    assert captured["python_executable"] == sys.executable

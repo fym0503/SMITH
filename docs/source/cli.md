@@ -8,6 +8,29 @@ Use `python scripts/main.py --help` for the complete training interface. The run
 
 ## SMITH-Agent
 
+Install the package in the environment that will run the experiments. This
+registers both `smith-agent` (the interactive shell) and `smith-cli` (the
+command-oriented interface):
+
+```bash
+python -m pip install -e .
+```
+
+Configure an OpenAI-compatible planner before using free-form natural-language
+requests. The agent still exposes deterministic tools when no planner is
+configured, but it cannot interpret arbitrary questions without a model:
+
+```bash
+export OPENAI_BASE_URL=https://api.babelark.com/v1
+export OPENAI_MODEL=<model-name>
+export OPENAI_API_KEY=<api-key>
+smith-agent --config configs/agent/agent.yaml shell
+```
+
+The shell accepts dataset paths in a message with an `@/absolute/path.h5ad`
+mention, then can run registered SMITH, evaluation, feasibility, and reporting
+tools. It is a terminal interface; the package does not provide a web server.
+
 ```bash
 smith-cli tools
 smith-cli datasets
