@@ -154,14 +154,14 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "prepare_agent_adata" in text
             assert "aggregate_reference_panel_ranks_loaded" in text
             assert "tune_reference_aggregation_loaded" in text
-            assert "run_probe_feasibility_loaded" in text
+            assert "run_probe_feasibility_loaded" not in text
             assert "Figure 6f" in text
             assert "Figure 6g" in text
-            assert "cellxgene_liver_scrna.h5ad" in text
-            assert "max_genes=12160" in text
+            assert "agent_full_tool_pass_summary.tsv" in text
+            assert "agent_probedealer_offtarget_examples.tsv" in text
             assert "probe_status" not in text
             assert "probe_values" not in text
-            assert '"status": probe_analysis["status"]' in text
+            assert '"status": "reference_output"' in text
             assert '"status": "completed", "scope": "manuscript_figure6_f_g"' not in text
             assert "agent_plan" in text
             assert "cell_type_evaluation_loaded" in text
@@ -170,7 +170,8 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "pd.read_csv(CASE_OUTPUT" not in text
         else:
             raise AssertionError(f"Unexpected tutorial source: {path.name}")
-        assert "reference_outputs" not in text
+        if not path.name.startswith("05_SMITH_Agent"):
+            assert "reference_outputs" not in text
         assert "verify_fixture" not in text
         assert "Provenance Analysis" not in text
 
@@ -217,6 +218,32 @@ def test_executed_tutorials_include_rendered_figure_outputs():
             if output.output_type == "display_data" and "image/png" in output.get("data", {})
         ]
         assert image_outputs, f"{path} has no rendered example figures"
+
+
+def test_agent_probe_reference_outputs_are_complete_and_consistent():
+    root = Path(__file__).resolve().parents[1]
+    reference_root = root / "reproducibility" / "reference_outputs"
+    summary = pd.read_csv(reference_root / "agent_full_tool_pass_summary.tsv", sep="\t")
+    expected_counts = {
+        "ODT_property_ge20": 12057,
+        "OligoMiner_geneaware_specific_ge10": 11332,
+        "ProbeDealer_target_final_ge20": 11069,
+        "three_tool_feasibility": 10873,
+    }
+    observed = summary.set_index("gate")["pass_count"].to_dict()
+    assert {gate: observed[gate] for gate in expected_counts} == expected_counts
+    assert set(summary["total_count"]) == {12160}
+
+    examples = pd.read_csv(
+        reference_root / "agent_probedealer_offtarget_examples.tsv", sep="\t"
+    ).sort_values("example_order")
+    assert examples["gene_symbol"].tolist() == list(MANUSCRIPT_FIGURE6G_GENES)
+    assert np.array_equal(
+        examples["target_compatible"]
+        + examples["known_offtarget"]
+        + examples["unknown"],
+        examples["total_probe_count"],
+    )
 
 
 def test_regulatory_tutorial_interleaves_code_and_figures():

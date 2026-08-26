@@ -1,0 +1,11 @@
+example_order	gene_symbol	target_compatible	known_offtarget	unknown	total_probe_count	offtarget_symbol
+0	JPX	8	230	34	272	FTX
+1	RGPD5	0	211	11	222	RGPD6
+2	RGPD2	2	192	16	210	RGPD1
+3	TMEM140	0	176	3	179	CYREN
+4	IGF1	19	165	9	193	HELLPAR
+5	UTP14C	0	154	4	158	ALG11
+6	SERF2	9	110	24	143	HYPK
+7	NDUFB2	10	72	0	82	BRAF
+8	SRSF9	0	49	1	50	GATC
+9	PTPRCAP	1	27	0	28	CORO1B

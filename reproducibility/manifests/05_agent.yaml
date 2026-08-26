@@ -5,8 +5,8 @@ manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay
 figure: Figure 6c-d, 6f-g
 runtime: 20-120 minutes depending on references, cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from real liver scRNA, MERFISH and at least two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels.
-claim: Reference aggregation and manuscript-level probe feasibility can be recomputed from fresh liver H5AD objects and the ranked candidate universe.
+summary: Starts from real liver snRNA-seq, MERFISH and two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels. The hosted page visualizes completed manuscript-scale probe outputs for Figure 6f-g.
+claim: Reference aggregation and MERFISH evaluation are recomputed from fresh liver H5AD objects. Figure 6f-g use clearly labelled precomputed backend artifacts because the external probe screens take hours.
 inputs:
   - path: agent/liver_merfish/cellxgene_liver_scrna.h5ad
     kind: data
@@ -38,4 +38,4 @@ full_workflow:
   source_scripts:
     - reproducibility/workflows/agent/run_tutorial.py
     - reproducibility/workflows/agent/evaluate_outputs.py
-  note: Figure 6f-g runs the three live probe gates when ODT, OligoMiner, ProbeDealer and the human transcriptome index are configured. Missing prerequisites raise an actionable error; no pass rate is fabricated.
+  note: The CLI can recompute Figure 6f-g through the three live probe gates when ODT, OligoMiner, ProbeDealer and the human transcriptome index are configured. The hosted notebook instead plots completed 12,160-gene reference outputs and labels them as such. Missing prerequisites in a live run raise an actionable error; no pass rate is fabricated.
