@@ -7,7 +7,7 @@ repro-check:
 	smith-repro check
 
 repro-run:
-	@for case in 01_wmb 02_regulatory_activity 03_ribomap_transfer 04_inhouse_disease 05_agent; do \
+	@for case in 02_regulatory_activity 03_ribomap_transfer 05_agent; do \
 		smith-repro run $$case --output-dir outputs/reproducibility/$$case; \
 	done
 

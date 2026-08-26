@@ -59,16 +59,15 @@ from reproducibility.workflows.regulatory_activity.paper_analysis import (
 from reproducibility.workflows.regulatory_activity.plot_figure3 import plot as plot_figure3
 
 
-EXPECTED_CASES = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
+EXPECTED_CASES = {"02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
 
 
 def test_public_case_registry_has_only_approved_chapters():
     cases = load_cases()
     assert set(cases) == EXPECTED_CASES
-    assert [case.order for case in cases.values()] == [1, 2, 3, 5]
+    assert [case.order for case in cases.values()] == [2, 3, 5]
     assert all("fixture" not in str(item).lower() for case in cases.values() for item in case.inputs)
-    assert not check_case(cases["01_wmb"])["ready"]
-    assert all(not check_case(cases[case_id])["ready"] for case_id in EXPECTED_CASES - {"01_wmb"})
+    assert all(not check_case(cases[case_id])["ready"] for case_id in EXPECTED_CASES)
 
 
 def test_data_root_drives_readiness(tmp_path: Path):
@@ -83,10 +82,9 @@ def test_data_root_drives_readiness(tmp_path: Path):
     assert all(item["kind"] == "data" for item in status["inputs"])
 
 
-def test_wmb_and_missing_data_cannot_run(tmp_path: Path):
-    for case_id in ("01_wmb", "02_regulatory_activity"):
-        with pytest.raises((FileNotFoundError, RuntimeError)):
-            run_case(load_cases()[case_id], tmp_path / "out", data_root=tmp_path)
+def test_missing_data_cannot_run(tmp_path: Path):
+    with pytest.raises((FileNotFoundError, RuntimeError)):
+        run_case(load_cases()["02_regulatory_activity"], tmp_path / "out", data_root=tmp_path)
 
 
 def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
@@ -94,7 +92,7 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
     manifest = yaml.safe_load((root / "reproducibility" / "data_manifest.yaml").read_text())
     assert manifest["zenodo_record_url"] is None
     assert manifest["publication_status"] == "prepared_not_uploaded"
-    assert set(manifest["cases"]) == EXPECTED_CASES - {"01_wmb"}
+    assert set(manifest["cases"]) == EXPECTED_CASES
     for case in manifest["cases"].values():
         assert case["archive_url"] is None
         assert case["files"]

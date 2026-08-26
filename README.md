@@ -43,7 +43,6 @@ Each main Results section has one representative executable example. The example
 ```bash
 smith-repro list
 smith-repro check
-smith-repro run 01_wmb
 smith-repro run 02_regulatory_activity
 smith-repro run 03_ribomap_transfer
 smith-repro check 02_regulatory_activity --data-root data/tutorials

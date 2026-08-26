@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 
-PUBLIC_CASE_IDS = {"01_wmb", "02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
+PUBLIC_CASE_IDS = {"02_regulatory_activity", "03_ribomap_transfer", "05_agent"}
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,6 @@ These runnable notebooks follow SMITH from real biological inputs through model 
 ```{toctree}
 :maxdepth: 1
 
-01_wmb
 notebooks/regulatory_section/02_SMITH_Regulatory_Activity_executed
 notebooks/ribomap_section/03_SMITH_RIBOMap_Transfer_executed
 notebooks/agent_section/05_SMITH_Agent_Evaluation_executed

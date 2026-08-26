@@ -21,7 +21,6 @@ root_doc = "index"
 exclude_patterns = [
     "_build/**",
     "**/*_source.ipynb",
-    "tutorials/notebooks/wmb_section/**",
     "**/.ipynb_checkpoints",
 ]
 html_theme = "furo"
