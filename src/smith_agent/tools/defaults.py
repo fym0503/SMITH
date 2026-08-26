@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -553,10 +555,16 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
             resolved_overrides[key] = caster(arguments[key])
         elif key in extra_args:
             resolved_overrides[key] = caster(extra_args.pop(key))
+    configured_python = str(model_entry.metadata.get("python_executable", "python3")).strip()
+    # Keep model configs portable: a named interpreter may be absent on a
+    # cluster, while the current agent process already has the right deps.
+    python_executable = (
+        configured_python
+        if (Path(configured_python).is_file() or shutil.which(configured_python))
+        else sys.executable
+    )
     config = SmithSelectionConfig(
-        python_executable=str(
-            model_entry.metadata.get("python_executable", "python3")
-        ),
+        python_executable=python_executable,
         smith_root=smith_root,
         adata_file=Path(arguments["adata_file"]),
         saving_dir=output_dir / "saving",
