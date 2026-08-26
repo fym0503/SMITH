@@ -34,8 +34,18 @@ from smith_agent.benchmarking import (
     prepare_agent_adata,
     spatial_coordinate_evaluation_loaded,
 )
-from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks_loaded, tune_reference_aggregation_loaded
+from smith_agent.panel_rank_aggregation import (
+    aggregate_reference_panel_ranks_loaded,
+    rank_genes_from_adata_loaded,
+    tune_reference_aggregation_loaded,
+)
 from smith_agent.feasibility.preflight import probe_backend_preflight
+from smith_agent.feasibility.manuscript import (
+    MANUSCRIPT_FIGURE6G_GENES,
+    manuscript_offtarget_examples,
+    manuscript_pass_rates,
+    ranked_gene_universe,
+)
 from reproducibility.workflows.regulatory_activity.analysis import paired_wilcoxon, statistical_analysis
 from reproducibility.workflows.regulatory_activity.evaluate_outputs import evaluate_loaded
 from reproducibility.workflows.regulatory_activity.paper_analysis import (
@@ -146,8 +156,13 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "prepare_agent_adata" in text
             assert "aggregate_reference_panel_ranks_loaded" in text
             assert "tune_reference_aggregation_loaded" in text
-            assert "probe_backend_preflight" in text
-            assert "probe_property_screen_loaded" in text
+            assert "run_probe_feasibility_loaded" in text
+            assert "Figure 6f" in text
+            assert "Figure 6g" in text
+            assert "cellxgene_liver_scrna.h5ad" in text
+            assert "max_genes=12160" in text
+            assert "probe_status" not in text
+            assert "probe_values" not in text
             assert "agent_plan" in text
             assert "cell_type_evaluation_loaded" in text
             assert 'run_manifest.json").read' not in text
@@ -165,7 +180,7 @@ def test_tutorial_sources_target_manuscript_panels():
     expected = {
         "02_SMITH_Regulatory_Activity_source.ipynb": ("Regulatory programs and cross-modality transfer in C. elegans", "plot_figure3.py"),
         "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Cross-modality brain panel transfer to RIBOMap", "plot_figure4.py"),
-        "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver cell identity in MERFISH", "plot_figure6.py"),
+        "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver cell identity and probe feasibility in MERFISH", "plot_figure6.py"),
     }
     sources = (
         path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
@@ -365,6 +380,67 @@ def test_agent_tuning_and_probe_preflight_use_live_objects():
     statuses = probe_backend_preflight()
     assert statuses
     assert all({"backend", "available", "requirements", "reason"} <= set(row) for row in statuses)
+
+
+def test_manuscript_probe_pass_rates_use_three_live_gates():
+    table = pd.DataFrame(
+        {
+            "gene_symbol": ["A", "B", "C"],
+            "transcript_resolved": [True, True, False],
+            "odt_property_probe_count": [20, 19, 50],
+            "oligominer_geneaware_specific_probe_count": [10, 20, 20],
+            "probedealer_target_final_probe_count": [20, 20, 20],
+        }
+    )
+    result = manuscript_pass_rates(table)
+    assert result.set_index("tool").loc["ODT", "pass_count"] == 2
+    assert result.set_index("tool").loc["OligoMiner", "pass_count"] == 3
+    assert result.set_index("tool").loc["ProbeDealer", "pass_count"] == 3
+    assert result.set_index("tool").loc["Integrated", "pass_count"] == 1
+
+
+def test_manuscript_offtarget_examples_are_ordered_and_partitioned():
+    genes = list(MANUSCRIPT_FIGURE6G_GENES)
+    risk = pd.DataFrame(
+        {
+            "gene_symbol": genes,
+            "symbol_target_only_probe_count_known": [10] * len(genes),
+            "clean_different_symbol_probe_count": [5] * len(genes),
+            "unknown_symbol_probe_count": [2] * len(genes),
+            "no_hit_probe_count": [3] * len(genes),
+            "initial_probe_count": [20] * len(genes),
+            "top_cross_symbols": ["OFF:5"] * len(genes),
+        }
+    )
+    result = manuscript_offtarget_examples(risk)
+    assert result["gene_symbol"].tolist() == genes
+    assert (result[["target_compatible", "known_offtarget", "unknown"]].sum(axis=1) == 20).all()
+    assert result["total_probe_count"].eq(20).all()
+    assert result["offtarget_symbol"].eq("OFF").all()
+
+
+def test_ranked_gene_universe_deduplicates_without_reordering():
+    ranking = pd.DataFrame({"gene_symbol": ["B", "A", "B", "C"], "score": [1, 2, 3, 4]})
+    result = ranked_gene_universe(ranking)
+    assert result["gene_symbol"].tolist() == ["B", "A", "C"]
+
+
+def test_loaded_source_ranking_preserves_gene_metadata_and_filters():
+    adata = ad.AnnData(
+        X=np.array([[1, 0, 2], [0, 3, 0], [1, 1, 1]], dtype=float),
+        var=pd.DataFrame({"feature_name": ["GENE_A", "GENE_B", "GENE_C"]}),
+    )
+    ranking = rank_genes_from_adata_loaded(
+        adata,
+        dataset_id="synthetic",
+        symbol_column="feature_name",
+        min_detection_rate=0.3,
+        max_cells=0,
+        spatial_weight=0.0,
+    )
+    assert set(ranking["gene_symbol"]) == {"GENE_A", "GENE_B", "GENE_C"}
+    assert ranking["rank"].tolist() == [1, 2, 3]
+    assert ranking["dataset_id"].eq("synthetic").all()
 
 
 def test_regulatory_paired_test_uses_split_as_pairing_unit():

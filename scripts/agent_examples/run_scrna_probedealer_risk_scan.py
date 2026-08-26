@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-target-probes", type=int, default=20)
     parser.add_argument("--min-different-symbol-probes", type=int, default=20)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--gene-metadata-h5ad", default=str(SOURCE_GENE_METADATA_H5AD))
     return parser.parse_args()
 
 
@@ -200,6 +201,7 @@ def main() -> None:
             output_dir=probe_dir,
             species=args.species,
             panel=panel,
+            gene_metadata_h5ad=args.gene_metadata_h5ad,
         )
     else:
         manifest_result = {

@@ -117,13 +117,17 @@ cases:
     disk_gb: 8.0
     ram_gb: 32
     gpu: optional
-    source: Healthy liver snRNA/MERFISH objects and materialized liver Visium references
+    source: CellxGene liver scRNA candidate universe, healthy liver snRNA/MERFISH objects and materialized liver Visium references
     upstream_license: pending_verification
     processing_scripts:
       - reproducibility/workflows/agent/run_tutorial.py
       - reproducibility/workflows/agent/evaluate_outputs.py
-    preparation: The hosted tutorial uses two real references. All five real references required by the Figure 6c-d paper-scale command are included in the archive definition.
+    preparation: Figure 6c-d uses the MERFISH shared-gene source/reference objects. Figure 6f-g independently ranks the complete CellxGene liver scRNA candidate universe from its H5AD input before running the three probe gates. The hosted tutorial uses two real references; all five paper-scale references remain in the archive definition.
     files:
+      - path: agent/liver_merfish/cellxgene_liver_scrna.h5ad
+        source: CellxGene liver scRNA source used to generate the complete Figure 6f-g candidate ranking
+        bytes: 1026127182
+        sha256: 9d05c010eb5233535a2a40bc2693fe5c61b4bb0379f01b8314273a7634ee3b11
       - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
         bytes: 1262101004
         sha256: faa8897adfc86a436053c28e7d5012a422335a00f9faf306bc09761b76127ade

@@ -1,13 +1,17 @@
 id: 05_agent
 order: 5
-title: Multi-reference ranking and probe feasibility
+title: Multi-reference ranking and manuscript probe feasibility
 manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay Design
-figure: Figure 6c-d
+figure: Figure 6c-d, 6f-g
 runtime: 20-120 minutes depending on references, cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
 summary: Starts from real liver scRNA, MERFISH and at least two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels.
-claim: Reference aggregation and probe-level checks can be recorded as explicit, auditable stages after panel selection.
+claim: Reference aggregation and manuscript-level probe feasibility can be recomputed from fresh liver H5AD objects and the ranked candidate universe.
 inputs:
+  - path: agent/liver_merfish/cellxgene_liver_scrna.h5ad
+    kind: data
+    bytes: 1026127182
+    sha256: 9d05c010eb5233535a2a40bc2693fe5c61b4bb0379f01b8314273a7634ee3b11
   - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
     kind: data
     bytes: 1262101004
@@ -24,14 +28,14 @@ inputs:
     kind: data
     bytes: 314137660
     sha256: c2f418c03d5792852d27210770ad4b094e9abb7c2fca9bc6010847ce065f4f9d
-outputs: [prepared_data/*.h5ad, runs/*/aggregation/integrated_panel_rank.tsv, figure_data/figure6_c_cell_type_accuracy.tsv, figure_data/figure6_d_merfish_expression.tsv, figures/figure6_c.*, figures/figure6_d.*, run_manifest.json]
-reproduced_panels: [Figure 6c, Figure 6d]
+outputs: [prepared_data/*.h5ad, runs/*/aggregation/integrated_panel_rank.tsv, figure_data/figure6_c_cell_type_accuracy.tsv, figure_data/figure6_d_merfish_expression.tsv, figure_data/figure6_f_pass_rates.tsv, figure_data/figure6_g_offtarget_examples.tsv, figures/figure6_c.*, figures/figure6_d.*, figures/figure6_f.*, figures/figure6_g.*, run_manifest.json]
+reproduced_panels: [Figure 6c, Figure 6d, Figure 6f, Figure 6g]
 not_reproduced:
-  Figure 6e-g: Requires separately installed probe-design backends and indexes.
+  Figure 6e: Requires the separate three-risk feasibility overview.
   Figure 6h-j: Requires the validation-guided hyperparameter search.
 full_workflow:
   availability: mixed_public_and_external_tools
   source_scripts:
     - reproducibility/workflows/agent/run_tutorial.py
     - reproducibility/workflows/agent/evaluate_outputs.py
-  note: Probe screening is intentionally not run by this tutorial. ODT, BLAST indexes, OligoMiner and ProbeDealer backends must be configured separately.
+  note: Figure 6f-g runs the three live probe gates when ODT, OligoMiner, ProbeDealer and the human transcriptome index are configured. Missing prerequisites raise an actionable error; no pass rate is fabricated.

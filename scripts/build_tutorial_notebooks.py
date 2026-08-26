@@ -87,7 +87,7 @@ SPECS = {
     "05_agent": {
         "case": "05_agent",
         "folder": "agent_section", "stem": "05_SMITH_Agent_Evaluation",
-        "title": "Liver cell identity in MERFISH", "figure": "Figure 6c-d",
+        "title": "Liver cell identity and probe feasibility in MERFISH", "figure": "Figure 6c-d, 6f-g",
         "biology": "Which genes should be measured in a spatial liver assay so that cell identities and their expression programs remain interpretable? The source snRNA-seq provides broad cell-state coverage, while spatial references add tissue context; the experiment compares a source-only panel with a panel informed by both kinds of biological evidence before reading out MERFISH.",
         "data_role": "The inputs are healthy-liver snRNA-seq, MERFISH, and spatial-reference H5AD files. MERFISH is the held-out assay used for evaluation; the snRNA-seq and spatial references are training views that contribute complementary cell-state and tissue-location information.",
         "model_role": "SMITH is trained separately on the source and each spatial reference after restricting them to the MERFISH gene universe. Source and reference rankings are aggregated into source-only and multi-reference panels, which are newly written for each seed and panel size.",
@@ -95,18 +95,20 @@ SPECS = {
         "workflow": "reproducibility/workflows/agent/run_tutorial.py",
         "plotter": "reproducibility/workflows/agent/plot_figure6.py", "output": "agent",
         "inputs": [
-            "agent/liver_merfish/adata_healthy_nucseq.h5ad", "agent/liver_merfish/adata_healthy_merfish.h5ad",
+            "agent/liver_merfish/cellxgene_liver_scrna.h5ad", "agent/liver_merfish/adata_healthy_nucseq.h5ad", "agent/liver_merfish/adata_healthy_merfish.h5ad",
             "agent/references/PSC011_C1_visium.h5ad", "agent/references/WSSS_F_IMMsp9838712_visium.h5ad",
         ],
         "arguments": ["--reference", "references/PSC011_C1_visium.h5ad", "--reference", "references/WSSS_F_IMMsp9838712_visium.h5ad", "--panel-sizes", "32,64,128", "--training-seeds", "1,2", "--max-cells", "3000"],
         "plot_arguments": ["--accuracy", "figure_data/figure6_c_cell_type_accuracy.tsv", "--expression", "figure_data/figure6_d_merfish_expression.tsv"],
-        "tables": ["figure_data/figure6_c_cell_type_accuracy.tsv", "figure_data/figure6_d_merfish_expression.tsv"],
+        "tables": ["figure_data/figure6_c_cell_type_accuracy.tsv", "figure_data/figure6_d_merfish_expression.tsv", "figure_data/figure6_f_pass_rates.tsv", "figure_data/figure6_g_offtarget_examples.tsv"],
         "figure_panels": [
             ("Figure 6c - MERFISH cell-type accuracy", "figures/figure6_c.png", 430),
             ("Figure 6d - MERFISH expression support", "figures/figure6_d.png", 430),
+            ("Figure 6f - package-level probe feasibility", "figures/figure6_f.png", 430),
+            ("Figure 6g - representative ProbeDealer off-target profiles", "figures/figure6_g.png", 430),
         ],
         "paper_command": "--panel-sizes 32,64,128 --training-seeds 1,2,3,4,5 --epochs 200 (omit --reference to use all five manifest-listed defaults)",
-        "scope": "This hosted run uses two real spatial references and two training seeds. The manuscript Figure 6c-d command uses five retrieved liver references and five training seeds. Figure 6e-j requires external probe-design backends and the validation-guided HPO run; this notebook does not fabricate those panels.",
+        "scope": "This hosted run uses two real spatial references and two training seeds. The manuscript Figure 6c-d command uses five retrieved liver references and five training seeds. Figure 6f-g additionally runs the full ranked liver candidate universe through ODT, OligoMiner and ProbeDealer; Figures 6e and 6h-j remain outside this hosted tutorial.",
     },
 }
 

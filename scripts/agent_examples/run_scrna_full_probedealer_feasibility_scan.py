@@ -49,6 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-known-offtarget-probes", type=int, default=20)
     parser.add_argument("--min-offtarget-fraction-known", type=float, default=0.5)
     parser.add_argument("--force-manifest", action="store_true")
+    parser.add_argument("--gene-metadata-h5ad", default=str(SOURCE_GENE_METADATA_H5AD))
     parser.add_argument("--force-batches", action="store_true")
     return parser.parse_args()
 
@@ -345,6 +346,7 @@ def main() -> None:
             output_dir=probe_dir,
             species=args.species,
             panel=panel,
+            gene_metadata_h5ad=args.gene_metadata_h5ad,
         )
     else:
         manifest_result = {
@@ -365,7 +367,7 @@ def main() -> None:
     )
 
     transcript_to_gene = load_transcript_to_gene(HUMAN_REFERENCE_DIR / "transcript_to_gene.tsv")
-    gene_id_to_symbol = load_gene_symbols_from_h5ad(SOURCE_GENE_METADATA_H5AD)
+    gene_id_to_symbol = load_gene_symbols_from_h5ad(args.gene_metadata_h5ad)
     gene_id_to_symbol.update(
         dict(zip(manifest["gene_id"].astype(str), manifest["gene_symbol"].astype(str), strict=False))
     )

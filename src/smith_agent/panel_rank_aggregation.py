@@ -156,9 +156,8 @@ def _filter_gene_patterns(df: pd.DataFrame, patterns: list[str] | None) -> pd.Da
     return df[keep].copy()
 
 
-def rank_genes_from_adata(
-    adata_file: str | Path,
-    output_tsv: str | Path,
+def rank_genes_from_adata_loaded(
+    adata: ad.AnnData,
     dataset_id: str = "",
     data_role: str = "reference",
     symbol_column: str = "",
@@ -172,37 +171,33 @@ def rank_genes_from_adata(
     spatial_weight: float = 0.15,
     hvg_weight: float = 0.0,
 ) -> pd.DataFrame:
-    adata_file = Path(adata_file)
-    adata = _load_adata_subset(adata_file, max_cells=max_cells, seed=seed)
-    try:
-        genes = _gene_symbols(adata, symbol_column=symbol_column)
-        x = _as_csr_float_matrix(adata.X)
-        mean = _matrix_mean(x)
-        variance = _matrix_variance(x, mean)
-        detection = _matrix_detection_rate(x)
-        spatial_score = _coordinate_correlation_score(x, _coordinates(adata), variance)
-        hvg_score = _hvg_score(adata)
+    """Rank genes from a loaded AnnData object without reading a prior rank file."""
+    indices = _sample_obs_indices(adata.n_obs, max_cells=max_cells, seed=seed)
+    loaded = adata[indices, :].copy() if len(indices) != adata.n_obs else adata
+    genes = _gene_symbols(loaded, symbol_column=symbol_column)
+    x = _as_csr_float_matrix(loaded.X)
+    mean = _matrix_mean(x)
+    variance = _matrix_variance(x, mean)
+    detection = _matrix_detection_rate(x)
+    spatial_score = _coordinate_correlation_score(x, _coordinates(loaded), variance)
+    hvg_score = _hvg_score(loaded)
 
-        df = pd.DataFrame(
-            {
-                "gene_symbol": genes.to_numpy(),
-                "mean_expression": mean,
-                "variance": variance,
-                "detection_rate": detection,
-                "spatial_coord_score": spatial_score,
-                "hvg_score": hvg_score,
-            }
-        )
-    finally:
-        if getattr(adata, "file", None) is not None:
-            adata.file.close()
-
+    df = pd.DataFrame(
+        {
+            "gene_symbol": genes.to_numpy(),
+            "mean_expression": mean,
+            "variance": variance,
+            "detection_rate": detection,
+            "spatial_coord_score": spatial_score,
+            "hvg_score": hvg_score,
+        }
+    )
     df = df[df["gene_symbol"].astype(bool)].copy()
     df = _filter_gene_patterns(df, exclude_gene_patterns)
     if min_detection_rate > 0:
         df = df[df["detection_rate"] >= float(min_detection_rate)].copy()
     if df.empty:
-        raise ValueError(f"No genes remained after ranking filters for {adata_file}.")
+        raise ValueError("No genes remained after ranking filters.")
 
     df = (
         df.groupby("gene_symbol", as_index=False)
@@ -227,11 +222,50 @@ def rank_genes_from_adata(
         + float(spatial_weight) * spatial_pct
         + float(hvg_weight) * hvg_pct
     )
-    df["dataset_id"] = dataset_id or adata_file.stem
-    df["dataset_path"] = str(adata_file)
+    df["dataset_id"] = dataset_id
     df["data_role"] = data_role
-    df = df.sort_values(["rank_score", "detection_rate", "variance", "gene_symbol"], ascending=[False, False, False, True])
+    df = df.sort_values(
+        ["rank_score", "detection_rate", "variance", "gene_symbol"],
+        ascending=[False, False, False, True],
+    )
     df.insert(0, "rank", np.arange(1, len(df) + 1))
+    return df
+
+
+def rank_genes_from_adata(
+    adata_file: str | Path,
+    output_tsv: str | Path,
+    dataset_id: str = "",
+    data_role: str = "reference",
+    symbol_column: str = "",
+    max_cells: int = 50000,
+    seed: int = 42,
+    min_detection_rate: float = 0.0,
+    exclude_gene_patterns: list[str] | None = None,
+    expression_weight: float = 0.35,
+    variability_weight: float = 0.35,
+    detection_weight: float = 0.15,
+    spatial_weight: float = 0.15,
+    hvg_weight: float = 0.0,
+) -> pd.DataFrame:
+    adata_file = Path(adata_file)
+    adata = _load_adata_subset(adata_file, max_cells=max_cells, seed=seed)
+    df = rank_genes_from_adata_loaded(
+        adata,
+        dataset_id=dataset_id or adata_file.stem,
+        data_role=data_role,
+        symbol_column=symbol_column,
+        max_cells=max_cells,
+        seed=seed,
+        min_detection_rate=min_detection_rate,
+        exclude_gene_patterns=exclude_gene_patterns,
+        expression_weight=expression_weight,
+        variability_weight=variability_weight,
+        detection_weight=detection_weight,
+        spatial_weight=spatial_weight,
+        hvg_weight=hvg_weight,
+    )
+    df["dataset_path"] = str(adata_file)
     output_tsv = Path(output_tsv)
     ensure_dir(output_tsv.parent)
     df.to_csv(output_tsv, sep="\t", index=False)

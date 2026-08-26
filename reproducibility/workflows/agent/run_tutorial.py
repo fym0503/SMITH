@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks
+from smith_agent.panel_rank_aggregation import aggregate_reference_panel_ranks, rank_genes_from_adata_loaded
 from reproducibility.workflows.agent.evaluate_outputs import evaluate
 from reproducibility.workflows.common import (
     gene_symbols,
@@ -173,12 +173,51 @@ def run(args: argparse.Namespace) -> dict:
     expression_path = figure_dir / "figure6_d_merfish_expression.tsv"
     pd.DataFrame(metric_rows).to_csv(accuracy_path, sep="\t", index=False)
     pd.DataFrame(support_rows).to_csv(expression_path, sep="\t", index=False)
+    probe_analysis = None
+    if args.run_probe_feasibility:
+        from reproducibility.workflows.agent.probe_feasibility import run_probe_feasibility_loaded
+
+        probe_source = data_dir / args.probe_source
+        if not probe_source.is_file():
+            raise FileNotFoundError(f"Missing complete liver source H5AD for Figure 6f-g: {probe_source}")
+        probe_adata = ad.read_h5ad(probe_source)
+        probe_ranking = rank_genes_from_adata_loaded(
+            probe_adata,
+            dataset_id=probe_source.stem,
+            data_role="source_scrna_probe_feasibility",
+            symbol_column="feature_name",
+            max_cells=args.probe_rank_max_cells,
+            seed=training_seeds[0],
+            min_detection_rate=0.01,
+            expression_weight=0.20,
+            variability_weight=0.30,
+            detection_weight=0.10,
+            spatial_weight=0.0,
+            hvg_weight=0.40,
+        )
+        probe_analysis = run_probe_feasibility_loaded(
+            probe_ranking,
+            output_dir / "probe_feasibility",
+            project_root=Path(__file__).resolve().parents[3],
+            species="homo_sapiens",
+            human_reference_dir=args.human_reference_dir,
+            gene_metadata_h5ad=args.probe_gene_metadata_h5ad or probe_source,
+            max_genes=12160,
+            force=args.force,
+        )
+    manifest_inputs = [source_file, merfish_file, *reference_files]
+    manifest_outputs = {"figure6_c": str(accuracy_path), "figure6_d": str(expression_path)}
+    if probe_analysis is not None:
+        manifest_inputs.append(probe_source)
+        manifest_outputs.update({"figure6_f": probe_analysis["audit"]["pass_rates"], "figure6_g": probe_analysis["audit"]["examples"]})
     manifest = {
-        "workflow": "05_agent", "manuscript_figure": "Figure 6c-d", "configuration": vars(args),
-        "inputs": [{"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path)} for path in [source_file, merfish_file, *reference_files]],
+        "workflow": "05_agent", "manuscript_figure": "Figure 6c-d, 6f-g", "configuration": vars(args),
+        "inputs": [{"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path)} for path in manifest_inputs],
         "preparation": preparation, "training_runs": seed_runs,
-        "outputs": {"figure6_c": str(accuracy_path), "figure6_d": str(expression_path)},
-        "probe_backend": {"status": "not_run", "reason": "Figure 6e-g requires separately installed ODT/OligoMiner/ProbeDealer backends and indexes."},
+        "outputs": manifest_outputs,
+        "probe_backend": ({"status": "completed", "scope": "Figure 6f-g", "artifacts": probe_analysis["audit"], "backend_outputs": probe_analysis["backend_outputs"]}
+                          if probe_analysis is not None else
+                          {"status": "not_run", "reason": "Pass --run-probe-feasibility with the human transcriptome reference and backend environments to generate Figure 6f-g."}),
     }
     write_json(output_dir / "run_manifest.json", manifest)
     return manifest
@@ -208,6 +247,11 @@ def main() -> None:
     parser.add_argument("--source-weight", type=float, default=0.50)
     parser.add_argument("--min-reference-support", type=int, default=2)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--run-probe-feasibility", action="store_true", help="Run Figure 6f-g from the complete liver candidate universe.")
+    parser.add_argument("--probe-source", default="liver_merfish/cellxgene_liver_scrna.h5ad")
+    parser.add_argument("--probe-gene-metadata-h5ad", default=None)
+    parser.add_argument("--human-reference-dir", default=None)
+    parser.add_argument("--probe-rank-max-cells", type=int, default=50000)
     args = parser.parse_args()
     args.reference = args.reference or list(DEFAULT_REFERENCES)
     if len(args.reference) < 2:
