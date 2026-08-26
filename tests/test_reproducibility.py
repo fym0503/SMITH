@@ -161,6 +161,8 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "max_genes=12160" in text
             assert "probe_status" not in text
             assert "probe_values" not in text
+            assert '"status": probe_analysis["status"]' in text
+            assert '"status": "completed", "scope": "manuscript_figure6_f_g"' not in text
             assert "agent_plan" in text
             assert "cell_type_evaluation_loaded" in text
             assert 'run_manifest.json").read' not in text

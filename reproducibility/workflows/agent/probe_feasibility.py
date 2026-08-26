@@ -110,8 +110,16 @@ def run_probe_feasibility_loaded(
 
     feasibility_path = three_tool_dir / "three_tool_feasibility_table.tsv"
     risk_path = probedealer_dir / "probe_risk_summary.tsv"
-    if not feasibility_path.is_file() or not risk_path.is_file():
-        raise RuntimeError("Probe backends completed without producing the required Figure 6f-g tables.")
+    required_outputs = {
+        "three_tool": feasibility_path,
+        "probedealer": risk_path,
+    }
+    missing_outputs = [name for name, path in required_outputs.items() if not path.is_file()]
+    if missing_outputs:
+        raise RuntimeError(
+            "Probe backends completed without producing the required Figure 6f-g tables: "
+            + ", ".join(missing_outputs)
+        )
     feasibility = pd.read_csv(feasibility_path, sep="\t")
     risk = pd.read_csv(risk_path, sep="\t")
     pass_rates = manuscript_pass_rates(feasibility)
@@ -124,5 +132,6 @@ def run_probe_feasibility_loaded(
         "pass_rates": pass_rates,
         "examples": examples,
         "audit": audit,
+        "status": "completed" if not missing_outputs else "incomplete",
         "backend_outputs": {"probedealer": str(probedealer_dir), "three_tool": str(three_tool_dir)},
     }

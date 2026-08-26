@@ -215,7 +215,7 @@ def run(args: argparse.Namespace) -> dict:
         "inputs": [{"path": str(path), "bytes": path.stat().st_size, "sha256": sha256(path)} for path in manifest_inputs],
         "preparation": preparation, "training_runs": seed_runs,
         "outputs": manifest_outputs,
-        "probe_backend": ({"status": "completed", "scope": "Figure 6f-g", "artifacts": probe_analysis["audit"], "backend_outputs": probe_analysis["backend_outputs"]}
+        "probe_backend": ({"status": probe_analysis["status"], "scope": "Figure 6f-g", "artifacts": probe_analysis["audit"], "backend_outputs": probe_analysis["backend_outputs"]}
                           if probe_analysis is not None else
                           {"status": "not_run", "reason": "Pass --run-probe-feasibility with the human transcriptome reference and backend environments to generate Figure 6f-g."}),
     }
