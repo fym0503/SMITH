@@ -4,9 +4,12 @@ title: Multi-reference ranking and manuscript probe feasibility
 manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay Design
 figure: Figure 6c-d, 6f-g
 runtime: 20-120 minutes depending on references, cells, epochs and device
-data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from real liver snRNA-seq, MERFISH and two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels. The hosted page visualizes completed manuscript-scale probe outputs for Figure 6f-g.
+data_access: Versioned external H5AD archives downloaded through reproducibility/data_manifest.yaml. The hosted notebook defaults to the reproducibility variant; the full variant contains the complete manuscript inputs.
+summary: Starts from real liver snRNA-seq, MERFISH and two spatial references, trains source/reference panels, aggregates ranks and evaluates newly generated panels. A separate full archive adds the CellxGene candidate universe and all five spatial references for manuscript-scale runs.
 claim: Reference aggregation and MERFISH evaluation are recomputed from fresh liver H5AD objects. Figure 6f-g use clearly labelled precomputed backend artifacts because the external probe screens take hours.
+archives:
+  reproducibility: Four hosted-notebook inputs (snRNA-seq, MERFISH and two representative Visium references), about 2 GB compressed.
+  full: Complete CellxGene candidate universe plus all five Visium references, about 8 GB uncompressed.
 inputs:
   - path: agent/liver_merfish/cellxgene_liver_scrna.h5ad
     kind: data

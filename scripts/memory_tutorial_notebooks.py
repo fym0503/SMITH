@@ -278,7 +278,7 @@ results.to_csv(FIGURE_DATA / "figure6_c_d_values.tsv", sep="\t", index=False)
 """
     cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\n{spec['biology']}\n\nThis notebook trains current source and spatial-reference panels, aggregates their rankings in memory, and evaluates the current panels directly on MERFISH."),
-        nbformat.v4.new_markdown_cell("## Download the real input data\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --data-root data/tutorials\n```"),
+        nbformat.v4.new_markdown_cell("## Download the real input data\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --variant reproducibility --data-root data/tutorials\n```\n\nUse `--variant full` for the complete manuscript-scale archive."),
         nbformat.v4.new_markdown_cell("## Load and prepare liver modalities"),
         nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_code_cell(load),
@@ -469,7 +469,7 @@ results.to_csv(FIGURE_DATA / "figure6_c_d_values.tsv", sep="\\t", index=False)
 '''
     cells = [
         nbformat.v4.new_markdown_cell(f"# {spec['title']}\n\n{spec['biology']}\n\nThis notebook trains source and spatial-reference models from the downloaded H5AD files, combines their in-memory rankings, and evaluates the current SMITH panels directly on held-out MERFISH biology. Figure 6f-g then visualizes completed manuscript-scale probe-design outputs; the hosted page does not rerun those hours-long external backends."),
-        nbformat.v4.new_markdown_cell("## Download the source data\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --data-root data/tutorials\n```\n\nThe four H5AD files used for SMITH training and MERFISH evaluation are real liver source, target and spatial-reference inputs. The notebook creates its panel rankings and shared-gene objects in memory; it does not load a prior panel or evaluation file."),
+        nbformat.v4.new_markdown_cell("## Download the source data\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --variant reproducibility --data-root data/tutorials\n```\n\nThe reproducibility archive contains the four H5AD files used for SMITH training and MERFISH evaluation. For the complete manuscript-scale candidate universe and all five references, download the full archive instead:\n\n```bash\npython scripts/download_tutorial_data.py --case 05_agent --variant full --data-root data/tutorials\n```\n\nThe notebook creates its panel rankings and shared-gene objects in memory; it does not load a prior panel or evaluation file."),
         nbformat.v4.new_markdown_cell("## Load raw modalities and define the biological measurement space"),
         nbformat.v4.new_code_cell(setup),
         nbformat.v4.new_code_cell(load),

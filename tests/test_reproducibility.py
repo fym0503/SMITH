@@ -109,6 +109,18 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
     )
 
 
+def test_agent_manifest_exposes_reproducibility_and_full_archives():
+    root = Path(__file__).resolve().parents[1]
+    manifest = yaml.safe_load((root / "reproducibility" / "data_manifest.yaml").read_text())
+    variants = manifest["cases"]["05_agent"]["archive_variants"]
+    assert set(variants) == {"reproducibility", "full"}
+    assert len(case_files(manifest["cases"]["05_agent"], "reproducibility")) == 4
+    assert len(case_files(manifest["cases"]["05_agent"], "full")) == 8
+    assert variants["reproducibility"]["prepared_archive_sha256"] != variants["full"]["prepared_archive_sha256"]
+    with pytest.raises(ValueError, match="choose --variant"):
+        case_files(manifest["cases"]["05_agent"])
+
+
 def test_safe_extract_rejects_path_traversal(tmp_path: Path):
     archive = tmp_path / "unsafe.tar.gz"
     with tarfile.open(archive, "w:gz") as handle:

@@ -20,7 +20,19 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def case_files(case: dict) -> list[dict]:
+def case_files(case: dict, variant: str | None = None) -> list[dict]:
+    variants = case.get("archive_variants", {})
+    if variants:
+        if variant is None:
+            raise ValueError(
+                "This case has multiple data archives; choose --variant "
+                + ", ".join(sorted(variants))
+            )
+        if variant not in variants:
+            raise KeyError(f"Unknown archive variant: {variant}")
+        return list(variants[variant].get("files", []))
+    if variant is not None:
+        raise ValueError(f"Case has no archive variants; remove --variant {variant!r}")
     specs = list(case.get("files", []))
     specs.extend(case.get("paper_inputs", {}).get("files", []))
     return specs
@@ -29,6 +41,7 @@ def case_files(case: dict) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build a local tutorial archive before an authorized Zenodo upload.")
     parser.add_argument("--case", required=True)
+    parser.add_argument("--variant", help="Archive variant for cases with full/reproducibility packages.")
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--manifest", default=str(ROOT / "reproducibility" / "data_manifest.yaml"))
@@ -36,10 +49,14 @@ def main() -> None:
     manifest = yaml.safe_load(Path(args.manifest).read_text(encoding="utf-8"))
     case = manifest["cases"][args.case]
     data_root = Path(args.data_root).resolve()
-    output = Path(args.output_dir).resolve() / case["archive_name"]
+    variants = case.get("archive_variants", {})
+    archive_spec = variants.get(args.variant, {}) if variants else case
+    if variants and not args.variant:
+        raise ValueError("This case requires --variant (reproducibility or full).")
+    output = Path(args.output_dir).resolve() / archive_spec["archive_name"]
     output.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(output, "w:gz") as archive:
-        for spec in case_files(case):
+        for spec in case_files(case, args.variant):
             source = data_root / spec["path"]
             if not source.is_file():
                 raise FileNotFoundError(source)
