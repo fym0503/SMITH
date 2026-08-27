@@ -475,18 +475,6 @@ results.to_csv(FIGURE_DATA / "figure6_c_d_values.tsv", sep="\\t", index=False)
         nbformat.v4.new_code_cell(load),
         nbformat.v4.new_markdown_cell("## Execute the Agent plan: train source and reference SMITH models"),
         nbformat.v4.new_code_cell(plan_and_train),
-        nbformat.v4.new_markdown_cell("### SMITH-Agent workflow stages"),
-        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(5.6, 1.15), facecolor="white")
-axis.axis("off")
-for index, step in enumerate(agent_plan):
-    x = 0.02 + index * 0.245
-    color = "#2f78bd" if step["status"] == "completed" else "#b7791f"
-    axis.text(x, 0.62, step["skill"].replace("_", "\\n"), ha="left", va="center", fontsize=8, color=color, weight="bold")
-    if index < len(agent_plan) - 1:
-        axis.annotate("", xy=(x + 0.21, 0.62), xytext=(x + 0.18, 0.62), arrowprops={"arrowstyle": "->", "color": "#666666", "lw": 1.2})
-axis.set_xlim(0, 1); axis.set_ylim(0, 1)
-display(figure)
-plt.close(figure)'''),
         nbformat.v4.new_markdown_cell("## Example: tune panel size and evidence balance\n\nThis small held-out search is the tutorial's hyperparameter example. It compares panel sizes 32, 64 and 128 and source-ranking weights 0.25, 0.50 and 0.75. The best setting is selected only from the tuning half of MERFISH; the evaluation half remains untouched until the next section. The search uses rankings returned by the current SMITH runs, not a saved ranking file."),
         nbformat.v4.new_code_cell(tuning),
         nbformat.v4.new_markdown_cell("## Evaluate source-only and SMITH-Agent panels"),
