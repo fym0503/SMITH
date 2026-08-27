@@ -77,6 +77,12 @@ def main() -> None:
     parser.add_argument("--sandbox", action="store_true", help="Use sandbox.zenodo.org instead of zenodo.org.")
     parser.add_argument("--publish", action="store_true", help="Publish the deposition after all uploads succeed.")
     parser.add_argument("--allow-pending-license", action="store_true", help="Allow publication before upstream licenses are verified.")
+    parser.add_argument(
+        "--upload-timeout",
+        type=int,
+        default=21600,
+        help="Per-file upload read timeout in seconds (default: 6 hours for multi-GB archives).",
+    )
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest).resolve()
@@ -133,7 +139,9 @@ def main() -> None:
     try:
         for case_id, variant, archive, package in archives:
             with archive.open("rb") as handle:
-                file_response = session.put(f"{bucket}/{archive.name}", data=handle, timeout=(30, 3600))
+                file_response = session.put(
+                    f"{bucket}/{archive.name}", data=handle, timeout=(30, args.upload_timeout)
+                )
             file_response.raise_for_status()
             uploaded.append((case_id, variant, {
                 "archive_url": f"{host}/records/{deposition_id}/files/{archive.name}",
@@ -146,7 +154,10 @@ def main() -> None:
         else:
             record_id = deposition_id
     except Exception:
-        session.delete(f"{api}/deposit/depositions/{deposition_id}", timeout=(30, 300))
+        print(
+            f"Zenodo draft {deposition_id} was retained after the upload failure so its server-side "
+            "file state can be inspected before retrying."
+        )
         raise
 
     manifest["zenodo_record_url"] = f"{host}/records/{record_id}"
