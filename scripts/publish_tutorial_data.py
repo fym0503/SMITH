@@ -76,6 +76,7 @@ def main() -> None:
     parser.add_argument("--title", default="SMITH tutorial data release 2026.08")
     parser.add_argument("--sandbox", action="store_true", help="Use sandbox.zenodo.org instead of zenodo.org.")
     parser.add_argument("--publish", action="store_true", help="Publish the deposition after all uploads succeed.")
+    parser.add_argument("--deposition-id", type=int, help="Resume an existing unpublished Zenodo deposition.")
     parser.add_argument("--allow-pending-license", action="store_true", help="Allow publication before upstream licenses are verified.")
     parser.add_argument(
         "--upload-timeout",
@@ -117,22 +118,27 @@ def main() -> None:
 
     session = requests.Session()
     session.params = {"access_token": token}
-    deposition = request_json(
-        session,
-        "POST",
-        f"{api}/deposit/depositions",
-        json={
-            "metadata": {
-                "title": args.title,
-                "upload_type": "dataset",
-                "description": "Versioned H5AD inputs for the SMITH biological panel-design tutorials.",
-                "creators": [{"name": "Fan, Yimin"}],
-                "access_right": "open",
-                "license": "CC-BY-NC-4.0",
-                "keywords": ["SMITH", "spatial transcriptomics", "panel selection", "H5AD"],
-            }
-        },
-    )
+    if args.deposition_id:
+        deposition = request_json(session, "GET", f"{api}/deposit/depositions/{args.deposition_id}")
+        if deposition.get("state") != "unsubmitted":
+            raise ValueError(f"Deposition {args.deposition_id} is not an editable draft.")
+    else:
+        deposition = request_json(
+            session,
+            "POST",
+            f"{api}/deposit/depositions",
+            json={
+                "metadata": {
+                    "title": args.title,
+                    "upload_type": "dataset",
+                    "description": "Versioned H5AD inputs for the SMITH biological panel-design tutorials.",
+                    "creators": [{"name": "Fan, Yimin"}],
+                    "access_right": "open",
+                    "license": "CC-BY-NC-4.0",
+                    "keywords": ["SMITH", "spatial transcriptomics", "panel selection", "H5AD"],
+                }
+            },
+        )
     deposition_id = deposition["id"]
     bucket = deposition["links"]["bucket"]
     uploaded: list[tuple[str, str | None, dict[str, Any]]] = []
