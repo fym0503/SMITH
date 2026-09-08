@@ -111,8 +111,23 @@ def module_miss_rate(panel: list[str] | set[str], modules: pd.DataFrame) -> floa
     return float(sum(not (genes & selected) for genes in grouped) / len(grouped))
 
 
-def module_coverage(panels: pd.DataFrame, modules: pd.DataFrame) -> pd.DataFrame:
-    """Calculate module coverage from panels produced in the current process."""
+def module_coverage(
+    panels: pd.DataFrame,
+    modules: pd.DataFrame,
+    *,
+    expected_methods: tuple[str, ...] | None = None,
+    expected_splits: tuple[str, ...] | None = None,
+    expected_panel_sizes: tuple[int, ...] | None = None,
+    expected_training_seeds: tuple[int, ...] | None = None,
+    require_complete: bool = False,
+) -> pd.DataFrame:
+    """Calculate module miss rates from panels produced in the current process.
+
+    ``require_complete`` is intended for manuscript-scale runs.  It prevents a
+    partial baseline directory (for example, one split or a missing 24-TF
+    panel) from being silently presented as the complete Figure 3h analysis.
+    The default remains permissive for small, single-split tutorials.
+    """
     modules = normalize_module_table(modules)
     rows = []
     for row in panels.to_dict("records"):
@@ -130,13 +145,46 @@ def module_coverage(panels: pd.DataFrame, modules: pd.DataFrame) -> pd.DataFrame
         )
     if not rows:
         raise ValueError("No generated TF panels were supplied for module coverage")
-    return pd.DataFrame(rows)
+    result = pd.DataFrame(rows)
+    if require_complete:
+        methods = tuple(expected_methods or sorted(result["method"].astype(str).unique()))
+        splits = tuple(expected_splits or sorted(result["split"].astype(str).unique()))
+        sizes = tuple(int(size) for size in (expected_panel_sizes or sorted(result["panel_size"].unique())))
+        seeds = tuple(int(seed) for seed in (expected_training_seeds or sorted(result["training_seed"].unique())))
+        observed = {
+            (str(row.method), str(row.split), int(row.training_seed), int(row.panel_size))
+            for row in result.itertuples(index=False)
+        }
+        missing = [
+            (method, split, seed, size)
+            for method in methods
+            for split in splits
+            for seed in seeds
+            for size in sizes
+            if (method, split, seed, size) not in observed
+        ]
+        if missing:
+            preview = ", ".join(
+                f"{method}/{split}/seed{seed}/top{size}" for method, split, seed, size in missing[:8]
+            )
+            suffix = "..." if len(missing) > 8 else ""
+            raise ValueError(
+                "Incomplete module-coverage input: missing "
+                f"{len(missing)} method/split/panel combinations ({preview}{suffix})"
+            )
+    return result
 
 
 def write_module_coverage(
     panels: pd.DataFrame,
     module_file: str | Path,
     output_file: str | Path,
+    *,
+    expected_methods: tuple[str, ...] | None = None,
+    expected_splits: tuple[str, ...] | None = None,
+    expected_panel_sizes: tuple[int, ...] | None = None,
+    expected_training_seeds: tuple[int, ...] | None = None,
+    require_complete: bool = False,
 ) -> Path:
     modules = normalize_module_table(module_file)
     in_memory_panels = panels.copy()
@@ -144,7 +192,15 @@ def write_module_coverage(
         read_panel(Path(str(row.panel_file)), int(row.panel_size))
         for row in panels.itertuples(index=False)
     ]
-    result = module_coverage(in_memory_panels, modules)
+    result = module_coverage(
+        in_memory_panels,
+        modules,
+        expected_methods=expected_methods,
+        expected_splits=expected_splits,
+        expected_panel_sizes=expected_panel_sizes,
+        expected_training_seeds=expected_training_seeds,
+        require_complete=require_complete,
+    )
     output_file = Path(output_file)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_file, sep="\t", index=False)

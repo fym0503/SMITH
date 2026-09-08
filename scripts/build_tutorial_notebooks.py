@@ -312,8 +312,10 @@ figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
 display(figure)
 plt.close(figure)'''),
         nbformat.v4.new_markdown_cell(
-            "### Coverage of developmental modules\n\n"
-            "For each current TF panel, the miss rate is the fraction of annotated modules containing no selected TF."
+            "### Coverage of annotated developmental modules\n\n"
+            "For each current TF panel, the miss rate is the fraction of annotated modules containing no selected TF. "
+            "This hosted example uses one real lineage split and SMITH only; it is a tutorial-scale subset, "
+            "not the multi-method, five-split manuscript Figure 3h. The full comparison is the command at the end of the notebook."
         ),
         nbformat.v4.new_code_cell('''coverage_panels = pd.json_normalize([
     row for row in panel_records
@@ -323,7 +325,15 @@ coverage_panels["panel_genes"] = [
     training_runs["elegans_tf"][int(size)]["panel_genes"]
     for size in coverage_panels["panel_size"]
 ]
-coverage = module_coverage(coverage_panels, modules)
+coverage = module_coverage(
+    coverage_panels,
+    modules,
+    expected_methods=("SMITH",),
+    expected_splits=("split_1",),
+    expected_panel_sizes=(16, 24, 32),
+    expected_training_seeds=(1,),
+    require_complete=True,
+)
 coverage.to_csv(FIGURE_DATA / "figure3_h_module_miss_rate.tsv", sep="\\t", index=False)
 
 figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")

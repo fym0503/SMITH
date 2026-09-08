@@ -552,6 +552,31 @@ def test_regulatory_in_memory_panel_evaluation_and_coverage(tmp_path: Path):
     assert coverage.iloc[0]["module_miss_rate"] == pytest.approx(0.5)
 
 
+def test_regulatory_module_coverage_rejects_incomplete_manuscript_grid():
+    modules = pd.DataFrame([
+        {"module_id": "module_a", "gene_symbol": "TF1"},
+    ])
+    panels = pd.DataFrame([
+        {
+            "dataset": "elegans_tf",
+            "split": "split_1",
+            "method": "SMITH",
+            "panel_size": 16,
+            "panel_genes": ["TF1"],
+        },
+    ])
+    with pytest.raises(ValueError, match="Incomplete module-coverage input"):
+        module_coverage(
+            panels,
+            modules,
+            expected_methods=("SMITH", "PERSIST-class"),
+            expected_splits=("split_1", "split_2"),
+            expected_panel_sizes=(16, 24, 32),
+            expected_training_seeds=(1, 2),
+            require_complete=True,
+        )
+
+
 def test_regulatory_paper_analysis_reconstructs_coactivity_and_tf_transfer(tmp_path: Path):
     rng = np.random.default_rng(4)
     genes = ["TF1", "TF2", "TF3", "TF4"]

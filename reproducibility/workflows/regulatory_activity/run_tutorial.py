@@ -328,7 +328,16 @@ def run(args: argparse.Namespace) -> dict:
             (panels["dataset"] == "elegans_tf") & panels["panel_size"].isin(MODULE_SIZES)
         ]
         paper_outputs["module_coverage"] = str(
-            write_module_coverage(coverage_panels, module_file, figure_dir / "figure3_h_module_miss_rate.tsv")
+            write_module_coverage(
+                coverage_panels,
+                module_file,
+                figure_dir / "figure3_h_module_miss_rate.tsv",
+                expected_methods=tuple(requested_methods),
+                expected_splits=tuple(splits),
+                expected_panel_sizes=MODULE_SIZES,
+                expected_training_seeds=tuple(seeds),
+                require_complete=True,
+            )
         )
 
         coactivity_panels = panels[
