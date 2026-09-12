@@ -77,5 +77,5 @@ source_data:
 notes:
   - Cluster absolute paths are recorded for audit only and are not used by the package.
   - No aggregate CSV is a tutorial input.
-  - Figure 3h-i annotation inputs are normalized from official Supplementary Table 5; no cluster-side implementation of those two panels was found.
+  - Figure 3h-i annotation inputs are normalized from official Supplementary Table 5; no cluster-side implementation of those two panels was found. Figure 3h uses the source atlas tissue-by-temporal-stage module definition (15 modules); progenitor lineage remains an annotation field and is not treated as a separate module dimension.
   - Figure 3j and 3k were mapped to the exact cluster-side implementations above; the portable workflow uses the same lineage aggregation, normalization and held-out endpoints.

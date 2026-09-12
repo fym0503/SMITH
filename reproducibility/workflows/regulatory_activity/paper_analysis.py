@@ -86,11 +86,11 @@ def normalize_module_table(source: str | Path | pd.DataFrame) -> pd.DataFrame:
     aliases = {str(column).strip().lower(): column for column in frame.columns}
     gene = next((aliases[name] for name in ("gene_symbol", "gene", "tf", "target") if name in aliases), None)
     module = next((aliases[name] for name in ("module_id", "module", "module_name") if name in aliases), None)
-    if module is None and {
-        "tissue", "progenitor_lineage", "temporal_module"
-    }.issubset(aliases):
+    if {"tissue", "temporal_module"}.issubset(aliases):
+        # The source atlas stores progenitor lineage as an annotation inside a
+        # tissue/stage program; it is not an additional module dimension.
         frame["_module_id"] = frame[
-            [aliases["tissue"], aliases["progenitor_lineage"], aliases["temporal_module"]]
+            [aliases["tissue"], aliases["temporal_module"]]
         ].astype(str).agg("|".join, axis=1)
         module = "_module_id"
     if module is None or gene is None:

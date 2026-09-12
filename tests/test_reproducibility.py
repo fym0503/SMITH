@@ -53,6 +53,7 @@ from reproducibility.workflows.regulatory_activity.paper_analysis import (
     coactivity_reconstruction,
     module_coverage,
     module_miss_rate,
+    normalize_module_table,
     tf_scrna_correlation_from_objects,
     tf_scrna_correlation,
 )
@@ -513,6 +514,16 @@ def test_regulatory_module_miss_rate_uses_selected_panel_only():
         {"module_id": "neuron_late", "gene_symbol": "UNC-30"},
     ])
     assert module_miss_rate(["myod"], modules) == pytest.approx(0.5)
+
+
+def test_regulatory_module_normalization_groups_progenitors_within_stage():
+    modules = pd.DataFrame([
+        {"tissue": "Muscle", "progenitor_lineage": "MSa", "temporal_module": "Module-I", "gene_symbol": "TF1"},
+        {"tissue": "Muscle", "progenitor_lineage": "MSp", "temporal_module": "Module-I", "gene_symbol": "TF2"},
+        {"tissue": "Neuron", "progenitor_lineage": "AB", "temporal_module": "Module-I", "gene_symbol": "TF3"},
+    ])
+    normalized = normalize_module_table(modules)
+    assert set(normalized["module_id"]) == {"Muscle|Module-I", "Neuron|Module-I"}
 
 
 def test_regulatory_in_memory_panel_evaluation_and_coverage(tmp_path: Path):
