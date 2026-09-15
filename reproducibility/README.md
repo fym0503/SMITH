@@ -15,4 +15,7 @@ python scripts/compute_elegans_module_coverage.py \
 ```
 
 The command requires the full method/split/seed/panel-size grid by default and
-fails explicitly when a panel is missing.
+fails explicitly when a panel is missing. Grid completeness alone does not
+establish manuscript equivalence; compare the resulting values and rendered
+structure against `validation/figure3_validation.yaml` before calling a panel
+reproduced.

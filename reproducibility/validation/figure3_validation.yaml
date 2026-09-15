@@ -1,0 +1,76 @@
+schema_version: 1
+validated_on: 2026-09-15
+status: failed_not_manuscript_reproduction
+sources:
+  manuscript_pdf:
+    sha256: 5c35beb2a43fa57a0230734f65ababc72989b579d0d19736f14f04880b4a8f8f
+  figure3_pdf:
+    sha256: 5d22feead086a309e7d49367346d8d51f7f18567a8a75aa5acb4f226baeb1af4
+  atlas_supplementary_table_5:
+    sha256: 61c4b9c2075558223b5793ca0d5f0f9e32bddc7469d793e581ceb826d23643db
+    module_definition: progenitor_lineage_spatial_module_by_temporal_module
+    annotated_module_count: 164
+hosted_configuration:
+  splits: [split_1]
+  methods: [SMITH]
+  training_seeds: [1]
+  epochs: 30
+  max_cells: 3000
+hosted_artifact:
+  executed_on: 2026-08-24
+  remote_root: /workspace/fanyimin/SMITH_tutorial_validation_f4e2a72/outputs/tutorial_memory_JY8G2K/regulatory
+  values:
+    Figure 3c:
+      panel_sizes: [32, 64, 128]
+      smith_cell_type_accuracy: [0.5800610983, 0.5954101781, 0.5834140526]
+    Figure 3d:
+      panel_sizes: [32, 64, 128]
+      smith_time_pearson: [0.8092659883, 0.8716325909, 0.8816693336]
+    Figure 3e:
+      panel_sizes: [16, 24, 32]
+      smith_cell_type_accuracy: [0.3479305560, 0.3840400690, 0.4101323226]
+    Figure 3f:
+      panel_sizes: [16, 24, 32]
+      smith_time_pearson: [0.9446198747, 0.9563813574, 0.9610921355]
+    Figure 3h:
+      panel_sizes: [16, 24, 32]
+      module_count: 164
+      smith_module_miss_rate: [0.2317073171, 0.1524390244, 0.0853658537]
+    Figure 3i:
+      lineages: [muscle, neuron, pharynx, skin]
+      smith_pearson: [0.0762219202, 0.2196328299, 0.1628295465, 0.3016591673]
+    Figure 3j:
+      shared_genes: 266
+      shared_lineages: 984
+      mean_rowwise_pearson: 0.3800585466
+    Figure 3k:
+      panel_sizes: [32, 64, 128]
+      smith_rna_to_tf_accuracy: [0.3634354122, 0.4870476616, 0.5549263592]
+      smith_tf_to_tf_accuracy: [0.5800610983, 0.5954101781, 0.5834140526]
+audited_manuscript_runner:
+  splits: [split_1, split_2, split_3, split_4, split_5]
+  training_seed: 42
+  epochs: 150
+  batch_size: 1024
+panels:
+  Figure 3c-f:
+    status: failed
+    reason: Hosted outputs contain one SMITH split instead of five lineage-aware splits and all manuscript methods.
+  Figure 3g:
+    status: failed
+    reason: Hosted output is an annotation heatmap rather than the manuscript spatial/temporal module schematic.
+  Figure 3h:
+    status: failed
+    reason: Hosted values do not match the manuscript points; a scan of 3,001 panel artifacts on pc157 found no 16/24/32 panel matching the manuscript SMITH miss counts.
+    manuscript_text_check: SMITH covers all annotated modules at panel size 32, so the manuscript miss rate is zero.
+  Figure 3i:
+    status: failed
+    reason: Hosted output contains SMITH only and one seed; the manuscript compares SMITH and PERSIST with repeated-run uncertainty.
+  Figure 3j:
+    status: partial
+    verified: Overall TF/scRNA correlation equals the manuscript value of 0.38.
+    missing: Pixel-level and matrix-order equivalence has not been validated.
+  Figure 3k:
+    status: failed
+    reason: Hosted output contains one split and SMITH only; the manuscript includes SMITH and PERSIST-class over five repeats with statistical comparisons.
+acceptance_rule: No hosted panel may be labeled reproduced until its input provenance, configuration, split-level values, summary values and rendered structure all match the manuscript source.

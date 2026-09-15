@@ -485,7 +485,9 @@ def run(args: argparse.Namespace) -> dict:
 
     manifest = {
         "workflow": "02_regulatory_activity",
-        "manuscript_figure": "Figure 3c-k" if args.paper_analyses else "Figure 3c-f",
+        "manuscript_reference": "Figure 3c-k" if args.paper_analyses else "Figure 3c-f",
+        "reproduction_status": "not_numerically_validated",
+        "validation_record": "reproducibility/validation/figure3_validation.yaml",
         "configuration": vars(args),
         "inputs": list({item["path"]: item for item in inputs}.values()),
         "training_runs": runs,
@@ -507,7 +509,7 @@ def run(args: argparse.Namespace) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train SMITH and reproduce the C. elegans regulatory analyses in Figure 3c-k."
+        description="Train SMITH and run C. elegans analyses related to Figure 3c-k."
     )
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--output-dir", required=True)
@@ -524,11 +526,11 @@ def main() -> None:
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--persist-device", default="cpu")
-    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--baseline-epochs", type=int, default=200)
-    parser.add_argument("--seeds", default="1")
+    parser.add_argument("--seeds", default="42")
     parser.add_argument("--panel-size", type=int, default=128, help="Compatibility option; manuscript sizes are fixed.")
-    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--max-cells", type=int, default=None)
     parser.add_argument("--time-column", default="absolute_time")
     parser.add_argument("--neighbors", type=int, default=5)

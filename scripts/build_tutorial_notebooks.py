@@ -20,7 +20,7 @@ SPECS = {
     "02_regulatory_activity": {
         "case": "02_regulatory_activity",
         "folder": "regulatory_section", "stem": "02_SMITH_Regulatory_Activity",
-        "title": "Regulatory programs and cross-modality transfer in C. elegans", "figure": "Figure 3c-k",
+        "title": "Regulatory programs and cross-modality transfer in C. elegans", "figure": "Related to Figure 3c-k",
         "biology": "Which compact set of regulatory features is sufficient to preserve C. elegans cell identity and developmental progression? The TF and miRNA assays represent regulatory activity rather than a generic feature-selection benchmark: a useful panel should retain discrete lineage labels and the continuous developmental-time signal in held-out cells.",
         "data_role": "The train/test H5AD files contain lineage-aware TF or miRNA activity, cell-type labels, and absolute developmental time. The supplementary module and TF-pair annotations define the developmental programs and regulator relationships used in the manuscript analyses, while the scRNA H5AD supplies the independent reference for RNA-to-TF transfer. Training cells learn the activity representation; held-out cells test whether selected regulators still recover identity, age, and regulatory structure.",
         "model_role": "SMITH is trained on the training H5AD with reconstruction, cell-type classification, and developmental-time objectives. Its learned gene ranking is then truncated to the manuscript panel sizes; no packaged aggregate ranking is used.",
@@ -51,8 +51,8 @@ SPECS = {
             ("Figure 3k - scRNA-to-TF panel transfer", "figures/figure3_k.png", 500),
             ("Shared method legend", "figures/figure3_method_legend.png", 900),
         ],
-        "paper_command": "--splits split_1,split_2,split_3,split_4,split_5 --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --epochs 200",
-        "scope": "This executed page uses one real TF split, one real miRNA split and one scRNA-to-TF transfer split. The paper command above regenerates Figure 3c-k with all five lineage-aware splits and manuscript baselines. The module, TF-pair and scRNA inputs are versioned biological inputs; the workflow stops with an explicit error if they are absent.",
+        "paper_command": "--splits split_1,split_2,split_3,split_4,split_5 --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros --baseline-root external/SMITH_baselines/GPS_tools-main/baselines --baseline-python PERSIST=/opt/envs/persist/bin/python --baseline-python PERSIST-class=/opt/envs/persist/bin/python --baseline-python scGIST=/opt/envs/scgist/bin/python --epochs 150 --seeds 42 --batch-size 1024",
+        "scope": "This executed page uses one real TF split, one real miRNA split and one scRNA-to-TF transfer split. It demonstrates the data-to-analysis path but does not numerically reproduce Figure 3c-k. The full command is the intended manuscript-scale entry point; its outputs must be compared against the manuscript source values before they are described as reproduced.",
     },
     "03_ribomap_transfer": {
         "case": "03_ribomap_transfer",
@@ -262,14 +262,17 @@ plt.close(figure)'''
             "This tutorial starts from the real activity and atlas inputs, trains SMITH, and passes the "
             "newly generated panels through every downstream analysis in memory. Files written under the "
             "output directory are provenance artifacts, not inputs to later notebook cells. "
-            f"[Open the editable source notebook on GitHub]({github})."
+            f"[Open the editable source notebook on GitHub]({github}).\n\n"
+            "> **Validation status:** The hosted figures are tutorial-scale outputs from one split and SMITH only. "
+            "They are related to manuscript Figure 3c-k but are not numerical reproductions of those panels. "
+            "Do not use them to validate the manuscript result."
         ),
         nbformat.v4.new_markdown_cell(
             f"## Biological question\n\n{spec['biology']}\n\n**Biological endpoints:** {spec['analysis_role']}"
         ),
         nbformat.v4.new_markdown_cell(
             "## Download the real input data\n\n"
-            "```bash\npython scripts/download_tutorial_data.py \\\n+  --case 02_regulatory_activity \\\n+  --data-root data/tutorials\n```\n\n"
+            "```bash\npython scripts/download_tutorial_data.py \\\n  --case 02_regulatory_activity \\\n  --data-root data/tutorials\n```\n\n"
             "Read the Docs displays this executed notebook; it does not train the model during the documentation build."
         ),
         nbformat.v4.new_markdown_cell("## Configuration"),
@@ -313,7 +316,7 @@ display(figure)
 plt.close(figure)'''),
         nbformat.v4.new_markdown_cell(
             "### Coverage of annotated developmental modules\n\n"
-            "The atlas defines 15 spatiotemporal modules by tissue system and temporal stage; progenitor lineage is retained as annotation detail. For each current TF panel, the miss rate is the fraction of these modules containing no selected TF. "
+            "The source atlas defines each tissue progenitor lineage as a spatial module and subdivides it into temporal modules, yielding 164 annotated spatial-by-temporal combinations. For each current TF panel, the miss rate is the fraction of these modules containing no selected TF. "
             "This hosted example uses one real lineage split and SMITH only; it is a tutorial-scale subset, "
             "not the multi-method, five-split manuscript Figure 3h. The full comparison is the command at the end of the notebook."
         ),
@@ -472,8 +475,8 @@ write_json(CASE_OUTPUT / "run_manifest.json", {
 })'''),
         nbformat.v4.new_markdown_cell(
             "## Full manuscript command\n\nThe command-line workflow remains the entry point for all five splits and manuscript baselines:\n\n"
-            "```bash\npython reproducibility/workflows/regulatory_activity/run_tutorial.py \\\n+  --data-root data/tutorials \\\n+  --output-dir outputs/paper/regulatory \\\n+  --datasets elegans_tf,elegans_mirna \\\n+  --splits split_1,split_2,split_3,split_4,split_5 \\\n+  --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros \\\n+  --paper-analyses --epochs 200\n```\n\n"
-            "The executed tutorial uses one real lineage split and one seed so that the complete data-to-result path remains practical to rerun."
+            "```bash\npython reproducibility/workflows/regulatory_activity/run_tutorial.py \\\n  --data-root data/tutorials \\\n  --output-dir outputs/paper/regulatory \\\n  --datasets elegans_tf,elegans_mirna \\\n  --splits split_1,split_2,split_3,split_4,split_5 \\\n  --methods SMITH,PERSIST-class,PERSIST,ActiveSVM,scGIST,scGeneFit,Spapros \\\n  --paper-analyses --epochs 150 --seeds 42 --batch-size 1024\n```\n\n"
+            "This is the manuscript-scale entry point inferred from the audited cluster runner. Its outputs still require panel-by-panel numerical validation against the manuscript source values before they can be called reproduced."
         ),
     ]
     notebook = nbformat.v4.new_notebook(cells=cells)

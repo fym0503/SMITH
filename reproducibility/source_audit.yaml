@@ -3,9 +3,9 @@ audited_on: 2026-08-24
 host: pc157
 repository: /workspace/fanyimin/SMITH_unified
 purpose: >-
-  Frozen audit of the cluster implementations used to align the portable
-  Figure 3c-k and Figure 4c-h tutorials. These files are provenance only;
-  tutorials execute the checked-in portable workflows.
+  Frozen audit of cluster implementations mapped to the portable Figure 3c-k
+  and Figure 4c-h tutorials. These mappings are provenance only and do not
+  certify numerical reproduction; tutorials execute the checked-in workflows.
 scripts:
   - case: 02_regulatory_activity
     path: /workspace/fanyimin/SMITH_unified/code/SMITH_tool-main/scripts/run_elegans_smith_multitask.py
@@ -77,5 +77,5 @@ source_data:
 notes:
   - Cluster absolute paths are recorded for audit only and are not used by the package.
   - No aggregate CSV is a tutorial input.
-  - Figure 3h-i annotation inputs are normalized from official Supplementary Table 5; no cluster-side implementation of those two panels was found. Figure 3h uses the source atlas tissue-by-temporal-stage module definition (15 modules); progenitor lineage remains an annotation field and is not treated as a separate module dimension.
-  - Figure 3j and 3k were mapped to the exact cluster-side implementations above; the portable workflow uses the same lineage aggregation, normalization and held-out endpoints.
+  - Figure 3h-i annotation inputs are normalized from official Supplementary Table 5; no cluster-side implementation of those two panels was found. Figure 3h retains the source-atlas definition in which each progenitor lineage is a spatial module subdivided into temporal modules (164 annotated spatial-by-temporal combinations).
+  - Figure 3j and 3k were mapped to cluster-side implementations above; the portable workflow uses the same lineage aggregation, normalization and held-out endpoints, but only the Figure 3j overall correlation has been numerically verified.

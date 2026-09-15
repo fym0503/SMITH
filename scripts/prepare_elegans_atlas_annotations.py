@@ -65,10 +65,9 @@ def prepare(source: Path, data_root: Path) -> dict[str, Path]:
     modules.insert(
         0,
         "module_id",
-        # The manuscript defines a spatiotemporal module by tissue system and
-        # temporal stage. Progenitor lineage is retained as annotation detail,
-        # but does not create a separate module for miss-rate calculations.
-        modules[["tissue", "temporal_module"]].agg("|".join, axis=1),
+        # Each progenitor lineage is a spatial module, subdivided into temporal
+        # modules, as defined in the source atlas Extended Data Figure 4b.
+        modules[["tissue", "progenitor_lineage", "temporal_module"]].agg("|".join, axis=1),
     )
     modules = modules.drop_duplicates().sort_values(
         ["tissue", "progenitor_lineage", "temporal_module", "gene_symbol"]

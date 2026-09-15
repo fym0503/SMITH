@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Compute Figure 3h module miss rates from generated panel artifacts.
+"""Compute candidate Figure 3h module miss rates from generated panel artifacts.
 
-This is an audit/export command for a completed manuscript-scale run. The
+This is an audit/export command for a completed manuscript-scale run. It does
+not by itself certify numerical equivalence with the manuscript. The
 hosted notebook computes coverage from in-memory panels; this command is useful
 when the panels were generated remotely and only their provenance artifacts
 were synchronized locally.

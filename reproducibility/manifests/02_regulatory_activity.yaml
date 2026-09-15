@@ -2,10 +2,10 @@ id: 02_regulatory_activity
 order: 2
 title: Developmental regulatory activity panels
 manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
-figure: Figure 3c-k
+figure: Tutorial analyses related to Figure 3c-k
 runtime: 10-60 minutes depending on cells, epochs and device
 data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from real TF and miRNA lineage-aware splits, selects panels, evaluates held-out identity/time, and rebuilds the manuscript's panel-level regulatory analyses in Figure 3c-k.
+summary: Starts from real TF and miRNA lineage-aware splits and demonstrates analyses related to Figure 3c-k. The hosted outputs are not numerical reproductions of the manuscript panels.
 claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
 inputs:
   - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
@@ -25,7 +25,17 @@ inputs:
     bytes: 27111860
     sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
 outputs: [runs/*/SMITH/ranking/epoch_*.csv, figure_data/figure3_c_f_values.tsv, figure_data/figure3_h_module_miss_rate.tsv, figure_data/figure3_i_coactivity.tsv, figure_data/figure3_j_tf_scrna_correlation.tsv, figure_data/figure3_k_transfer.tsv, figures/figure3_c.*, figures/figure3_d.*, figures/figure3_e.*, figures/figure3_f.*, figures/figure3_g.*, figures/figure3_h.*, figures/figure3_i.*, figures/figure3_j.*, figures/figure3_k.*, run_manifest.json]
-reproduced_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f, Figure 3g, Figure 3h, Figure 3i, Figure 3j, Figure 3k]
+reproduced_panels: []
+related_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f, Figure 3g, Figure 3h, Figure 3i, Figure 3j, Figure 3k]
+reproduction_status: tutorial_scale_not_numerically_validated
+validation_record: reproducibility/validation/figure3_validation.yaml
+not_reproduced:
+  Figure 3c-f: Hosted notebook uses one split, one method, 30 epochs, seed 1 and at most 3,000 cells; the manuscript uses five splits and all comparison methods.
+  Figure 3g: Hosted notebook renders an annotation heatmap rather than the manuscript schematic.
+  Figure 3h: Hosted notebook uses one newly trained SMITH panel per size; the manuscript comparison requires the exact manuscript panels for all methods.
+  Figure 3i: Hosted notebook contains SMITH only; the manuscript panel compares SMITH with PERSIST over repeated runs.
+  Figure 3j: The overall correlation of 0.38 has been reproduced, but visual identity with the manuscript panel has not been validated.
+  Figure 3k: Hosted notebook uses one split and SMITH only; the manuscript panel includes SMITH and PERSIST-class over five repeats.
 required_paper_inputs:
   - regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
   - regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv

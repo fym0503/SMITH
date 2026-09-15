@@ -71,6 +71,20 @@ def test_public_case_registry_has_only_approved_chapters():
     assert all(not check_case(cases[case_id])["ready"] for case_id in EXPECTED_CASES)
 
 
+def test_regulatory_manifest_does_not_claim_unvalidated_figure3_reproduction():
+    root = Path(__file__).resolve().parents[1]
+    manifest = yaml.safe_load(
+        (root / "reproducibility/manifests/02_regulatory_activity.yaml").read_text()
+    )
+    validation = yaml.safe_load(
+        (root / "reproducibility/validation/figure3_validation.yaml").read_text()
+    )
+    assert manifest["reproduced_panels"] == []
+    assert manifest["reproduction_status"] == "tutorial_scale_not_numerically_validated"
+    assert validation["status"] == "failed_not_manuscript_reproduction"
+    assert validation["sources"]["atlas_supplementary_table_5"]["annotated_module_count"] == 164
+
+
 def test_data_root_drives_readiness(tmp_path: Path):
     original = load_cases()["02_regulatory_activity"]
     case = replace(original, inputs=tuple({"path": item["path"], "kind": "data"} for item in original.inputs))
@@ -207,7 +221,7 @@ def test_tutorial_sources_target_manuscript_panels():
         assert figure in text
         assert "Reproduce SMITH Figure" not in text
         assert plotter in text or "_draw_bar_panel" in text or "_draw_performance" in text or "_draw_violin_panel" in text
-        assert "quick hosted run" in text or "executed tutorial uses one real lineage split" in text or "current SMITH panels directly" in text or "current panels directly" in text
+        assert "quick hosted run" in text or "tutorial-scale outputs" in text or "executed tutorial uses one real lineage split" in text or "current SMITH panels directly" in text or "current panels directly" in text
         assert "--output-dir" in text
         assert "display(pd.DataFrame" not in text
         assert "display(df" not in text
@@ -516,14 +530,16 @@ def test_regulatory_module_miss_rate_uses_selected_panel_only():
     assert module_miss_rate(["myod"], modules) == pytest.approx(0.5)
 
 
-def test_regulatory_module_normalization_groups_progenitors_within_stage():
+def test_regulatory_module_normalization_preserves_progenitor_modules():
     modules = pd.DataFrame([
         {"tissue": "Muscle", "progenitor_lineage": "MSa", "temporal_module": "Module-I", "gene_symbol": "TF1"},
         {"tissue": "Muscle", "progenitor_lineage": "MSp", "temporal_module": "Module-I", "gene_symbol": "TF2"},
         {"tissue": "Neuron", "progenitor_lineage": "AB", "temporal_module": "Module-I", "gene_symbol": "TF3"},
     ])
     normalized = normalize_module_table(modules)
-    assert set(normalized["module_id"]) == {"Muscle|Module-I", "Neuron|Module-I"}
+    assert set(normalized["module_id"]) == {
+        "Muscle|MSa|Module-I", "Muscle|MSp|Module-I", "Neuron|AB|Module-I"
+    }
 
 
 def test_regulatory_in_memory_panel_evaluation_and_coverage(tmp_path: Path):
