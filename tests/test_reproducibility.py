@@ -226,7 +226,10 @@ def test_tutorial_sources_target_manuscript_panels():
         assert "display(pd.DataFrame" not in text
         assert "display(df" not in text
         assert "display(dataframe" not in text.lower()
-        assert "display(Image" in text or "display(figure" in text
+        if path.name.startswith("02_SMITH_Regulatory"):
+            assert "display(Image" not in text and "display(figure" not in text
+        else:
+            assert "display(Image" in text or "display(figure" in text
 
 
 def test_executed_tutorials_include_rendered_figure_outputs():
@@ -244,7 +247,10 @@ def test_executed_tutorials_include_rendered_figure_outputs():
             for output in cell.get("outputs", [])
             if output.output_type == "display_data" and "image/png" in output.get("data", {})
         ]
-        assert image_outputs, f"{path} has no rendered example figures"
+        if path.name.startswith("02_SMITH_Regulatory"):
+            assert not image_outputs, f"{path} contains an unvalidated rendered figure"
+        else:
+            assert image_outputs, f"{path} has no rendered example figures"
 
 
 def test_agent_probe_reference_outputs_are_complete_and_consistent():
@@ -285,21 +291,18 @@ def test_regulatory_tutorial_interleaves_code_and_figures():
         if cell.cell_type == "code" and "display(figure)" in str(cell.source)
         and not str(cell.source).lstrip().startswith("from pathlib")
     ]
-    assert len(display_cells) == 9
+    assert len(display_cells) == 0
     text = "\n".join(str(cell.source) for cell in notebook.cells)
     assert "render_figure3_panel" not in text
     assert "Methods used in the panel comparisons" not in text
     assert "METHOD_COLORS" not in text
     coactivity_cell = next(
         cell for cell in notebook.cells
-        if "figure3_i_coactivity.tsv" in str(cell.source) and "axis.bar(" in str(cell.source)
+        if "figure3_i_coactivity.tsv" in str(cell.source)
     )
-    assert "axis.bar(" in str(coactivity_cell.source)
+    assert "display(figure)" not in str(coactivity_cell.source)
     assert "Render the manuscript panels" not in "\n".join(str(cell.source) for cell in notebook.cells)
-    for index in display_cells:
-        assert notebook.cells[index - 1].cell_type == "markdown"
-        assert str(notebook.cells[index - 1].source).lstrip().startswith("#")
-        assert str(notebook.cells[index].source).count("display(figure)") == 1
+    assert "Validation status" in text
 
 
 def test_ribomap_plot_has_no_placeholder_panel():

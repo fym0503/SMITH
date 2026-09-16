@@ -248,14 +248,6 @@ tf_values = benchmark_values.loc[benchmark_values["dataset"] == "elegans_tf"]
 mirna_values = benchmark_values.loc[benchmark_values["dataset"] == "elegans_mirna"]
 '''
 
-    def bar_cell(variable: str, panel: str) -> str:
-        return f'''figure, axis = plt.subplots(figsize=(2.35, 2.10), facecolor="white")
-_draw_bar_panel(axis, {variable}, PANEL_SPECS["{panel}"])
-figure.text(0.015, 0.985, "{panel}", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.25, right=0.97, bottom=0.22, top=0.86)
-display(figure)
-plt.close(figure)'''
-
     cells = [
         nbformat.v4.new_markdown_cell(
             f"# {spec['title']}\n\n"
@@ -289,36 +281,21 @@ plt.close(figure)'''
         ),
         nbformat.v4.new_code_cell(evaluation),
         nbformat.v4.new_markdown_cell(
-            "### TF activity retains lineage identity\n\nCell-type accuracy measures whether the compact TF panel separates held-out cell identities."
+            "### Held-out regulatory activity metrics\n\nThe current run has produced the TF and miRNA predictions and split-level metrics above. Their manuscript panel plots are withheld until the exact five-split, multi-method values pass validation against the paper source data."
         ),
-        nbformat.v4.new_code_cell(bar_cell("tf_values", "c")),
-        nbformat.v4.new_markdown_cell(
-            "### TF activity retains developmental order\n\nPearson correlation measures whether the same panel preserves the continuous developmental trajectory."
-        ),
-        nbformat.v4.new_code_cell(bar_cell("tf_values", "d")),
-        nbformat.v4.new_markdown_cell(
-            "### miRNA activity retains lineage identity\n\nThe analysis asks whether a smaller post-transcriptional panel still resolves held-out cell types."
-        ),
-        nbformat.v4.new_code_cell(bar_cell("mirna_values", "e")),
-        nbformat.v4.new_markdown_cell(
-            "### miRNA activity retains developmental order\n\nThe temporal endpoint tests whether selected miRNA activities follow embryonic progression."
-        ),
-        nbformat.v4.new_code_cell(bar_cell("mirna_values", "f")),
         nbformat.v4.new_markdown_cell(
             "## Developmental regulatory programs\n\n### Spatiotemporal TF modules\n\n"
             "The atlas groups regulators by tissue and developmental phase, defining the programs whose representation is tested next."
         ),
-        nbformat.v4.new_code_cell('''figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
-_draw_module_schematic(axis, modules)
-figure.text(0.015, 0.985, "g", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
-display(figure)
-plt.close(figure)'''),
+        nbformat.v4.new_code_cell('''module_annotation = modules.copy()
+module_annotation["module_id"] = module_annotation["module_id"].astype(str)
+module_annotation.to_csv(FIGURE_DATA / "figure3_g_module_annotations.tsv", sep="\\t", index=False)
+'''),
         nbformat.v4.new_markdown_cell(
             "### Coverage of annotated developmental modules\n\n"
             "The source atlas defines each tissue progenitor lineage as a spatial module and subdivides it into temporal modules, yielding 164 annotated spatial-by-temporal combinations. For each current TF panel, the miss rate is the fraction of these modules containing no selected TF. "
             "This hosted example uses one real lineage split and SMITH only; it is a tutorial-scale subset, "
-            "not the multi-method, five-split manuscript Figure 3h. The full comparison is the command at the end of the notebook."
+            "not the multi-method, five-split manuscript Figure 3h. The full comparison is the command at the end of the notebook. No Figure 3h image is displayed until the full comparison passes validation."
         ),
         nbformat.v4.new_code_cell('''coverage_panels = pd.json_normalize([
     row for row in panel_records
@@ -338,16 +315,10 @@ coverage = module_coverage(
     require_complete=True,
 )
 coverage.to_csv(FIGURE_DATA / "figure3_h_module_miss_rate.tsv", sep="\\t", index=False)
-
-figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
-_draw_module_coverage(axis, coverage)
-figure.text(0.015, 0.985, "h", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
-display(figure)
-plt.close(figure)'''),
+'''),
         nbformat.v4.new_markdown_cell(
             "## Regulatory reconstruction and modality transfer\n\n### Reconstruction of TF co-activity\n\n"
-            "The reconstruction head learned during the current 32-TF training run predicts held-out activity. Atlas TF pairs then quantify agreement within four lineages."
+            "The reconstruction head learned during the current 32-TF training run predicts held-out activity. Atlas TF pairs then quantify agreement within four lineages. The manuscript Figure 3i plot is withheld until repeated SMITH/PERSIST runs are validated."
         ),
         nbformat.v4.new_code_cell('''tf32 = training_runs["elegans_tf"][32]
 coactivity = coactivity_from_objects(
@@ -355,19 +326,7 @@ coactivity = coactivity_from_objects(
     checkpoint_file=tf32["checkpoint_file"], method="SMITH", seed=1,
 )
 coactivity.to_csv(FIGURE_DATA / "figure3_i_coactivity.tsv", sep="\\t", index=False)
-
-lineages = ["muscle", "neuron", "pharynx", "skin"]
-means = [coactivity.loc[coactivity["lineage"] == lineage, "pearson"].mean() for lineage in lineages]
-errors = [coactivity.loc[coactivity["lineage"] == lineage, "pearson"].sem() if sum(coactivity["lineage"] == lineage) > 1 else 0.0 for lineage in lineages]
-figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
-axis.bar(np.arange(len(lineages)), means, yerr=errors, capsize=1.5, color="#2f75b5", edgecolor="black", linewidth=0.4)
-axis.set(title="TF co-activity reconstruction", ylabel="Pearson agreement")
-axis.set_xticks(np.arange(len(lineages)), [name.title() for name in lineages], rotation=25, ha="right")
-axis.set_ylim(-1, 1)
-figure.text(0.015, 0.985, "i", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
-display(figure)
-plt.close(figure)'''),
+'''),
         nbformat.v4.new_markdown_cell(
             "### Conservation of regulatory structure across modalities\n\n"
             "Shared TFs are aggregated over matched lineages in scRNA-seq and TF activity. Biclustering exposes whether the two modalities retain similar regulatory blocks."
@@ -377,21 +336,10 @@ tf_combined.var_names = tf_train.var_names.copy()
 correlation, correlation_matrices = tf_scrna_correlation_from_objects(scrna, tf_combined)
 correlation.to_csv(FIGURE_DATA / "figure3_j_tf_scrna_correlation.tsv", sep="\\t", index=False)
 np.savez_compressed(FIGURE_DATA / "figure3_j_correlation_matrices.npz", **correlation_matrices)
-
-figure, axes = plt.subplots(1, 2, figsize=(4.7, 2.25), facecolor="white")
-for axis, key, title in zip(axes, ("scrna", "tf"), ("scRNA-seq", "TF activity")):
-    image = axis.imshow(correlation_matrices[key], cmap="Blues", vmin=0, vmax=1, interpolation="nearest")
-    image.set_rasterized(True)
-    axis.set_title(title, fontsize=8.5, pad=4)
-    axis.set_xticks([]); axis.set_yticks([])
-axes[1].text(0.98, 0.02, f"corr = {float(correlation.iloc[0]['mean_rowwise_pearson']):.2f}", transform=axes[1].transAxes, ha="right", va="bottom", fontsize=7, bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8, "pad": 1.5})
-figure.text(0.008, 0.985, "j", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.04, right=0.98, bottom=0.08, top=0.86, wspace=0.08)
-display(figure)
-plt.close(figure)'''),
+'''),
         nbformat.v4.new_markdown_cell(
             "### Transfer from scRNA-seq into TF activity\n\n"
-            "A new panel is now learned from the loaded scRNA-seq reference, then evaluated directly on the held-out TF-activity split."
+            "A new panel is now learned from the loaded scRNA-seq reference, then evaluated directly on the held-out TF-activity split. The manuscript Figure 3k plot is withheld until the five-repeat comparison is validated."
         ),
         nbformat.v4.new_code_cell('''source_names = scrna.var["gene_short_name"].astype(str).str.upper() if "gene_short_name" in scrna.var else scrna.var_names.astype(str).str.upper()
 scrna_for_training = scrna.copy()
@@ -444,13 +392,7 @@ for row in benchmark_rows:
         transfer_rows.append({**row, "source_modality": "TF-TF"})
 transfer = pd.json_normalize(transfer_rows)
 transfer.to_csv(FIGURE_DATA / "figure3_k_transfer.tsv", sep="\\t", index=False)
-
-figure, axis = plt.subplots(figsize=(2.55, 2.25), facecolor="white")
-_draw_transfer(axis, transfer)
-figure.text(0.015, 0.985, "k", ha="left", va="top", fontsize=10, weight="bold")
-figure.subplots_adjust(left=0.16, right=0.97, bottom=0.23, top=0.85)
-display(figure)
-plt.close(figure)'''),
+'''),
         nbformat.v4.new_markdown_cell(
             "## Record the run\n\nThe manifest records the inputs and artifacts after all analyses finish. It is never read as an analysis input."
         ),
