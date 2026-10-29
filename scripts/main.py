@@ -51,7 +51,7 @@ def process_batch(model, feed_dict, tasks, loss_fn, optimizer, mask, masks, devi
         
         scale = {}
         if len(tasks) > 2:
-            sol, _ = MinNormSolver.find_min_norm_element([grads[t] for t in tasks[1:]])
+            sol, _ = MinNormSolver.find_min_norm_element_FW([grads[t] for t in tasks[1:]])
             for i, t in enumerate(tasks[1:]):
                 scale[t] = float(sol[i])
         else:
@@ -100,8 +100,8 @@ def Smith(args):
     
     if args.prior_file != "0":
         prior_idx = get_prior_idx(args, var)
-        for idx in prior_idx:
-            model['rep'].mu.data[idx] = 10
+        with torch.no_grad():
+            model['rep'].mu[prior_idx] = 1e4
     
     for epoch in tqdm(range(args.epoch)):
         print(f'Epoch {epoch} Started')

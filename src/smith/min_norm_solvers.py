@@ -144,47 +144,41 @@ class MinNormSolver:
             sol_vec = new_sol_vec
 
     def find_min_norm_element_FW(vecs):
-        r"""
-        Given a list of vectors (vecs), this method finds the minimum norm element in the convex hull
-        as min |u|_2 st. u = \sum c_i vecs[i] and \sum c_i = 1.
-        It is quite geometric, and the main idea is the fact that if d_{ij} = min |u|_2 st u = c x_i + (1-c) x_j; the solution lies in (0, d_{i,j})
-        Hence, we find the best 2-task solution, and then run the Frank Wolfe until convergence
+        """Minimize the squared gradient norm on the simplex with Frank-Wolfe.
+
+        Start from uniform task weights and use exact line search toward the
+        simplex vertex with the smallest directional derivative. Return the
+        latest weights and their squared norm, including at the iteration cap.
         """
-        # Solution lying at the combination of two points
-        dps = {}
-        init_sol, dps = MinNormSolver._min_norm_2d(vecs, dps)
+        n = len(vecs)
+        if n == 0:
+            raise ValueError('At least one task gradient is required.')
 
-        n=len(vecs)
-        sol_vec = np.zeros(n)
-        sol_vec[init_sol[0][0]] = init_sol[1]
-        sol_vec[init_sol[0][1]] = 1 - init_sol[1]
+        gradients = [
+            torch.cat([block.detach().reshape(-1).double().cpu() for block in task]).numpy()
+            for task in vecs
+        ]
+        gradients = np.stack(gradients)
+        grad_mat = gradients @ gradients.T
+        sol_vec = np.full(n, 1.0 / n)
 
-        if n < 3:
-            # This is optimal for n=2, so return the solution
-            return sol_vec , init_sol[2]
-
-        iter_count = 0
-
-        grad_mat = np.zeros((n,n))
-        for i in range(n):
-            for j in range(n):
-                grad_mat[i,j] = dps[(i, j)]
-
-        while iter_count < MinNormSolver.MAX_ITER:
-            t_iter = np.argmin(np.dot(grad_mat, sol_vec))
-
-            v1v1 = np.dot(sol_vec, np.dot(grad_mat, sol_vec))
-            v1v2 = np.dot(sol_vec, grad_mat[:, t_iter])
-            v2v2 = grad_mat[t_iter, t_iter]
-
-            nc, nd = MinNormSolver._min_norm_element_from2(v1v1, v1v2, v2v2)
-            new_sol_vec = nc*sol_vec
-            new_sol_vec[t_iter] += 1 - nc
-
-            change = new_sol_vec - sol_vec
-            if np.sum(np.abs(change)) < MinNormSolver.STOP_CRIT:
-                return sol_vec, nd
+        for _ in range(MinNormSolver.MAX_ITER):
+            grad_product = grad_mat @ sol_vec
+            vertex = int(np.argmin(grad_product))
+            cost = float(sol_vec @ grad_product)
+            cross = float(grad_product[vertex])
+            curvature = cost - 2.0 * cross + grad_mat[vertex, vertex]
+            # Identical gradients give a flat segment; retaining the current
+            # point avoids division by zero without changing the objective.
+            step = float(np.clip((cost - cross) / curvature, 0.0, 1.0)) if curvature > 0 else 0.0
+            new_sol_vec = (1.0 - step) * sol_vec
+            new_sol_vec[vertex] += step
+            change = np.linalg.norm(new_sol_vec - sol_vec, ord=1)
             sol_vec = new_sol_vec
+            if change <= MinNormSolver.STOP_CRIT:
+                break
+
+        return sol_vec, float(sol_vec @ grad_mat @ sol_vec)
 
 
 def gradient_normalizers(grads, losses, normalization_type):
