@@ -296,6 +296,15 @@ class InteractiveSmithAgent:
             request.test_adata_file = getattr(self.registries.datasets.get("smith_st_processed"), "path", "")
         if not request.tasks:
             request.tasks = ["recon", "cls", "region", "pathology"]
+        if "time" in request.tasks and not request.time_label and Path(request.train_adata_file).is_file():
+            import anndata as ad
+            source = ad.read_h5ad(request.train_adata_file, backed="r")
+            try:
+                request.time_label = next(
+                    (name for name in ("absolute_time", "consensus_time", "time") if name in source.obs), "",
+                )
+            finally:
+                source.file.close()
         if request.panel_size <= 0:
             request.panel_size = 64
         if not request.species:
@@ -323,6 +332,12 @@ class InteractiveSmithAgent:
         elif "reconstruction" in lower or "recon" in lower:
             tasks = ["recon"]
             objective = "reconstruction"
+        if any(token in lower for token in ["developmental time", "temporal", "time regression", "时间回归", "发育时间"]):
+            tasks = [task for task in tasks if task not in {"region", "pathology"}]
+            tasks.append("time")
+        if any(token in lower for token in ["coordinate regression", "spatial coordinate", "坐标回归", "空间坐标"]):
+            tasks = [task for task in tasks if task not in {"region", "pathology"}]
+            tasks.append("coordination")
         return PanelPipelineRequest(
             train_adata_file=train_path,
             test_adata_file=test_path or "",
@@ -330,6 +345,7 @@ class InteractiveSmithAgent:
             objective=objective,
             tasks=tasks,
             label=label,
+            obsm_key="spatial" if "coordination" in tasks else "",
             formal=formal,
             epoch=5 if formal else 1,
             run_selection=any(token in lower for token in ["run smith", "panel selection", "select panel", "generate panel", "design panel"]),
@@ -376,7 +392,8 @@ class InteractiveSmithAgent:
             return None
 
         state = session.state
-        if request.run_selection and self._looks_like_imaging_st_target(request.train_adata_file):
+        uses_spatial_reference = any(task in request.tasks for task in ("region", "coordination", "standard_coordination"))
+        if request.run_selection and self._looks_like_imaging_st_target(request.train_adata_file) and not uses_spatial_reference:
             return {
                 "assistant_message": (
                     "For prospective imaging-ST panel design, the training/source input should be paired or tissue-matched "
@@ -402,6 +419,10 @@ class InteractiveSmithAgent:
                             "epoch": request.epoch,
                             "record": 1,
                             "execute": True,
+                            "time_label": request.time_label,
+                            "spatial_key": request.spatial_key,
+                            "must_keep_genes": request.must_keep_genes,
+                            "forbidden_genes": request.forbidden_genes,
                             "extra_args": {"batch_size": 4096, "balance_mode": "off"},
                         },
                     }
@@ -470,6 +491,7 @@ class InteractiveSmithAgent:
                             "panel_size": request.panel_size,
                             "label": request.label,
                             "obsm_key": request.obsm_key,
+                            "time_label": request.time_label or None,
                         },
                     }
                 ],
@@ -685,6 +707,17 @@ class InteractiveSmithAgent:
         has_feasibility = bool(state.get("feasibility_table"))
         train_path_from_message, test_path_from_message = self._extract_dataset_paths(session, user_message)
         pipeline_request = self._current_pipeline_request(session)
+        # The parsed request distinguishes requested steps from negated words
+        # such as "skip probe feasibility". Keyword matches must not override it.
+        cached_request = session.memory.get("pipeline_request", {})
+        if (
+            mode == ControlMode.PIPELINE
+            and pipeline_request is not None
+            and cached_request.get("source_message") == user_message
+        ):
+            wants_evaluation = pipeline_request.run_evaluation
+            wants_report = pipeline_request.build_report
+            wants_feasibility = pipeline_request.run_feasibility
         skip_odt_requested = bool(pipeline_request.skip_odt) if pipeline_request else any(token in lower for token in ["skip odt", "without odt", "no odt"])
         repaired = []
         saw_run_smith = False
@@ -907,6 +940,7 @@ class InteractiveSmithAgent:
                         "panel_size": panel_size,
                         "label": label,
                         "obsm_key": obsm_key,
+                        "time_label": (pipeline_request.time_label or None) if pipeline_request else None,
                     },
                 }
             ]

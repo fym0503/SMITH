@@ -35,6 +35,8 @@ class SmithSelectionConfig:
     sigma: float = 0.5
     activation: str = "tanh"
     optimizer: str = "Adam"
+    prior_file: Path | None = None
+    forbidden_file: Path | None = None
     extra_args: dict[str, Any] | None = None
 
 
@@ -93,6 +95,10 @@ def build_smith_command(config: SmithSelectionConfig) -> list[str]:
                 command.append(flag)
             continue
         command.extend([flag, str(value)])
+    if config.prior_file is not None:
+        command.extend(["--prior_file", str(config.prior_file)])
+    if config.forbidden_file is not None:
+        command.extend(["--forbidden_file", str(config.forbidden_file)])
     return command
 
 

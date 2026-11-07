@@ -261,8 +261,15 @@ class LLMClient:
             "For prospective imaging-ST panel design, train_adata_file must be the paired/tissue-matched scRNA-seq source. "
             "MERFISH/Xenium/CosMx/MERSCOPE/seqFISH/osmFISH target data are held out and must not be used as the training "
             "or retrieval input; only set test_adata_file when the user explicitly provides a held-out dataset path. "
+            "An existing spatial reference explicitly supplied for spatial-objective training is allowed as the source; "
+            "keep the new target experiment separate from that existing reference. "
             "Infer objective and tasks from scientific intent. "
-            "Use these task tokens only: recon, cls, region, pathology. "
+            "Use these task tokens only: recon, cls, region, pathology, time, coordination, standard_coordination. "
+            "Developmental time prediction/regression requires time; set time_label to the provided obs column, or an empty string to infer it. "
+            "Spatial coordinate regression requires coordination (or standard_coordination for standardized coordinates), never region. "
+            "region is classification of discrete anatomical labels only. Set spatial_key to the provided obsm key, default spatial. "
+            "Set obsm_key to spatial_key only when coordinate evaluation is requested; otherwise use an empty string. "
+            "Preserve must_keep_genes and forbidden_genes exactly as requested. "
             "Examples: pathology classification -> tasks ['cls','pathology'], objective 'pathology_classification', label 'pathology'; "
             "region classification -> tasks ['region'], objective 'region_classification', label 'region'; "
             "reconstruction -> tasks ['recon'], objective 'reconstruction'; balanced/default -> tasks ['recon','cls','region','pathology']. "
@@ -287,10 +294,12 @@ class LLMClient:
                         "objective": {"type": "string"},
                         "tasks": {
                             "type": "array",
-                            "items": {"type": "string", "enum": ["recon", "cls", "region", "pathology"]},
+                            "items": {"type": "string", "enum": ["recon", "cls", "region", "pathology", "time", "coordination", "standard_coordination"]},
                         },
                         "label": {"type": "string"},
                         "obsm_key": {"type": "string"},
+                        "time_label": {"type": "string"},
+                        "spatial_key": {"type": "string"},
                         "species": {"type": "string"},
                         "formal": {"type": "boolean"},
                         "epoch": {"type": "integer"},
@@ -312,6 +321,8 @@ class LLMClient:
                         "tasks",
                         "label",
                         "obsm_key",
+                        "time_label",
+                        "spatial_key",
                         "species",
                         "formal",
                         "epoch",
@@ -331,7 +342,7 @@ class LLMClient:
 
     @staticmethod
     def _panel_pipeline_request_from_payload(payload: dict[str, Any]) -> PanelPipelineRequest:
-        tasks = [str(item) for item in payload.get("tasks", []) if str(item) in {"recon", "cls", "region", "pathology"}]
+        tasks = [str(item) for item in payload.get("tasks", []) if str(item) in {"recon", "cls", "region", "pathology", "time", "coordination", "standard_coordination"}]
         if not tasks:
             tasks = ["recon", "cls", "region", "pathology"]
         panel_size = int(payload.get("panel_size", 64) or 64)
@@ -346,7 +357,9 @@ class LLMClient:
             objective=str(payload.get("objective", "balanced") or "balanced"),
             tasks=tasks,
             label=str(payload.get("label", "pathology") or "pathology"),
-            obsm_key=str(payload.get("obsm_key", "X_pca") or "X_pca"),
+            obsm_key=str(payload.get("obsm_key", "X_pca") or ""),
+            time_label=str(payload.get("time_label", "") or ""),
+            spatial_key=str(payload.get("spatial_key", "spatial") or "spatial"),
             species=str(payload.get("species", "homo_sapiens") or "homo_sapiens"),
             formal=formal,
             epoch=epoch,

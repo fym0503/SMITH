@@ -535,7 +535,24 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
     entrypoint = _resolve_model_entrypoint(runtime, model_entry)
     smith_root = entrypoint.parent
     output_dir = Path(arguments.get("output_dir", runtime.working_dir / "smith_selection"))
+    ensure_dir(output_dir)
+    must_keep_genes = list(dict.fromkeys(str(gene).strip() for gene in arguments.get("must_keep_genes", []) if str(gene).strip()))
+    forbidden_genes = list(dict.fromkeys(str(gene).strip() for gene in arguments.get("forbidden_genes", []) if str(gene).strip()))
+    overlap = {gene.upper() for gene in must_keep_genes} & {gene.upper() for gene in forbidden_genes}
+    if overlap:
+        raise ValueError(f"Genes cannot be both required and forbidden: {sorted(overlap)}")
+    prior_file = None
+    forbidden_file = None
+    if must_keep_genes:
+        prior_file = output_dir / "prior_genes.csv"
+        pd.DataFrame({"names": must_keep_genes}).to_csv(prior_file, index=False)
+    if forbidden_genes:
+        forbidden_file = output_dir / "forbidden_genes.csv"
+        pd.DataFrame({"names": forbidden_genes}).to_csv(forbidden_file, index=False)
     extra_args = dict(arguments.get("extra_args", {}))
+    for key in ("time_label", "spatial_key"):
+        if arguments.get(key):
+            extra_args[key] = str(arguments[key])
     known_overrides = {
         "learning_rate": float,
         "batch_size": int,
@@ -560,7 +577,7 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
     # cluster, while the current agent process already has the right deps.
     python_executable = (
         configured_python
-        if (Path(configured_python).is_file() or shutil.which(configured_python))
+        if configured_python not in {"python", "python3", ""} and (Path(configured_python).is_file() or shutil.which(configured_python))
         else sys.executable
     )
     config = SmithSelectionConfig(
@@ -587,6 +604,8 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
         sigma=float(resolved_overrides.get("sigma", 0.5)),
         activation=str(resolved_overrides.get("activation", "tanh")),
         optimizer=str(resolved_overrides.get("optimizer", "Adam")),
+        prior_file=prior_file,
+        forbidden_file=forbidden_file,
         extra_args=extra_args,
     )
     result = run_smith_selection(config, execute=bool(arguments.get("execute", False)))
@@ -700,8 +719,6 @@ def _handle_build_run_report(runtime, arguments: dict[str, Any]) -> dict[str, An
         mounted = runtime.session.state.get("mounted_datasets", {})
         if len(mention_ids) >= 2 and mention_ids[1] in mounted:
             test_adata_file = mounted[mention_ids[1]]["path"]
-        elif "smith_st_processed" in runtime.registries.datasets:
-            test_adata_file = runtime.registries.datasets["smith_st_processed"].path
 
     report_paths = build_run_report(
         output_dir=Path(arguments.get("output_dir", runtime.working_dir / "report")),

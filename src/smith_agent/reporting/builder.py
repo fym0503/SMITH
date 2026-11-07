@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -115,6 +116,11 @@ def build_run_report(
         "evaluation_metrics": metrics,
         "feasibility_summary": feasibility_summary or {},
         "figures": figures,
+        "embeddings": {
+            name: json.loads(Path(path).with_suffix(".embedding.json").read_text())
+            for name, path in figures.items()
+            if Path(path).with_suffix(".embedding.json").exists()
+        },
     }
     summary_json = write_json(report_dir / "report_summary.json", summary_payload)
 

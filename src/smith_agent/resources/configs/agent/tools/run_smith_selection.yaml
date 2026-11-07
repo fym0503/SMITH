@@ -12,8 +12,19 @@ input_schema:
     type: integer
   execute:
     type: boolean
+  time_label:
+    type: string
+  spatial_key:
+    type: string
+  must_keep_genes:
+    type: array
+    items:
+      type: string
+  forbidden_genes:
+    type: array
+    items:
+      type: string
 outputs:
   - smith_run_manifest.json
 metadata:
   handler: run_smith_selection
-

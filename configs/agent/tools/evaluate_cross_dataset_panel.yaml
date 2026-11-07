@@ -10,6 +10,12 @@ input_schema:
     type: string
   panel_size:
     type: integer
+  label:
+    type: string
+  obsm_key:
+    type: string
+  time_label:
+    type: string
 outputs:
   - cross_dataset_evaluation.csv
 metadata:

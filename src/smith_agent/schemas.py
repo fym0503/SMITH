@@ -46,6 +46,8 @@ class PanelPipelineRequest:
     tasks: list[str] = field(default_factory=lambda: ["recon", "cls", "region", "pathology"])
     label: str = "pathology"
     obsm_key: str = "X_pca"
+    time_label: str = ""
+    spatial_key: str = "spatial"
     species: str = "homo_sapiens"
     formal: bool = True
     epoch: int = 5

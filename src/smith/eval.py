@@ -2,12 +2,72 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from scipy import sparse
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score, classification_report, explained_variance_score
 from scipy.stats import pearsonr
 import argparse
 import os
+
+
+def load_panel_genes(panel_path, panel_size=32):
+    """Load the ordered marker CSV exported by SMITH."""
+    if panel_size <= 0:
+        raise ValueError('panel_size must be positive')
+    table = pd.read_csv(panel_path)
+    genes = table.iloc[:panel_size, 0].dropna().astype(str).str.upper().tolist()
+    if len(genes) != panel_size or len(set(genes)) != panel_size:
+        raise ValueError('Panel must contain the requested number of distinct genes')
+    return genes
+
+
+def _split_panel_matrices(train_adata, test_adata, selected_genes):
+    matrices = []
+    for adata in (train_adata, test_adata):
+        if not adata.var_names.is_unique:
+            raise ValueError('Gene names must be unique')
+        missing = [g for g in selected_genes if g not in adata.var_names]
+        if missing:
+            raise ValueError(f'Selected genes absent from evaluation input: {missing}')
+        values = adata[:, selected_genes].X
+        matrices.append(values.toarray() if sparse.issparse(values) else np.asarray(values))
+    return matrices
+
+
+def evaluate_split_knn_classification(train_adata, test_adata, selected_genes,
+                                      label_name, n_neighbors=5):
+    """Fit only on source cells and score the supplied held-out target cells."""
+    train_x, test_x = _split_panel_matrices(train_adata, test_adata, selected_genes)
+    model = KNeighborsClassifier(n_neighbors=n_neighbors)
+    model.fit(train_x, train_adata.obs[label_name].to_numpy())
+    predicted = model.predict(test_x)
+    observed = test_adata.obs[label_name].to_numpy()
+    return accuracy_score(observed, predicted), classification_report(
+        observed, predicted, output_dict=True, zero_division=0,
+    )
+
+
+def evaluate_split_obsm_regression(train_adata, test_adata, selected_genes, obsm_key):
+    train_x, test_x = _split_panel_matrices(train_adata, test_adata, selected_genes)
+    train_y = np.asarray(train_adata.obsm[obsm_key])
+    test_y = np.asarray(test_adata.obsm[obsm_key])
+    model = LinearRegression().fit(train_x, train_y)
+    predicted = model.predict(test_x)
+    # Match the existing eval_regression convention: pooled output Pearson r.
+    return explained_variance_score(test_y, predicted), pearsonr(
+        test_y.flatten(), predicted.flatten(),
+    )[0]
+
+
+def evaluate_split_time_knn_regression(train_adata, test_adata, selected_genes,
+                                      time_label, n_neighbors=5):
+    train_x, test_x = _split_panel_matrices(train_adata, test_adata, selected_genes)
+    model = KNeighborsRegressor(n_neighbors=n_neighbors)
+    model.fit(train_x, train_adata.obs[time_label].to_numpy(dtype=float))
+    return pearsonr(
+        test_adata.obs[time_label].to_numpy(dtype=float), model.predict(test_x),
+    )[0]
 
 def downsample_adata(adata, target_n=50000, random_state=42):
     if target_n >= adata.n_obs:
@@ -71,6 +131,13 @@ def eval_regression(adata, selected_genes, obsm_key, test_size=0.2, random_state
 def save_results(epoch, var, models, args, tasks, train_loss, val_loss):
     array = models['rep'].mu.detach().cpu().numpy()
     index = np.argsort(array)[::-1]
+    if getattr(args, 'prior_file', '0') != '0':
+        from smith.datasets import get_prior_idx
+        prior_indices = get_prior_idx(args, var)
+        if len(prior_indices) > args.panel_size:
+            raise ValueError('Required prior genes exceed the panel budget')
+        prior_set = set(prior_indices)
+        index = np.asarray(prior_indices + [i for i in index if i not in prior_set])
     var_index = [var[i] for i in index]
     
     saving_name = args.tasks.replace(",", "-") + '-seed' + str(args.seed) + '-' + args.task_name

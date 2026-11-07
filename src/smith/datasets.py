@@ -160,6 +160,31 @@ def maybe_balance_datas(datas, label_indices, args):
 def get_dataset(args):
     adata = ad.read_h5ad(args.adata_file)
     adata.var_names_make_unique()
+    forbidden_file = getattr(args, "forbidden_file", "0")
+    if forbidden_file != "0":
+        forbidden_genes = set(
+            pd.read_csv(forbidden_file)["names"].astype(str).str.strip().str.upper()
+        )
+        forbidden_genes.discard("")
+        keep = ~adata.var_names.astype(str).str.upper().isin(forbidden_genes)
+        adata = adata[:, np.asarray(keep)].copy()
+        if adata.n_vars < int(args.panel_size):
+            raise ValueError(
+                f"Only {adata.n_vars} candidate genes remain after exclusions, "
+                f"fewer than panel_size={args.panel_size}."
+            )
+    prior_file = getattr(args, "prior_file", "0")
+    if prior_file != "0":
+        prior_genes = pd.read_csv(prior_file)["names"].astype(str).str.strip().str.upper()
+        prior_genes = list(dict.fromkeys(gene for gene in prior_genes if gene))
+        available = set(adata.var_names.astype(str).str.upper())
+        missing = [gene for gene in prior_genes if gene not in available]
+        if missing:
+            raise ValueError(f"Required prior genes are absent or excluded: {missing}")
+        if len(prior_genes) > int(args.panel_size):
+            raise ValueError(
+                f"{len(prior_genes)} prior genes exceed panel_size={args.panel_size}."
+            )
     max_cells = getattr(args, "max_cells", None)
     if max_cells and adata.n_obs > int(max_cells):
         labels = _sampling_labels(adata, getattr(args, "sampling_strategy", "random"))
@@ -178,6 +203,8 @@ def get_dataset(args):
         if args.layer == 'raw':
             sc.pp.highly_variable_genes(adata, n_top_genes=10000)
         hvg_mask = adata.var['highly_variable'].values
+        if prior_file != "0":
+            hvg_mask = hvg_mask | adata.var_names.astype(str).str.upper().isin(prior_genes)
         x = x[:, hvg_mask]
         var = adata.var.index[hvg_mask]
     else:
@@ -204,7 +231,8 @@ def get_dataset(args):
                     break
 
     if 'time' in tasks:
-        candidates = [getattr(args, "time_label", None), "absolute_time", "consensus_time", "time"]
+        requested_time = getattr(args, "time_label", None)
+        candidates = [requested_time] if requested_time else ["absolute_time", "consensus_time", "time"]
         for column in [item for item in candidates if item]:
             if column in adata.obs:
                 values = pd.to_numeric(adata.obs[column], errors="coerce").to_numpy(dtype=np.float32)
@@ -217,7 +245,10 @@ def get_dataset(args):
             raise KeyError(f"time task requested but no time column was found: {candidates}")
     
     if any(t in tasks for t in ["coordination", "standard_coordination"]):
-        spatial = np.asarray(adata.obsm['spatial'], dtype=np.float32)
+        spatial_key = getattr(args, "spatial_key", "spatial")
+        spatial = np.asarray(adata.obsm[spatial_key], dtype=np.float32)
+        if spatial.ndim != 2 or not np.isfinite(spatial).all():
+            raise ValueError(f"obsm[{spatial_key!r}] must contain a finite coordinate matrix")
         if 'standard_coordination' in tasks:
             mean = spatial.mean(axis=0, keepdims=True)
             std = np.where(spatial.std(axis=0, keepdims=True) > 0, spatial.std(axis=0, keepdims=True), 1.0)
@@ -253,5 +284,8 @@ def split_dataset(tasks, datas, args, ratio=0.2):
 
 def get_prior_idx(args, var):
     genes = pd.read_csv(args.prior_file)['names'].tolist()
-    var_list = var.tolist()
-    return [var_list.index(gene) for gene in genes if gene in var_list]
+    var_list = [str(gene).upper() for gene in var.tolist()]
+    indices = [var_list.index(str(gene).strip().upper()) for gene in genes if str(gene).strip()]
+    if len(indices) != len(set(indices)):
+        raise ValueError("The prior file contains duplicate gene names.")
+    return indices

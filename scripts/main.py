@@ -163,6 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int)
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--prior_file', type=str, default='0')
+    parser.add_argument('--forbidden_file', type=str, default='0')
     parser.add_argument('--hurdle', action='store_true')
     parser.add_argument('--save', action='store_true')
     parser.add_argument('--evaluate_epoch', type=int, default=10)
@@ -171,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_cells', type=int, default=None)
     parser.add_argument('--sampling_strategy', choices=['random', 'celltype', 'spatial', 'celltype_spatial'], default='random')
     parser.add_argument('--time_label', type=str, default=None)
+    parser.add_argument('--spatial_key', type=str, default='spatial')
     
     args = parser.parse_args()
     if args.seed is not None:
