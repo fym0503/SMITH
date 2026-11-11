@@ -17,17 +17,21 @@
 
 SMITH learns a compact set of genes or molecular targets from single-cell, spatial or aligned reference data. Its multi-task objective can preserve cell identity, expression profiles, spatial organization and developmental signals; SMITH-Agent adds reference-aware workflow tools for panel design and evaluation.
 
-## What SMITH does
+## Why SMITH?
 
-| Need | SMITH workflow |
+Imaging-based spatial assays measure a limited number of molecular targets. Designing a useful panel therefore requires choosing which biological signals to preserve, which reference data to learn from, and how to evaluate the selected targets.
+
+| Panel-design challenge | How SMITH helps |
 |---|---|
-| Select a panel from a single-cell reference | Optimize a target ranking using expression reconstruction and cell labels |
-| Use spatial context | Include spatial coordinates and cell annotations in the selection objectives |
-| Transfer between studies or assays | Learn from a related reference and evaluate on a held-out target dataset |
-| Coordinate a panel-design workflow | Use SMITH-Agent tools to inspect data, select panels and evaluate results |
+| A limited panel must preserve the biological differences of interest | Selects targets using objectives such as cell identity, expression reconstruction and developmental timing |
+| Spatial patterns matter alongside molecular profiles | Incorporates spatial coordinates and cell annotations into panel selection |
+| Reference data and the intended assay may come from different studies or modalities | Learns panels from related references and evaluates their performance in the target dataset |
+| Panel design involves multiple data sources and analysis steps | SMITH-Agent connects data inspection, reference integration, panel selection and evaluation |
 
 <p align="center">
-  <img src="docs/source/_static/figures/model_overview_c.png" alt="SMITH combines stochastic target selection with multiple biological objectives to produce a compact target panel" width="900">
+  <a href="docs/source/_static/figures/smith_framework.png">
+    <img src="docs/source/_static/figures/smith_framework.png" alt="Complete SMITH framework: spatial profiling, SMITH-Agent, panel selection, stochastic gates, multi-task learning, transferability and biological applications (panels a–g)" width="1000">
+  </a>
 </p>
 
 ## Install
