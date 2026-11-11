@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="SMITH_illu.png" alt="SMITH logo: a compact spatial target panel linked to a molecular reference" width="1000">
+  <img src="https://raw.githubusercontent.com/fym0503/SMITH/main/SMITH_illu.png" alt="SMITH logo: a compact spatial target panel linked to a molecular reference" width="1000">
 </p>
 
 <p align="center">

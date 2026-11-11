@@ -49,6 +49,7 @@ jobs:
               assert any(name.endswith("/SMITH_illu.png") for name in names)
               assert not any("/docs/internal/" in name for name in names)
               assert not any("/reproducibility/validation/" in name for name in names)
+              assert not any("/outputs/" in name and not name.endswith("/outputs/.gitkeep") for name in names)
               assert not any("/sessions/" in name for name in names)
               text_names = [name for name in names if name.endswith((".yaml", ".yml", ".md", ".json", ".tsv", ".py"))]
               for name in text_names:
@@ -59,6 +60,9 @@ jobs:
           with zipfile.ZipFile(wheel) as archive:
               names = archive.namelist()
               assert any("smith_agent/resources/backends/paper_20260428/main.py" in name for name in names)
+              assert any("smith_agent/resources/configs/agent/models/Agent_profile.yaml" in name for name in names)
+              assert any("smith_agent/resources/configs/agent/models/ribomap_profile.yaml" in name for name in names)
+              assert not any("agent_examples" in name for name in names)
               assert not any("__pycache__" in name for name in names)
           print(f"Inspected {sdist.name} and {wheel.name}")
           PY

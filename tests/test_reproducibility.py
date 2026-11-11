@@ -275,6 +275,23 @@ def test_release_source_has_no_workstation_paths_or_internal_audits():
         for path in (root / folder).rglob("*"):
             if path.is_file() and path.suffix in {".yaml", ".yml", ".md", ".json", ".tsv"}:
                 assert ("/workspace/" + "fanyimin/") not in path.read_text(errors="replace"), path
+    for path in (root / "docs/source/tutorials/notebooks").rglob("*.ipynb"):
+        text = path.read_text(errors="replace")
+        assert ("/workspace/" + "fanyimin/") not in text, path
+        assert ("/home/" + "yiminfan/") not in text, path
+
+
+def test_public_tutorial_copy_describes_current_workflows():
+    root = Path(__file__).resolve().parents[1]
+    docs = (root / "docs/source/tutorials/index.md").read_text()
+    assert "five lineage splits" in docs
+    assert "12 accuracy endpoints" in docs
+    assert "30/30 accuracy and expression points" in docs
+    for path in (root / "docs/source/tutorials/notebooks").rglob("*_source.ipynb"):
+        notebook = nbformat.read(path, as_version=4)
+        markdown = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "markdown")
+        for phrase in ("Validation status", "Do not use them to validate", "not full manuscript reproductions", "pixel-identical reference"):
+            assert phrase not in markdown, (path, phrase)
 
 
 def test_agent_probe_reference_outputs_are_complete_and_consistent():
@@ -351,8 +368,12 @@ def test_plotters_export_independent_manuscript_panels():
         text = (workflow_root / relative).read_text()
         assert "--output-dir" in text
         assert "--output-prefix" not in text
+        dynamic_prefix = "figure3" if relative.startswith("regulatory_activity") else "figure4"
+        if relative.startswith(("regulatory_activity", "ribomap_transfer")):
+            assert f'outputs[f"{dynamic_prefix}_{{letter}}"]' in text
         for stem in stems:
-            assert stem in text or stem in notebook_builder
+            suffix = stem.rsplit("_", 1)[-1]
+            assert stem in text or f'outputs[f"{dynamic_prefix}_{{letter}}"]' in text or stem in notebook_builder
 
 
 def test_ribomap_analysis_formulas_are_manuscript_defined():

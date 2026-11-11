@@ -19,231 +19,39 @@ ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_ROOT = ROOT / "docs" / "source" / "tutorials" / "notebooks"
 
 
-SPECS = {'02_regulatory_activity': {'case': '02_regulatory_activity',
-                            'folder': 'regulatory_section',
-                            'stem': '02_SMITH_Regulatory_Activity',
-                            'title': 'Regulatory programs and cross-modality transfer in C. elegans',
-                            'figure': 'Related to Figure 3c-k',
-                            'biology': 'Which TF panels preserve cell identity and developmental timing in '
-                                       'held-out lineages?',
-                            'data_role': 'The train/test H5AD files contain lineage-aware TF or miRNA '
-                                         'activity, cell-type labels, and absolute developmental time. The '
-                                         'supplementary module and TF-pair annotations define the '
-                                         'developmental programs and regulator relationships used in the '
-                                         'manuscript analyses, while the scRNA H5AD supplies the independent '
-                                         'reference for RNA-to-TF transfer. Training cells learn the '
-                                         'activity representation; held-out cells test whether selected '
-                                         'regulators still recover identity, age, and regulatory structure.',
-                            'model_role': 'Train SMITH with reconstruction, classification and '
-                                          'developmental-time objectives, then select panels of 32, 64 and '
-                                          '128 targets.',
-                            'analysis_role': 'Evaluate cell identity, developmental time, TF correlation '
-                                             'structure and transfer from scRNA-seq.',
-                            'workflow': 'reproducibility/workflows/regulatory_activity/run_tutorial.py',
-                            'plotter': 'reproducibility/workflows/regulatory_activity/plot_figure3.py',
-                            'output': 'regulatory',
-                            'inputs': ['regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad',
-                                       'regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad',
-                                       'regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad',
-                                       'regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad',
-                                       'regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv',
-                                       'regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv',
-                                       'regulatory_activity/elegans/reference/elegans_scrna.h5ad'],
-                            'arguments': ['--datasets',
-                                          'elegans_tf,elegans_mirna',
-                                          '--splits',
-                                          'split_1',
-                                          '--methods',
-                                          'SMITH',
-                                          '--seeds',
-                                          '1',
-                                          '--max-cells',
-                                          '3000',
-                                          '--paper-analyses',
-                                          '--module-file',
-                                          'regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv',
-                                          '--regulatory-pair-file',
-                                          'regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv',
-                                          '--scrna-file',
-                                          'regulatory_activity/elegans/reference/elegans_scrna.h5ad'],
-                            'plot_arguments': ['--values',
-                                               'figure_data/figure3_c_f_values.tsv',
-                                               '--modules',
-                                               'regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv',
-                                               '--module-coverage',
-                                               'figure_data/figure3_h_module_miss_rate.tsv',
-                                               '--coactivity',
-                                               'figure_data/figure3_i_coactivity.tsv',
-                                               '--correlation',
-                                               'figure_data/figure3_j_tf_scrna_correlation.tsv',
-                                               '--transfer',
-                                               'figure_data/figure3_k_transfer.tsv'],
-                            'tables': ['figure_data/figure3_c_f_summary.tsv',
-                                       'figure_data/figure3_c_f_paired_tests.tsv',
-                                       'figure_data/figure3_h_module_miss_rate.tsv',
-                                       'figure_data/figure3_i_coactivity.tsv',
-                                       'figure_data/figure3_j_tf_scrna_correlation.tsv',
-                                       'figure_data/figure3_k_transfer.tsv'],
-                            'figure_panels': [('Figure 3c - TF cell-type accuracy',
-                                               'figures/figure3_c.png',
-                                               430),
-                                              ('Figure 3d - TF developmental-time correlation',
-                                               'figures/figure3_d.png',
-                                               430),
-                                              ('Figure 3e - miRNA cell-type accuracy',
-                                               'figures/figure3_e.png',
-                                               430),
-                                              ('Figure 3f - miRNA developmental-time correlation',
-                                               'figures/figure3_f.png',
-                                               430),
-                                              ('Figure 3g - annotated developmental modules',
-                                               'figures/figure3_g.png',
-                                               500),
-                                              ('Figure 3h - developmental module miss rate',
-                                               'figures/figure3_h.png',
-                                               500),
-                                              ('Figure 3i - TF co-activity reconstruction',
-                                               'figures/figure3_i.png',
-                                               500),
-                                              ('Figure 3j - scRNA/TF correlation structure',
-                                               'figures/figure3_j.png',
-                                               500),
-                                              ('Figure 3k - scRNA-to-TF panel transfer',
-                                               'figures/figure3_k.png',
-                                               500),
-                                              ('Shared method legend',
-                                               'figures/figure3_method_legend.png',
-                                               900)]},
- '03_ribomap_transfer': {'case': '03_ribomap_transfer',
-                         'folder': 'ribomap_section',
-                         'stem': '03_SMITH_RIBOMap_Transfer',
-                         'title': 'Cross-modality brain panel transfer to RIBOMap',
-                         'figure': 'Figure 4c-h',
-                         'biology': 'Can a compact gene panel transfer cell-type and brain-region biology '
-                                    'from reference modalities into RIBOMap? Deep-RIBOmap and STARmap '
-                                    'measure related but non-identical molecular views, so the biological '
-                                    'question is whether the same panel captures stable tissue structure '
-                                    'without erasing ribosome-associated expression differences.',
-                         'data_role': 'The workflow starts from real Deep-RIBOmap, STARmap, and target '
-                                      'RIBOMap H5AD files. Shared-gene preparation defines the common '
-                                      'biological measurement space; target cell-type and region labels '
-                                      'provide held-out transfer endpoints, while expression means support '
-                                      'the RIBOMap-bias analysis.',
-                         'model_role': 'For each source modality, SMITH is trained from the shared-gene H5AD '
-                                       'with reconstruction and cell-type objectives, plus spatial '
-                                       'coordination when coordinates are available. The ranking is '
-                                       'converted into new source panels and evaluated on the target RIBOMap '
-                                       'cells.',
-                         'analysis_role': 'Cell-type and region accuracy test whether the panel transfers '
-                                          'biological identity and anatomy. Same- versus cross-modality '
-                                          'Jaccard measures which biological features are stable across '
-                                          'references. RIBOMap bias tests whether panel membership follows '
-                                          'translatome-specific abundance rather than only generic '
-                                          'expression.',
-                         'workflow': 'reproducibility/workflows/ribomap_transfer/run_tutorial.py',
-                         'plotter': 'reproducibility/workflows/ribomap_transfer/plot_figure4.py',
-                         'output': 'ribomap',
-                         'inputs': ['ribomap_transfer/ribomap/deep_brain_ribomap.h5ad',
-                                    'ribomap_transfer/ribomap/mouse_brain_starmap_rep2.h5ad',
-                                    'ribomap_transfer/ribomap/mouse_brain_ribomap_rep2.h5ad'],
-                         'arguments': ['--methods',
-                                       'SMITH',
-                                       '--panel-sizes',
-                                       '32,64,128',
-                                       '--training-seeds',
-                                       '1,2',
-                                       '--evaluation-seeds',
-                                       '1,2,3',
-                                       '--max-cells',
-                                       '3000'],
-                         'plot_arguments': ['--metrics',
-                                            'figure_data/figure4_c_f_values.tsv',
-                                            '--overlap',
-                                            'figure_data/figure4_g_jaccard.tsv',
-                                            '--bias',
-                                            'figure_data/figure4_h_ribomap_bias.tsv',
-                                            '--bias-tests',
-                                            'figure_data/figure4_h_pairwise_tests.tsv'],
-                         'tables': ['figure_data/figure4_c_f_values.tsv',
-                                    'figure_data/figure4_g_jaccard.tsv',
-                                    'figure_data/figure4_h_ribomap_bias.tsv',
-                                    'figure_data/figure4_h_pairwise_tests.tsv'],
-                         'figure_panels': [('Figure 4c - Deep-RIBOmap cell-type transfer',
-                                            'figures/figure4_c.png',
-                                            430),
-                                           ('Figure 4d - Deep-RIBOmap region transfer',
-                                            'figures/figure4_d.png',
-                                            430),
-                                           ('Figure 4e - STARmap cell-type transfer',
-                                            'figures/figure4_e.png',
-                                            430),
-                                           ('Figure 4f - STARmap region transfer',
-                                            'figures/figure4_f.png',
-                                            430),
-                                           ('Figure 4g - same- versus cross-modality overlap',
-                                            'figures/figure4_g.png',
-                                            430),
-                                           ('Figure 4h - RIBOMap expression bias',
-                                            'figures/figure4_h.png',
-                                            430),
-                                           ('Shared method legend',
-                                            'figures/figure4_method_legend.png',
-                                            900)]},
- '05_agent': {'case': '05_agent',
-              'folder': 'agent_section',
-              'stem': '05_SMITH_Agent_Evaluation',
-              'title': 'Liver cell identity and probe feasibility in MERFISH',
-              'figure': 'Figure 6c-d, 6f-g',
-              'biology': 'Which genes should be measured in a spatial liver assay so that cell identities '
-                         'and their expression programs remain interpretable? The source snRNA-seq provides '
-                         'broad cell-state coverage, while spatial references add tissue context; the '
-                         'experiment compares a source-only panel with a panel informed by both kinds of '
-                         'biological evidence before reading out MERFISH.',
-              'data_role': 'The inputs are healthy-liver snRNA-seq, MERFISH, and spatial-reference H5AD '
-                           'files. MERFISH is the held-out assay used for evaluation; the snRNA-seq and '
-                           'spatial references are training views that contribute complementary cell-state '
-                           'and tissue-location information.',
-              'model_role': 'SMITH is trained separately on the source and each spatial reference after '
-                            'restricting them to the MERFISH gene universe. Source and reference rankings '
-                            'are aggregated into source-only and multi-reference panels, which are newly '
-                            'written for each seed and panel size.',
-              'analysis_role': 'MERFISH cell-type accuracy asks whether the selected genes retain cellular '
-                               'identity in the assay that will be measured. Mean MERFISH expression asks '
-                               'whether the panel is supported by detectable biology. The paired comparison '
-                               'tests whether spatial references add biological information beyond the '
-                               'source transcriptome.',
-              'workflow': 'reproducibility/workflows/agent/run_tutorial.py',
-              'plotter': 'reproducibility/workflows/agent/plot_figure6.py',
-              'output': 'agent',
-              'inputs': ['agent/liver_merfish/cellxgene_liver_scrna.h5ad',
-                         'agent/liver_merfish/adata_healthy_nucseq.h5ad',
-                         'agent/liver_merfish/adata_healthy_merfish.h5ad',
-                         'agent/references/PSC011_C1_visium.h5ad',
-                         'agent/references/WSSS_F_IMMsp9838712_visium.h5ad'],
-              'arguments': ['--reference',
-                            'references/PSC011_C1_visium.h5ad',
-                            '--reference',
-                            'references/WSSS_F_IMMsp9838712_visium.h5ad',
-                            '--panel-sizes',
-                            '32,64,128',
-                            '--training-seeds',
-                            '1,2',
-                            '--max-cells',
-                            '3000'],
-              'plot_arguments': ['--accuracy',
-                                 'figure_data/figure6_c_cell_type_accuracy.tsv',
-                                 '--expression',
-                                 'figure_data/figure6_d_merfish_expression.tsv'],
-              'tables': ['figure_data/figure6_c_cell_type_accuracy.tsv',
-                         'figure_data/figure6_d_merfish_expression.tsv',
-                         'figure_data/figure6_f_pass_rates.tsv',
-                         'figure_data/figure6_g_offtarget_examples.tsv'],
-              'figure_panels': [('Figure 6c - MERFISH cell-type accuracy', 'figures/figure6_c.png', 430),
-                                ('Figure 6d - MERFISH expression support', 'figures/figure6_d.png', 430),
-                                ('Figure 6f - package-level probe feasibility', 'figures/figure6_f.png', 430),
-                                ('Figure 6g - representative ProbeDealer off-target profiles',
-                                 'figures/figure6_g.png',
-                                 430)]}}
+SPECS = {
+    "02_regulatory_activity": {
+        "case": "02_regulatory_activity",
+        "folder": "regulatory_section",
+        "stem": "02_SMITH_Regulatory_Activity",
+        "title": "Regulatory programs and cross-modality transfer in C. elegans",
+        "biology": "Which TF panels preserve cell identity and developmental timing in held-out lineages?",
+        "data_role": "Five lineage-separated TF train/test splits, atlas module annotations and a scRNA-seq reference support the evaluation.",
+        "model_role": "Train one TF panel ranking per lineage split with reconstruction, classification and developmental-time objectives.",
+        "analysis_role": "Evaluate cell identity and developmental timing, then compare TF correlation structure and scRNA-to-TF transfer.",
+        "inputs": [
+            f"regulatory_activity/elegans/splits/elegans_tf/split_{split}/{part}.h5ad"
+            for split in range(1, 6) for part in ("train", "test")
+        ] + [
+            "regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv",
+            "regulatory_activity/elegans/reference/elegans_scrna.h5ad",
+        ],
+    },
+    "03_ribomap_transfer": {
+        "case": "03_ribomap_transfer",
+        "folder": "ribomap_section",
+        "stem": "03_SMITH_RIBOMap_Transfer",
+        "title": "Cross-modality brain panel transfer to RIBOMap",
+        "biology": "Can compact panels selected from transcriptomic and translatomic references recover cell-type and brain-region information in RIBOMap?",
+    },
+    "05_agent": {
+        "case": "05_agent",
+        "folder": "agent_section",
+        "stem": "05_SMITH_Agent_Evaluation",
+        "title": "Liver panel design with five spatial references",
+        "biology": "How do spatial references change the genes selected for a liver MERFISH panel?",
+    },
+}
 
 
 def build_regulatory_notebook(spec: dict, epochs: int, device: str) -> nbformat.NotebookNode:

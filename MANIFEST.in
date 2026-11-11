@@ -17,15 +17,7 @@ recursive-include data .gitkeep README.md
 recursive-include outputs .gitkeep
 recursive-include reproducibility *.py *.yaml *.json *.md
 recursive-include reproducibility/reference_outputs *.csv *.tsv *.json *.md
-recursive-include src/smith_agent/resources/configs *.yaml *.tsv *.md
+recursive-include src/smith_agent/resources/configs *.yaml
 recursive-include src/smith_agent/resources/manifests *.tsv *.md
 recursive-include src/smith_agent/resources/scripts *.py *.md
 recursive-include src/smith_agent/resources/backends *.py *.json *.md
-prune docs/internal
-prune docs/brand
-prune reproducibility/validation
-global-exclude ._* .DS_Store *.py[cod] *.h5ad *.h5 *.loom *.pt *.pth *.ckpt *.log
-
-prune docs/source/_build
-prune docs/source/.jupyter_cache
-prune docs/_build
