@@ -22,7 +22,7 @@ def test_agent_registry_loads_from_packaged_config():
     assert set(registries.models) == {"ribomap_profile", "Agent_profile", "TF_profile"}
     assert registries.resolve_model_id("smith_default") == "TF_profile"
     assert len(registries.datasets) >= 1
-    assert registries.models["TF_profile"].entrypoint == "reproducibility/backends/paper_20260428/main.py"
+    assert registries.models["TF_profile"].entrypoint == "scripts/main.py"
 
 
 def test_dataset_registry_uses_portable_paths():
@@ -60,16 +60,12 @@ def test_model_entrypoint_resolves_from_packaged_resources(monkeypatch, tmp_path
     runtime = build_runtime(config_path=config_path)
     entrypoint = _resolve_model_entrypoint(runtime, runtime.registries.models["TF_profile"])
 
-    assert entrypoint == resource_root / "backends" / "paper_20260428" / "main.py"
+    assert entrypoint == resource_root / "scripts" / "main.py"
     assert entrypoint.exists()
     for profile in ("ribomap_profile", "Agent_profile"):
         paper_entrypoint = _resolve_model_entrypoint(runtime, runtime.registries.models[profile])
-        assert paper_entrypoint == resource_root / "backends" / "paper_20260428" / "main.py"
+        assert paper_entrypoint == resource_root / "scripts" / "main.py"
         assert paper_entrypoint.exists()
-        paper_manifest = paper_entrypoint.parent / "source_manifest.json"
-        assert paper_manifest.exists()
-        for item in json.loads(paper_manifest.read_text())["files"]:
-            assert hashlib.sha256((paper_entrypoint.parent / item["path"]).read_bytes()).hexdigest() == item["sha256"]
 
 
 def test_smith_selection_falls_back_to_current_python(monkeypatch, tmp_path):

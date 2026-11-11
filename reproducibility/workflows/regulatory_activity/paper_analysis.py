@@ -240,8 +240,6 @@ def _smith_reconstruction(
         command = json.loads(command_file.read_text())
         for key, value in command.get("model_options", {}).items():
             setattr(args, key, value)
-        if command.get("model_profile") == "smith_paper_20260428":
-            from reproducibility.backends.paper_20260428.Smith.model_selector import get_model
     selected_input = np.zeros_like(test_matrix, dtype=np.float32)
     selected_input[:, panel_positions] = test_matrix[:, panel_positions]
     model = get_model(["input", "recon"], [selected_input, test_matrix], args)

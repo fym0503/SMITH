@@ -60,7 +60,7 @@ full_workflow:
 related_panels:
 - Figure 6c-d
 - Figure 6f-g
-training_backend: reproducibility/backends/paper_20260428
+training_backend: src/smith
 analysis_scope:
   training_method: SMITH
   training_seeds: 5

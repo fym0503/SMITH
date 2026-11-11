@@ -1,5 +1,4 @@
-"""Regression checks for the frozen manuscript training/evaluation protocol."""
-import hashlib
+"""Regression checks for the shared training and tutorial evaluation protocol."""
 import json
 from pathlib import Path
 
@@ -14,13 +13,13 @@ from reproducibility.workflows.ribomap_transfer.evaluate_outputs import evaluate
 from reproducibility.workflows.common import resolve_training_model, resolve_tutorial_profile
 
 
-def test_task_profiles_select_recorded_implementations():
+def test_task_profiles_share_implementation_and_keep_parameters():
     ribo = resolve_tutorial_profile("ribomap_profile")
     agent = resolve_tutorial_profile("Agent_profile")
     tf = resolve_tutorial_profile("TF_profile")
-    assert ribo["training_model"]["training_backend"] == "paper_20260428"
-    assert agent["training_model"]["training_backend"] == "paper_20260428"
-    assert tf["training_model"]["training_backend"] == "paper_20260428"
+    assert ribo["training_model"]["training_backend"] == "smith"
+    assert agent["training_model"]["training_backend"] == "smith"
+    assert tf["training_model"]["training_backend"] == "smith"
     assert ribo["parameters"]["panel_sizes"] == [32, 64, 128]
     assert agent["parameters"]["training_seeds"] == [1, 2, 3, 4, 5]
     assert tf["parameters"]["training_seed"] == 8013
@@ -61,9 +60,13 @@ def test_paper_evaluation_matches_original_unscaled_uniform_knn():
     assert result['metrics']['accuracy'] == accuracy_score(labels[test], expected)
 
 
-def test_frozen_backend_matches_provenance_checksums():
-    root = Path(__file__).resolve().parents[1] / 'reproducibility/backends/paper_20260428'
-    manifest = json.loads((root / 'source_manifest.json').read_text())
-    assert len(manifest['files']) == 7
-    for entry in manifest['files']:
-        assert hashlib.sha256((root / entry['path']).read_bytes()).hexdigest() == entry['sha256']
+def test_profiles_share_the_same_trainer():
+    from smith import train
+    import runpy
+    root = Path(__file__).resolve().parents[1]
+    for path in (root / 'scripts/main.py', root / 'src/smith_agent/resources/scripts/main.py'):
+        assert runpy.run_path(str(path))['main'] is train.main
+    entries = {resolve_tutorial_profile(name)['training_model']['entrypoint']
+               for name in ('TF_profile', 'ribomap_profile', 'Agent_profile')}
+    assert entries == {root / 'scripts/main.py'}
+    assert not list((root / 'reproducibility/backends').glob('*/main.py'))

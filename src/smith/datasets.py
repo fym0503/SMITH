@@ -1,70 +1,109 @@
 import torch
 import anndata as ad
 import pandas as pd
+import scanpy as sc
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.utils import resample
 
 
-def _infer_celltype_series(adata):
-    for column in ("celltype", "cell_type", "subclass"):
-        if column in adata.obs:
-            return adata.obs[column].astype(str)
+def _infer_celltype_series(adata: ad.AnnData) -> pd.Series | None:
+    for col in ["celltype", "cell_type", "subclass"]:
+        if col in adata.obs.columns:
+            return adata.obs[col].astype(str)
     return None
 
 
-def _spatial_strata(adata, n_bins=8):
+def _make_spatial_strata(adata: ad.AnnData, n_bins: int = 8) -> pd.Series | None:
     if "spatial" not in adata.obsm:
         return None
     spatial = np.asarray(adata.obsm["spatial"], dtype=np.float32)
     if spatial.ndim != 2 or spatial.shape[1] < 2:
         return None
+    x = pd.Series(spatial[:, 0], index=adata.obs_names)
+    y = pd.Series(spatial[:, 1], index=adata.obs_names)
     try:
-        x_bins = pd.qcut(spatial[:, 0], q=min(n_bins, np.unique(spatial[:, 0]).size), labels=False, duplicates="drop")
-        y_bins = pd.qcut(spatial[:, 1], q=min(n_bins, np.unique(spatial[:, 1]).size), labels=False, duplicates="drop")
+        x_bins = pd.qcut(x, q=min(n_bins, x.nunique()), labels=False, duplicates="drop")
+        y_bins = pd.qcut(y, q=min(n_bins, y.nunique()), labels=False, duplicates="drop")
     except ValueError:
         return None
-    return pd.Series(x_bins).astype(str) + "_" + pd.Series(y_bins).astype(str)
+    return x_bins.astype(str) + "_" + y_bins.astype(str)
 
 
-def _sampling_labels(adata, strategy):
+def _build_sampling_labels(adata: ad.AnnData, strategy: str) -> pd.Series | None:
     if strategy == "random":
         return None
-    celltype = _infer_celltype_series(adata)
-    spatial = _spatial_strata(adata)
     if strategy == "celltype":
-        return celltype
+        return _infer_celltype_series(adata)
     if strategy == "spatial":
-        return spatial
+        return _make_spatial_strata(adata)
     if strategy == "celltype_spatial":
+        celltype = _infer_celltype_series(adata)
+        spatial = _make_spatial_strata(adata)
+        if celltype is None and spatial is None:
+            return None
         if celltype is None:
             return spatial
         if spatial is None:
             return celltype
-        return celltype.reset_index(drop=True) + "|" + spatial
-    raise ValueError(f"Unknown sampling strategy: {strategy}")
+        return celltype.astype(str) + "|" + spatial.astype(str)
+    raise ValueError(f"Unknown sampling_strategy: {strategy}")
 
 
-def _subsample_indices(labels, n_obs, max_cells, seed):
+def _stratified_subsample_indices(labels: pd.Series, max_cells: int, seed: int) -> np.ndarray:
+    counts = labels.value_counts()
+    total = int(counts.sum())
+    raw = counts / total * max_cells
+    alloc = np.floor(raw).astype(int)
+    alloc = np.minimum(alloc, counts)
+
+    zero_mask = (alloc == 0) & (counts > 0)
+    alloc.loc[zero_mask] = 1
+
+    current = int(alloc.sum())
+    if current > max_cells:
+        overflow = current - max_cells
+        reducible = alloc[alloc > 1].sort_values(ascending=False)
+        for key in reducible.index:
+            if overflow <= 0:
+                break
+            step = min(int(alloc.loc[key] - 1), overflow)
+            alloc.loc[key] -= step
+            overflow -= step
+    elif current < max_cells:
+        remainder = max_cells - current
+        frac = (raw - np.floor(raw)).sort_values(ascending=False)
+        for key in frac.index:
+            if remainder <= 0:
+                break
+            room = int(counts.loc[key] - alloc.loc[key])
+            if room <= 0:
+                continue
+            alloc.loc[key] += 1
+            remainder -= 1
+        if remainder > 0:
+            room_left = (counts - alloc).sort_values(ascending=False)
+            for key in room_left.index:
+                if remainder <= 0:
+                    break
+                room = int(counts.loc[key] - alloc.loc[key])
+                if room <= 0:
+                    continue
+                step = min(room, remainder)
+                alloc.loc[key] += step
+                remainder -= step
+
     rng = np.random.default_rng(seed)
-    if labels is None:
-        return np.sort(rng.choice(n_obs, size=max_cells, replace=False))
-    labels = np.asarray(labels.astype(str))
-    unique, counts = np.unique(labels, return_counts=True)
-    allocations = np.maximum(1, np.floor(counts / counts.sum() * max_cells).astype(int))
-    while allocations.sum() > max_cells:
-        index = int(np.argmax(allocations))
-        if allocations[index] == 1:
-            break
-        allocations[index] -= 1
-    while allocations.sum() < max_cells:
-        room = counts - allocations
-        index = int(np.argmax(room))
-        if room[index] <= 0:
-            break
-        allocations[index] += 1
-    chosen = [rng.choice(np.flatnonzero(labels == label), size=int(n), replace=False) for label, n in zip(unique, allocations)]
-    return np.sort(np.concatenate(chosen))
+    chosen = []
+    for key, n_take in alloc.items():
+        if n_take <= 0:
+            continue
+        idx = np.flatnonzero(labels.to_numpy() == key)
+        picked = rng.choice(idx, size=int(n_take), replace=False)
+        chosen.append(picked)
+    sampled = np.concatenate(chosen) if chosen else np.array([], dtype=int)
+    sampled.sort()
+    return sampled
 
 class FastTensorDataLoader:
     """
@@ -186,20 +225,22 @@ def get_dataset(args):
                 f"{len(prior_genes)} prior genes exceed panel_size={args.panel_size}."
             )
     max_cells = getattr(args, "max_cells", None)
-    if max_cells and adata.n_obs > int(max_cells):
-        labels = _sampling_labels(adata, getattr(args, "sampling_strategy", "random"))
-        indices = _subsample_indices(labels, adata.n_obs, int(max_cells), getattr(args, "seed", 42) or 42)
-        adata = adata[indices].copy()
+    if max_cells is not None and adata.n_obs > int(max_cells):
+        seed = getattr(args, "seed", 42) or 42
+        strategy = getattr(args, "sampling_strategy", "random")
+        labels = _build_sampling_labels(adata, strategy)
+        if labels is None:
+            rng = np.random.default_rng(seed)
+            sampled_idx = np.sort(rng.choice(adata.n_obs, size=int(max_cells), replace=False))
+        else:
+            sampled_idx = _stratified_subsample_indices(labels.astype(str), int(max_cells), seed)
+        adata = adata[sampled_idx].copy()
     
     x = adata.X if args.layer == 'raw' else adata.layers[args.layer].copy()
     if isinstance(x, csr_matrix):
         x = x.toarray()
     
     if args.hvg:
-        try:
-            import scanpy as sc
-        except ImportError as error:
-            raise ImportError("--hvg requires the optional `scanpy` dependency: pip install 'smith-panel-design[scanpy]'") from error
         if args.layer == 'raw':
             sc.pp.highly_variable_genes(adata, n_top_genes=10000)
         hvg_mask = adata.var['highly_variable'].values
@@ -231,27 +272,36 @@ def get_dataset(args):
                     break
 
     if 'time' in tasks:
-        requested_time = getattr(args, "time_label", None)
-        candidates = [requested_time] if requested_time else ["absolute_time", "consensus_time", "time"]
-        for column in [item for item in candidates if item]:
-            if column in adata.obs:
-                values = pd.to_numeric(adata.obs[column], errors="coerce").to_numpy(dtype=np.float32)
-                if np.isnan(values).any():
-                    raise ValueError(f"obs[{column!r}] contains missing or non-numeric time values")
-                datas.append(values.reshape(-1, 1))
+        time_candidates = []
+        explicit_time_label = getattr(args, "time_label", None)
+        if explicit_time_label:
+            time_candidates.append(explicit_time_label)
+        time_candidates.extend(["absolute_time", "consensus_time", "time"])
+        for col in time_candidates:
+            if col in adata.obs.columns:
+                time_values = pd.to_numeric(adata.obs[col], errors="coerce").to_numpy(dtype=np.float32)
+                if np.isnan(time_values).any():
+                    raise ValueError(f"time task requested but obs[{col!r}] contains missing/non-numeric values")
+                datas.append(time_values.reshape(-1, 1))
                 new_tasks.append('time')
+                counter += 1
                 break
         else:
-            raise KeyError(f"time task requested but no time column was found: {candidates}")
+            raise KeyError(
+                f"time task requested but none of the candidate columns were found: {time_candidates}"
+            )
     
     if any(t in tasks for t in ["coordination", "standard_coordination"]):
-        spatial_key = getattr(args, "spatial_key", "spatial")
+        spatial_key = getattr(args, 'spatial_key', 'spatial')
         spatial = np.asarray(adata.obsm[spatial_key], dtype=np.float32)
         if spatial.ndim != 2 or not np.isfinite(spatial).all():
-            raise ValueError(f"obsm[{spatial_key!r}] must contain a finite coordinate matrix")
-        if 'standard_coordination' in tasks:
+            raise ValueError(f'obsm[{spatial_key!r}] must contain a finite coordinate matrix')
+        if "standard_coordination" in tasks:
+            # Normalize each spatial axis independently so coordinate regression
+            # does not explode on raw slide-scale pixel values.
             mean = spatial.mean(axis=0, keepdims=True)
-            std = np.where(spatial.std(axis=0, keepdims=True) > 0, spatial.std(axis=0, keepdims=True), 1.0)
+            std = spatial.std(axis=0, keepdims=True)
+            std = np.where(std > 0, std, 1.0)
             spatial = (spatial - mean) / std
         datas.append(spatial)
         new_tasks.append('coo')

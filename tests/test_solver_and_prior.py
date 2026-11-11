@@ -1,4 +1,4 @@
-"""Numerical and runner regression checks for the manuscript's FW/prior settings."""
+"""Numerical solver and shared training regression checks."""
 
 import importlib.util
 import inspect
@@ -93,8 +93,8 @@ class SolverChecks(unittest.TestCase):
 
 
 class RunnerChecks(unittest.TestCase):
-    def test_both_runners_call_fw_and_update_parameters(self):
-        for path in ('scripts/main.py', 'src/smith_agent/resources/scripts/main.py'):
+    def test_trainer_uses_verified_solver_and_updates_parameters(self):
+        for path in ('src/smith/train.py',):
             with self.subTest(runner=path):
                 runner = load_runner(path)
                 torch.manual_seed(1)
@@ -108,8 +108,8 @@ class RunnerChecks(unittest.TestCase):
                 optimizer = torch.optim.Adam(parameters, lr=0.001)
                 before = models['rep'].mu.detach().clone()
                 kwargs = {'device': torch.device('cpu')} if 'device' in inspect.signature(runner.process_batch).parameters else {}
-                with patch.object(MinNormSolver, 'find_min_norm_element', side_effect=AssertionError('PGD must not be called')):
-                    with patch.object(MinNormSolver, 'find_min_norm_element_FW', wraps=MinNormSolver.find_min_norm_element_FW) as fw:
+                with patch.object(MinNormSolver, 'find_min_norm_element_FW', side_effect=AssertionError('FW must not be called')):
+                    with patch.object(MinNormSolver, 'find_min_norm_element', wraps=MinNormSolver.find_min_norm_element) as fw:
                         losses = runner.process_batch(
                             models, {'input': inputs, 'recon': target_a, 'coo': target_b},
                             tasks, {'recon': torch.nn.MSELoss(), 'coo': torch.nn.MSELoss()},
@@ -119,8 +119,8 @@ class RunnerChecks(unittest.TestCase):
                 self.assertTrue(all(np.isfinite(value) for value in losses.values()))
                 self.assertFalse(torch.equal(before, models['rep'].mu.detach()))
 
-    def test_both_runners_initialize_only_priors_to_10000(self):
-        for path in ('scripts/main.py', 'src/smith_agent/resources/scripts/main.py'):
+    def test_trainer_initializes_only_priors_to_10(self):
+        for path in ('src/smith/train.py',):
             with self.subTest(runner=path), tempfile.TemporaryDirectory() as tmp:
                 runner = load_runner(path)
                 rep = torch.nn.Module()
@@ -133,7 +133,7 @@ class RunnerChecks(unittest.TestCase):
                      patch.object(runner.model_selector, 'get_optimizer', return_value=None), \
                      patch.object(runner, 'get_prior_idx', return_value=[1, 3]):
                     runner.Smith(args)
-                torch.testing.assert_close(rep.mu.detach(), torch.tensor([0.0, 10000.0, 0.0, 10000.0]))
+                torch.testing.assert_close(rep.mu.detach(), torch.tensor([0.0, 10.0, 0.0, 10.0]))
 
 
 if __name__ == '__main__':

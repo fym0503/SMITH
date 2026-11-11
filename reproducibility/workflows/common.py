@@ -124,14 +124,6 @@ def resolve_training_model(model_profile: str) -> dict[str, Any]:
         ) from exc
     model["profile"] = model_profile
     model["entrypoint"] = REPO_ROOT / model["entrypoint"]
-    if model["training_backend"] == "paper_20260428":
-        import json
-
-        manifest = json.loads((REPO_ROOT / model["source_manifest"]).read_text(encoding="utf-8"))
-        for item in manifest["files"]:
-            path = model["entrypoint"].parent / item["path"]
-            if sha256(path) != item["sha256"]:
-                raise ValueError(f"Manuscript backend checksum mismatch: {item['path']}")
     return model
 
 
@@ -228,9 +220,8 @@ def run_smith(
     model_options: dict[str, Any] | None = None,
     validation: bool = True,
     record_interval: int | None = None,
-    model_profile: str = "smith_current",
+    model_profile: str = "smith",
     tutorial_profile: str | None = None,
-    training_backend: str | None = None,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir).resolve()
     if force and output_dir.exists():
@@ -268,12 +259,6 @@ def run_smith(
     if tutorial_profile is not None:
         selected_tutorial_profile = resolve_tutorial_profile(tutorial_profile)
         model_profile = selected_tutorial_profile["training_model"]["profile"]
-    if training_backend is not None:
-        legacy_profiles = {"current": "smith_current", "paper_20260428": "smith_paper_20260428"}
-        try:
-            model_profile = legacy_profiles[training_backend]
-        except KeyError as exc:
-            raise ValueError(f"Unknown legacy training backend: {training_backend}") from exc
     model = resolve_training_model(model_profile)
     entrypoint = model["entrypoint"]
     command = [

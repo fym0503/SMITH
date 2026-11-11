@@ -3,11 +3,11 @@ import torch
 from torch.autograd import Variable
 from tqdm import tqdm
 import os
-import Smith.losses as losses
-from Smith.datasets import get_dataset, split_dataset, get_prior_idx
-from Smith.eval import save_results
-import Smith.model_selector as model_selector
-from Smith.min_norm_solvers import MinNormSolver, gradient_normalizers
+import smith.losses as losses
+from smith.datasets import get_dataset, split_dataset, get_prior_idx
+from smith.eval import save_results
+import smith.model_selector as model_selector
+from smith.min_norm_solvers import MinNormSolver, gradient_normalizers
 import argparse
 import warnings
 import random
@@ -136,7 +136,7 @@ def Smith(args):
         if epoch % args.record == args.record - 1:
             save_results(epoch, var, model, args, tasks, train_losses, val_losses)
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Smith')
     parser.add_argument('--adata_file', type=str, required=True)
     parser.add_argument('--saving_dir', type=str, required=True)
@@ -163,6 +163,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int)
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--prior_file', type=str, default='0')
+    parser.add_argument('--forbidden_file', type=str, default='0')
+    parser.add_argument('--spatial_key', type=str, default='spatial')
     parser.add_argument('--hurdle', action='store_true')
     parser.add_argument('--save', action='store_true')
     parser.add_argument('--evaluate_epoch', type=int, default=10)
@@ -173,7 +175,11 @@ if __name__ == '__main__':
     parser.add_argument('--time_label', type=str, default=None)
     
     args = parser.parse_args()
-    if args.seed:
+    if args.seed is not None:
         set_random_seed(args.seed)
     
     Smith(args)
+
+
+if __name__ == "__main__":
+    main()

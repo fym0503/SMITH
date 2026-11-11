@@ -1,6 +1,6 @@
 id: TF_profile
 backend: smith
-entrypoint: reproducibility/backends/paper_20260428/main.py
+entrypoint: scripts/main.py
 description: C. elegans TF activity panel design with the recorded training configuration.
 capabilities:
 - panel_selection
@@ -15,7 +15,6 @@ metadata:
   python_executable: python
   tutorial_profile: TF_profile
   training_profile: TF_profile
-  source_manifest: reproducibility/backends/paper_20260428/source_manifest.json
   parameters:
     epoch: 90
     record: 90

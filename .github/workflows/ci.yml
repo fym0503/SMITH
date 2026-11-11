@@ -59,7 +59,7 @@ jobs:
                           assert (b"/workspace/" + b"fanyimin/") not in body.read(), name
           with zipfile.ZipFile(wheel) as archive:
               names = archive.namelist()
-              assert any("smith_agent/resources/backends/paper_20260428/main.py" in name for name in names)
+              assert any("smith/train.py" in name for name in names)
               assert any("smith_agent/resources/configs/agent/models/Agent_profile.yaml" in name for name in names)
               assert any("smith_agent/resources/configs/agent/models/ribomap_profile.yaml" in name for name in names)
               assert not any("agent_examples" in name for name in names)

@@ -43,7 +43,8 @@ def get_model(tasks, datas, args):
         elif task == 'coo':
             model[task] = MLPModel(rep_dim, data.shape[1], hidden_dims=head_hidden_dims, dropout=True, dropout_rate=args.dropout_rate,activation=args.activation).to(device)
         elif task == 'time':
-            model[task] = MLPModel(rep_dim, data.shape[1], hidden_dims=head_hidden_dims, dropout=True, dropout_rate=args.dropout_rate,activation=args.activation).to(device)
+            output_dim = data.shape[1] if len(data.shape) > 1 else 1
+            model[task] = MLPModel(rep_dim, output_dim, hidden_dims=head_hidden_dims, dropout=True, dropout_rate=args.dropout_rate,activation=args.activation).to(device)
         elif task == 'region':
             model[task] = MLPclassify(rep_dim, len(np.unique(data)), hidden_dims=head_hidden_dims, dropout=True, dropout_rate=args.dropout_rate,activation=args.activation).to(device)
         elif task == 'pathology':

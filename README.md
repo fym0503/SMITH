@@ -114,6 +114,8 @@ The shell and explicit `smith-agent run-tool` commands work without a language m
 
 ## Tutorials
 
+`TF_profile`, `ribomap_profile` and `Agent_profile` configure the same SMITH implementation for their respective tasks. The CLI, Agent and notebooks share the trainer in `src/smith/train.py`.
+
 The tutorial notebooks walk through three biological settings:
 
 | Notebook | Example |

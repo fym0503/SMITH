@@ -4,7 +4,7 @@ profiles:
     aliases:
     - ribomap
     task: RIBOMap cross-modality transfer
-    training_model: smith_paper_20260428
+    training_model: smith
     parameter_set: reproducibility/configs/ribomap_paper.json
     evaluation_protocol: paper_uniform_5nn_unstratified
     parameters:
@@ -24,7 +24,7 @@ profiles:
     - agent_profile
     - liver_agent
     task: five-reference liver panel design
-    training_model: smith_paper_20260428
+    training_model: smith
     parameters:
       epochs: 200
       batch_size: 64
@@ -54,7 +54,7 @@ profiles:
     - tf_profile
     - elegans_regulatory
     task: C. elegans TF regulatory activity
-    training_model: smith_paper_20260428
+    training_model: smith
     parameters:
       epochs: 90
       max_cells: null

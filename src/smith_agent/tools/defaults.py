@@ -541,15 +541,6 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
     smith_root = entrypoint.parent
     task_profile = str(model_entry.metadata.get("tutorial_profile", model_id))
     profile_parameters = dict(model_entry.metadata.get("parameters", {}))
-    source_manifest = str(model_entry.metadata.get("source_manifest", "")).strip()
-    if source_manifest:
-        manifest_path = _resolve_project_path(runtime.config, source_manifest)
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        for item in manifest.get("files", []):
-            source_path = manifest_path.parent / item["path"]
-            actual = hashlib.sha256(source_path.read_bytes()).hexdigest()
-            if actual != item["sha256"]:
-                raise ValueError(f"Model source checksum mismatch: {item['path']}")
     output_dir = Path(arguments.get("output_dir", runtime.working_dir / "smith_selection"))
     ensure_dir(output_dir)
     must_keep_genes = list(dict.fromkeys(str(gene).strip() for gene in arguments.get("must_keep_genes", []) if str(gene).strip()))
@@ -663,7 +654,7 @@ def _handle_build_decision_trace(runtime, arguments: dict[str, Any]) -> dict[str
 
 
 def _handle_evaluate_cross_dataset_panel(runtime, arguments: dict[str, Any]) -> dict[str, Any]:
-    requested_model = arguments.get("model_id") or runtime.session.active_model_id or "smith_current"
+    requested_model = arguments.get("model_id") or runtime.session.active_model_id or "TF_profile"
     model_id = runtime.registries.resolve_model_id(str(requested_model))
     if not model_id:
         raise KeyError(f"Unknown SMITH model profile: {requested_model}")

@@ -54,7 +54,7 @@ SMITH does not force exactly $M$ gates to be active during training. After optim
 :width: 70%
 :align: center
 
-The shared selector receives gradients from several biological objectives. A Frank-Wolfe minimum-norm update finds a common direction when profile, cell-type, spatial, and temporal objectives disagree. Adapted from Figure 1e of the SMITH manuscript.
+The shared selector receives gradients from several biological objectives. A minimum-norm update finds a common direction when profile, cell-type, spatial, and temporal objectives disagree. Adapted from Figure 1e of the SMITH manuscript.
 ```
 
 ### Shared representation and objective heads
@@ -83,7 +83,7 @@ A useful panel often has to preserve **several biological signals at once**. Cel
 :width: 85%
 :align: center
 
-Objective gradients can point in competing directions. SMITH uses a Frank-Wolfe minimum-norm solver to obtain a common update direction for the shared selector. Adapted from Figure 1e of the SMITH manuscript.
+Objective gradients can point in competing directions. SMITH uses a minimum-norm solver to obtain a common update direction for the shared selector. Adapted from Figure 1e of the SMITH manuscript.
 ```
 
 ### Gradient balancing
@@ -110,7 +110,7 @@ $$
 g^{*}=\sum_{i=1}^{m}\alpha_i^{*}g_i.
 $$
 
-The package solves this constrained problem with a **Frank-Wolfe minimum-norm solver**. Agreeing objectives retain their common direction; conflicting objectives receive a compromise direction on their convex hull.
+The package solves this constrained problem with a **minimum-norm solver**. Agreeing objectives retain their common direction; conflicting objectives receive a compromise direction on their convex hull.
 
 ### Training and evaluation
 

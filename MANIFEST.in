@@ -20,4 +20,3 @@ recursive-include reproducibility/reference_outputs *.csv *.tsv *.json *.md
 recursive-include src/smith_agent/resources/configs *.yaml
 recursive-include src/smith_agent/resources/manifests *.tsv *.md
 recursive-include src/smith_agent/resources/scripts *.py *.md
-recursive-include src/smith_agent/resources/backends *.py *.json *.md

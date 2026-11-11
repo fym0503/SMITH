@@ -50,7 +50,7 @@ related_panels:
 - Figure 4g
 - Figure 4h
 training_config: reproducibility/configs/ribomap_paper.json
-training_backend: reproducibility/backends/paper_20260428
+training_backend: src/smith
 analysis_scope:
   training_method: SMITH
   accuracy_endpoints: 12

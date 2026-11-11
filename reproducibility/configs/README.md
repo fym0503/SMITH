@@ -2,7 +2,7 @@
 
 `tutorial_profiles.yaml` defines the three task profiles shown to users: `TF_profile`, `ribomap_profile` and `Agent_profile`. Set `SMITH_TUTORIAL_PROFILE` to select a profile when supported by the notebook or CLI.
 
-The task profile determines the model implementation and recorded parameters. The implementation registry in `training_models.yaml` is an execution detail; notebooks and Agent model listings use the task-profile names.
+All three profiles use the shared trainer in `src/smith/train.py`. Profiles define task-specific training and evaluation parameters; `training_models.yaml` points to the common entry point.
 
 ## RIBOMap
 

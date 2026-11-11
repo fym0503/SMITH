@@ -138,7 +138,6 @@ class MLPModel(nn.Module):
         for i in range(nr_hiddens):
             layer = LinearLayer(dims[i], dims[i+1], batch_norm=batch_norm, dropout=dropout, dropout_rate=dropout_rate,activation=activation)
             modules.append(layer)
-            modules.append(torch.nn.Dropout(0.4))
         layer = nn.Linear(dims[-2], dims[-1], bias=True)
         modules.append(layer)
         self.mlp = nn.Sequential(*modules)
@@ -238,5 +237,5 @@ class MLPclassify(nn.Module):
     def forward(self, input, masks):
         if self.flatten:
             input = input.view(input.size(0), -1)
-        output =  self.mlp(input)
-        return F.log_softmax(output, dim=1), masks
+        output = self.mlp(input)
+        return output, masks
