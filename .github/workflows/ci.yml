@@ -27,6 +27,13 @@ jobs:
       - name: Build and inspect release distributions
         run: |
           python -m pip install build
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          for path in (Path("build"), Path("dist"), Path("src/smith_panel_design.egg-info")):
+              if path.is_dir():
+                  shutil.rmtree(path)
+          PY
           python -m build --sdist --wheel
           python - <<'PY'
           from pathlib import Path
