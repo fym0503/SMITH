@@ -284,7 +284,7 @@ def test_release_source_has_no_workstation_paths_or_internal_audits():
 def test_public_tutorial_copy_describes_current_workflows():
     root = Path(__file__).resolve().parents[1]
     docs = (root / "docs/source/tutorials/index.md").read_text()
-    assert "five lineage splits" in docs
+    assert "five tf lineage splits" in docs.lower()
     assert "12 accuracy endpoints" in docs
     assert "30/30 accuracy and expression points" in docs
     for path in (root / "docs/source/tutorials/notebooks").rglob("*_source.ipynb"):
