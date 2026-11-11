@@ -1,0 +1,20 @@
+{
+  "epochs": 60,
+  "tasks": "recon,cls",
+  "balance_mode": "off",
+  "balance_cap": 500,
+  "max_cells": 5000,
+  "sampling_strategy": "random",
+  "learning_rate": 0.00029493,
+  "batch_size": 64,
+  "dim": 64,
+  "rep_dim": 32,
+  "rep_hidden_dims": "64,32",
+  "head_hidden_dims": "64",
+  "dropout_rate": 0.2444,
+  "lam": 0.279129,
+  "sigma": 1.4945,
+  "activation": "selu",
+  "optimizer": "Adam",
+  "seed": 5010
+}

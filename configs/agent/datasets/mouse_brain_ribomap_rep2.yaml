@@ -13,4 +13,3 @@ aliases:
 metadata:
   figure_context: ribomap
   data_status: external_not_packaged
-  original_local_path: /workspace/fanyimin/SMITH_unified/data/SMITH_data_ribomap/data/mouse_brain_ribomap_rep2.h5ad

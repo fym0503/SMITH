@@ -71,7 +71,10 @@ def run_case(
     repro_root = Path(root).resolve() if root else default_reproducibility_root()
     status = check_case(case, repro_root, data_root)
     if not status["ready"]:
-        raise FileNotFoundError(f"Real H5AD inputs are missing or invalid for `{case.id}`. Pass --data-root after downloading the case archive.")
+        raise FileNotFoundError(
+            f"Required H5AD inputs are missing or invalid for `{case.id}`. "
+            "Place the files at the paths listed in reproducibility/data_manifest.yaml and pass --data-root."
+        )
     relative_script = WORKFLOW_SCRIPTS.get(case.id)
     if relative_script is None:
         raise RuntimeError(f"Case `{case.id}` is not executable from the public package.")

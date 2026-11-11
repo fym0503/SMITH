@@ -233,6 +233,15 @@ def _smith_reconstruction(
         activation="tanh",
         hurdle=False,
     )
+    checkpoint = Path(checkpoint_file)
+    command_file = checkpoint.parent.parent / "command.json"
+    if command_file.is_file():
+        import json
+        command = json.loads(command_file.read_text())
+        for key, value in command.get("model_options", {}).items():
+            setattr(args, key, value)
+        if command.get("model_profile") == "smith_paper_20260428":
+            from reproducibility.backends.paper_20260428.Smith.model_selector import get_model
     selected_input = np.zeros_like(test_matrix, dtype=np.float32)
     selected_input[:, panel_positions] = test_matrix[:, panel_positions]
     model = get_model(["input", "recon"], [selected_input, test_matrix], args)
@@ -385,10 +394,12 @@ def coactivity_from_objects(
         if max_pairs and len(tissue_pairs) > max_pairs:
             tissue_pairs = tissue_pairs.iloc[np.sort(rng.choice(len(tissue_pairs), size=max_pairs, replace=False))]
         truth_scores, predicted_scores = [], []
+        lineage_truth = x_test[mask]
+        lineage_reconstructed = reconstructed[mask]
         for pair in tissue_pairs.itertuples(index=False):
             left, right = common.index(pair.gene_a), common.index(pair.gene_b)
-            truth_scores.append(_pair_score(x_test[mask], left, right))
-            predicted_scores.append(_pair_score(reconstructed[mask], left, right))
+            truth_scores.append(_pair_score(lineage_truth, left, right))
+            predicted_scores.append(_pair_score(lineage_reconstructed, left, right))
         correlation = (
             float(pearsonr(truth_scores, predicted_scores).statistic)
             if len(truth_scores) > 1 and np.std(truth_scores) and np.std(predicted_scores)

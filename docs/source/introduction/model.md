@@ -120,7 +120,7 @@ Each batch follows three conceptual steps:
 2. Normalize objective gradients and solve for the Pareto coefficients $\alpha_i$.
 3. Update the model and repeat until the requested epoch, then export gate weights as the target ranking.
 
-The result is a locally Pareto-compatible compromise, not a claim that every objective is maximized simultaneously. Manuscript analyses **evaluate the exported panel separately on held-out data**, testing cell type, profile reconstruction, spatial organization, developmental time, or cross-dataset transfer rather than relying on a training curve.
+The selected panel balances the active objectives through a Pareto-compatible update. Evaluate the exported panel on held-out data for cell type, profile reconstruction, spatial organization, developmental time or cross-dataset transfer.
 
 ## Prior targets and panel output
 

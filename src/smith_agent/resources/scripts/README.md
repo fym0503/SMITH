@@ -1,32 +1,15 @@
 # Scripts
 
-Main entry points copied into this clean package:
+## Core commands
 
-- `main.py`: original SMITH training and target-panel selection runner.
-- `eval.py`: original downstream panel evaluation helper.
-- `submit_eval.py`: original batch/evaluation helper.
-- `make_smoke_h5ad.py`: creates a tiny synthetic AnnData file for tests and smoke runs.
-- `odt_property_only_runner.py`, `run_*`, `prepare_*`, `build_*`: probe-feasibility demonstration helpers used by `smith_agent.feasibility`.
-- `agent_examples/`: exploratory and figure-generation scripts copied from the SMITH-Agent workspace. Some of these scripts still expect manuscript-scale data or external tools and are kept as examples rather than core package smoke tests.
+- `main.py`: train SMITH and export ranked targets.
+- `eval.py`: evaluate a selected target panel.
+- `download_tutorial_data.py`: download and verify a tutorial archive after its URL is published.
+- `build_tutorial_notebooks.py`: build tutorial source notebooks and optionally execute them.
+- `make_smoke_h5ad.py`: generate a small synthetic AnnData object for an installation check.
 
-Run the optimizer from the package root:
+## Agent and feasibility utilities
 
-```bash
-python scripts/make_smoke_h5ad.py --output data/smoke/smoke_panel.h5ad
-python scripts/main.py \
-  --adata_file data/smoke/smoke_panel.h5ad \
-  --saving_dir outputs/smoke/saving \
-  --log_dir outputs/smoke/logs \
-  --tasks recon,cls,region,pathology,coordination \
-  --task_name celltype \
-  --panel_size 8 \
-  --epoch 2 \
-  --record 1 \
-  --batch_size 16 \
-  --rep_dim 8 \
-  --rep_hidden_dims 8 \
-  --head_hidden_dims 8 \
-  --dim 8 \
-  --device cpu \
-  --balance_mode off
-```
+The root utilities and `agent_examples/` support registered Agent tools, data preparation, probe screening and tutorial workflows. External screens use their own executable, index and reference sequence.
+
+Run `python scripts/main.py --help` or `smith-cli --help` for command options.

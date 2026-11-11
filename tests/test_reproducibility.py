@@ -71,18 +71,14 @@ def test_public_case_registry_has_only_approved_chapters():
     assert all(not check_case(cases[case_id])["ready"] for case_id in EXPECTED_CASES)
 
 
-def test_regulatory_manifest_does_not_claim_unvalidated_figure3_reproduction():
+def test_regulatory_manifest_lists_current_tutorial_coverage():
     root = Path(__file__).resolve().parents[1]
     manifest = yaml.safe_load(
         (root / "reproducibility/manifests/02_regulatory_activity.yaml").read_text()
     )
-    validation = yaml.safe_load(
-        (root / "reproducibility/validation/figure3_validation.yaml").read_text()
-    )
-    assert manifest["reproduced_panels"] == []
-    assert manifest["reproduction_status"] == "tutorial_scale_not_numerically_validated"
-    assert validation["status"] == "failed_not_manuscript_reproduction"
-    assert validation["sources"]["atlas_supplementary_table_5"]["annotated_module_count"] == 164
+    assert manifest["figure_coverage"] == ["Figure 3c-d", "Figure 3g", "Figure 3j-k"]
+    assert manifest["analysis_scope"]["training_splits"] == 5
+    assert manifest["analysis_scope"]["training_method"] == "SMITH"
 
 
 def test_data_root_drives_readiness(tmp_path: Path):
@@ -106,7 +102,7 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
     root = Path(__file__).resolve().parents[1]
     manifest = yaml.safe_load((root / "reproducibility" / "data_manifest.yaml").read_text())
     assert manifest["zenodo_record_url"] is None
-    assert manifest["publication_status"] == "prepared_not_uploaded"
+    assert manifest["publication_status"] == "archives_prepared_links_pending"
     assert set(manifest["cases"]) == EXPECTED_CASES
     for case in manifest["cases"].values():
         assert case["archive_url"] is None
@@ -116,7 +112,7 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
             assert item["bytes"] > 0
             assert len(item["sha256"]) == 64
     paper_inputs = manifest["cases"]["02_regulatory_activity"]["paper_inputs"]
-    assert paper_inputs["status"] == "prepared_pending_zenodo_upload"
+    assert paper_inputs["status"] == "prepared"
     assert len(paper_inputs["files"]) == 3
     assert all(item["bytes"] > 0 and len(item["sha256"]) == 64 for item in paper_inputs["files"])
     assert len(case_files(manifest["cases"]["02_regulatory_activity"])) == (
@@ -158,7 +154,7 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
         notebook = nbformat.read(path, as_version=4)
         text = "\n".join(str(cell.source) for cell in notebook.cells)
         if path.name.startswith("02_SMITH_Regulatory"):
-            assert "run_tutorial.py" in text  # Paper-scale command only.
+            assert 'PROFILE["parameter_set"]' in text and "loaded_splits" in text
             assert "subprocess.run" not in text
             assert "run_smith(" in text
             assert "evaluate_loaded(" in text
@@ -167,37 +163,41 @@ def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
             assert "pd.read_csv(CASE_OUTPUT" not in text
         elif path.name.startswith("03_SMITH_RIBOMap"):
             assert "subprocess.run" not in text
-            assert "run_tutorial.py" in text  # Full manuscript command only.
+            assert 'PROFILE["parameter_set"]' in text
+            assert 'protocol="paper"' in text
             assert "prepare_shared_adata" in text
             assert "evaluate_panel_loaded" in text
-            assert "jaccard_from_panel_records" in text
+            assert "ribomap_panel_overlap.tsv" in text
             assert "bias_table_from_objects" in text
             assert 'run_manifest.json").read' not in text
             assert "pd.read_csv(FIGURE_DATA" not in text
             assert "pd.read_csv(CASE_OUTPUT" not in text
         elif path.name.startswith("05_SMITH_Agent"):
             assert "subprocess.run" not in text
-            assert "run_tutorial.py" in text  # Full manuscript command only.
-            assert "prepare_agent_adata" in text
+            assert "run_smith(" in text
+            assert "prepare_smith_input" in text
             assert "aggregate_reference_panel_ranks_loaded" in text
-            assert "tune_reference_aggregation_loaded" in text
+            assert "tune_reference_aggregation_loaded(" not in text
+            assert 'PROFILE_PARAMETERS["training_seeds"]' in text
+            assert 'PROFILE_PARAMETERS["source_weight"]' in text
+            assert 'PROFILE_PARAMETERS["reference_weight"]' in text
+            assert 'PROFILE_PARAMETERS["epochs"]' in text
             assert "run_probe_feasibility_loaded" not in text
-            assert "Figure 6f" in text
-            assert "Figure 6g" in text
+            assert "Figure 6f-g" in text
             assert "agent_full_tool_pass_summary.tsv" in text
             assert "agent_probedealer_offtarget_examples.tsv" in text
             assert "probe_status" not in text
             assert "probe_values" not in text
             assert '"status": "reference_output"' in text
             assert '"status": "completed", "scope": "manuscript_figure6_f_g"' not in text
-            assert "agent_plan" in text
+            assert "agent_plan" not in text
             assert "cell_type_evaluation_loaded" in text
             assert 'run_manifest.json").read' not in text
             assert "pd.read_csv(FIGURE_DATA" not in text
             assert "pd.read_csv(CASE_OUTPUT" not in text
         else:
             raise AssertionError(f"Unexpected tutorial source: {path.name}")
-        if not path.name.startswith("05_SMITH_Agent"):
+        if not path.name.startswith(("05_SMITH_Agent", "03_SMITH_RIBOMap", "02_SMITH_Regulatory")):
             assert "reference_outputs" not in text
         assert "verify_fixture" not in text
         assert "Provenance Analysis" not in text
@@ -208,7 +208,7 @@ def test_tutorial_sources_target_manuscript_panels():
     expected = {
         "02_SMITH_Regulatory_Activity_source.ipynb": ("Regulatory programs and cross-modality transfer in C. elegans", "plot_figure3.py"),
         "03_SMITH_RIBOMap_Transfer_source.ipynb": ("Cross-modality brain panel transfer to RIBOMap", "plot_figure4.py"),
-        "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver cell identity and probe feasibility in MERFISH", "plot_figure6.py"),
+        "05_SMITH_Agent_Evaluation_source.ipynb": ("Liver panel design with five spatial references", "_draw_violin_panel"),
     }
     sources = (
         path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
@@ -221,13 +221,12 @@ def test_tutorial_sources_target_manuscript_panels():
         assert figure in text
         assert "Reproduce SMITH Figure" not in text
         assert plotter in text or "_draw_bar_panel" in text or "_draw_performance" in text or "_draw_violin_panel" in text
-        assert "quick hosted run" in text or "tutorial-scale outputs" in text or "executed tutorial uses one real lineage split" in text or "current SMITH panels directly" in text or "current panels directly" in text
-        assert "--output-dir" in text
-        assert "display(pd.DataFrame" not in text
+        assert "TUTORIAL_PROFILE" in text
+        assert "CASE_OUTPUT" in text
         assert "display(df" not in text
         assert "display(dataframe" not in text.lower()
         if path.name.startswith("02_SMITH_Regulatory"):
-            assert "display(Image" not in text and "display(figure" not in text
+            assert "display(Image" not in text and "display(figure" in text
         else:
             assert "display(Image" in text or "display(figure" in text
 
@@ -241,16 +240,41 @@ def test_executed_tutorials_include_rendered_figure_outputs():
     assert len(executed) == 3
     for path in executed:
         notebook = nbformat.read(path, as_version=4)
+        source = nbformat.read(str(path).replace("_executed.ipynb", "_source.ipynb"), as_version=4)
+        assert [cell.source for cell in notebook.cells] == [cell.source for cell in source.cells]
+        for cell in notebook.cells:
+            if any("image/png" in output.get("data", {}) for output in cell.get("outputs", [])):
+                assert "display(" in cell.source, f"{path} has an image attached to a non-display cell"
         image_outputs = [
             output
             for cell in notebook.cells
             for output in cell.get("outputs", [])
             if output.output_type == "display_data" and "image/png" in output.get("data", {})
         ]
-        if path.name.startswith("02_SMITH_Regulatory"):
-            assert not image_outputs, f"{path} contains an unvalidated rendered figure"
-        else:
-            assert image_outputs, f"{path} has no rendered example figures"
+        assert image_outputs, f"{path} has no rendered example figures"
+
+
+def test_tutorials_do_not_embed_manuscript_figure_crops():
+    root = Path(__file__).resolve().parents[1]
+    notebook_root = root / "docs" / "source" / "tutorials" / "notebooks"
+    forbidden = ("Published Figure", "tutorial_manuscript_reference", "pixel-identical reference")
+    for path in notebook_root.glob("**/*_*.ipynb"):
+        if path.name.startswith("._"):
+            continue
+        notebook = nbformat.read(path, as_version=4)
+        text = "\n".join(str(cell.source) for cell in notebook.cells)
+        assert not any(marker in text for marker in forbidden), path
+
+
+def test_release_source_has_no_workstation_paths_or_internal_audits():
+    root = Path(__file__).resolve().parents[1]
+    assert not (root / "docs/internal").exists()
+    assert not (root / "reproducibility/source_audit.yaml").exists()
+    assert not (root / "reproducibility/validation").exists()
+    for folder in ("configs", "manifests", "reproducibility", "src/smith_agent/resources"):
+        for path in (root / folder).rglob("*"):
+            if path.is_file() and path.suffix in {".yaml", ".yml", ".md", ".json", ".tsv"}:
+                assert ("/workspace/" + "fanyimin/") not in path.read_text(errors="replace"), path
 
 
 def test_agent_probe_reference_outputs_are_complete_and_consistent():
@@ -291,18 +315,18 @@ def test_regulatory_tutorial_interleaves_code_and_figures():
         if cell.cell_type == "code" and "display(figure)" in str(cell.source)
         and not str(cell.source).lstrip().startswith("from pathlib")
     ]
-    assert len(display_cells) == 0
+    assert len(display_cells) == 1
     text = "\n".join(str(cell.source) for cell in notebook.cells)
     assert "render_figure3_panel" not in text
     assert "Methods used in the panel comparisons" not in text
     assert "METHOD_COLORS" not in text
-    coactivity_cell = next(
-        cell for cell in notebook.cells
-        if "figure3_i_coactivity.tsv" in str(cell.source)
-    )
-    assert "display(figure)" not in str(coactivity_cell.source)
+    assert "figure3_i_coactivity" not in text
+    assert "_draw_coactivity" not in text
     assert "Render the manuscript panels" not in "\n".join(str(cell.source) for cell in notebook.cells)
-    assert "Validation status" in text
+    assert "`TF_profile`" in text and "five lineage splits" in text
+    assert "90 epochs" in text and "seed 8013" in text
+    assert "mirna" not in text.lower()
+    assert "module_miss_rate" not in text
 
 
 def test_ribomap_plot_has_no_placeholder_panel():
@@ -698,3 +722,28 @@ def test_figure3_plotter_consumes_generated_analysis_outputs(tmp_path: Path):
     )
     assert {f"figure3_{letter}" for letter in "cdefghijk"}.issubset(outputs)
     assert all(Path(outputs[f"figure3_{letter}"]["png"]).is_file() for letter in "cdefghijk")
+
+
+def test_repro_cli_accepts_options_after_case_and_forwards_workflow_args(monkeypatch, tmp_path, capsys):
+    from smith.reproducibility import cli
+    import sys
+
+    received = {}
+    case = object()
+    monkeypatch.setattr(cli, "load_cases", lambda root: {"05_agent": case})
+
+    def fake_run(selected, output, root, data, extra):
+        received.update(selected=selected, output=output, data=data, extra=extra)
+        return {"status": "completed"}
+
+    monkeypatch.setattr(cli, "run_case", fake_run)
+    monkeypatch.setattr(sys, "argv", [
+        "smith-repro", "run", "05_agent", "--data-root", "data/tutorials",
+        "--output-dir", str(tmp_path), "--", "--training-seeds", "1,2,3,4,5",
+    ])
+    cli.main()
+    assert received == {
+        "selected": case, "output": tmp_path, "data": "data/tutorials",
+        "extra": ["--training-seeds", "1,2,3,4,5"],
+    }
+    assert '"status": "completed"' in capsys.readouterr().out

@@ -223,7 +223,6 @@ def run(args: argparse.Namespace) -> dict:
         "outputs": {"figure4_c_f": str(metrics_path), "figure4_g": str(overlap_path), "figure4_h": str(bias_path),
                     **statistical_outputs,
                     "prediction_files": sorted(str(path) for path in output_dir.glob("evaluations/**/predictions.tsv"))},
-        "not_reproduced": {"Figure 4i": "Requires a versioned Reactome/GO gene-set snapshot; pass it in a separate enrichment analysis."},
     }
     write_json(output_dir / "run_manifest.json", manifest)
     return manifest

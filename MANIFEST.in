@@ -1,19 +1,31 @@
 include README.md
+include SMITH_illu.png
 include requirements.txt
-include pyproject.toml
 include requirements-reproducibility.txt
+include pyproject.toml
 include Makefile
+include .readthedocs.yaml
+include MANIFEST.in
+recursive-include .github/workflows *.yml
 recursive-include configs *.yaml
 recursive-include scripts *.py *.md
-recursive-include docs *.md *.txt
-recursive-include manifests *
+recursive-include docs/source *.py *.md *.png *.svg *.ipynb
+include docs/requirements.txt
+recursive-include manifests *.tsv *.md
 recursive-include tests *.py
 recursive-include data .gitkeep README.md
 recursive-include outputs .gitkeep
-recursive-include reproducibility *.py *.yaml *.csv *.tsv *.md
-recursive-include docs *.ipynb
-recursive-include src/smith_agent/resources *
+recursive-include reproducibility *.py *.yaml *.json *.md
+recursive-include reproducibility/reference_outputs *.csv *.tsv *.json *.md
+recursive-include src/smith_agent/resources/configs *.yaml *.tsv *.md
+recursive-include src/smith_agent/resources/manifests *.tsv *.md
+recursive-include src/smith_agent/resources/scripts *.py *.md
+recursive-include src/smith_agent/resources/backends *.py *.json *.md
+prune docs/internal
+prune docs/brand
+prune reproducibility/validation
+global-exclude ._* .DS_Store *.py[cod] *.h5ad *.h5 *.loom *.pt *.pth *.ckpt *.log
 
-
-prune src/smith_agent/resources/__pycache__
-global-exclude ._* .DS_Store *.py[cod]
+prune docs/source/_build
+prune docs/source/.jupyter_cache
+prune docs/_build

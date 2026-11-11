@@ -1,0 +1,33 @@
+{
+  "activation": "selu",
+  "balance_cap": 500,
+  "balance_mode": "off",
+  "batch_size": 1024,
+  "dim": 32,
+  "dropout_rate": 0.3867,
+  "epoch": 90,
+  "head_hidden_dims": "32",
+  "hurdle": false,
+  "lam": 1.532275,
+  "learning_rate": 0.00144281,
+  "optimizer": "RMSprop",
+  "panel_size": 128,
+  "panel_sizes": [
+    32,
+    64,
+    128
+  ],
+  "record": 90,
+  "rep_dim": 128,
+  "rep_hidden_dims": "64,32",
+  "seed": 8013,
+  "sigma": 0.8241,
+  "task_name": "elegans_tf_paper_panel",
+  "tasks": "recon,cls,time",
+  "disable_spatial": true,
+  "layer": "raw",
+  "time_label": "absolute_time",
+  "max_cells": null,
+  "sampling_strategy": "random",
+  "validation": true
+}

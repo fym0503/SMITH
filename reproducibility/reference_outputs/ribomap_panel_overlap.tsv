@@ -1,0 +1,73 @@
+panel_size	set_a	set_b	overlap	union	jaccard	pair_type	algorithm_a	algorithm_b	modality_group	analysis_set	method_a	method_b
+32	SMITH RIBOMap	RIBOMap persist_sup	4	60	0.0666666666666666	Within RIBOMap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+32	SMITH RIBOMap	RIBOMap scGIST	6	58	0.1034482758620689	Within RIBOMap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+32	SMITH RIBOMap	SMITH STARmap	4	60	0.0666666666666666	"Cross modality
+same algorithm"	SMITH	SMITH	Cross modality	Without spapros	SMITH	SMITH
+32	SMITH RIBOMap	STARmap persist_sup	2	62	0.032258064516129	"Cross modality
+different algorithm"	SMITH	persist_sup	Cross modality	Without spapros	SMITH	PERSIST-class
+32	SMITH RIBOMap	STARmap scGIST	1	63	0.0158730158730158	"Cross modality
+different algorithm"	SMITH	scGIST	Cross modality	Without spapros	SMITH	scGIST
+32	RIBOMap persist_sup	RIBOMap scGIST	8	56	0.1428571428571428	Within RIBOMap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST
+32	RIBOMap persist_sup	SMITH STARmap	1	63	0.0158730158730158	"Cross modality
+different algorithm"	persist_sup	SMITH	Cross modality	Without spapros	PERSIST-class	SMITH
+32	RIBOMap persist_sup	STARmap persist_sup	5	59	0.0847457627118644	"Cross modality
+same algorithm"	persist_sup	persist_sup	Cross modality	Without spapros	PERSIST-class	PERSIST-class
+32	RIBOMap persist_sup	STARmap scGIST	2	62	0.032258064516129	"Cross modality
+different algorithm"	persist_sup	scGIST	Cross modality	Without spapros	PERSIST-class	scGIST
+32	RIBOMap scGIST	SMITH STARmap	1	63	0.0158730158730158	"Cross modality
+different algorithm"	scGIST	SMITH	Cross modality	Without spapros	scGIST	SMITH
+32	RIBOMap scGIST	STARmap persist_sup	6	58	0.1034482758620689	"Cross modality
+different algorithm"	scGIST	persist_sup	Cross modality	Without spapros	scGIST	PERSIST-class
+32	RIBOMap scGIST	STARmap scGIST	3	61	0.0491803278688524	"Cross modality
+same algorithm"	scGIST	scGIST	Cross modality	Without spapros	scGIST	scGIST
+32	SMITH STARmap	STARmap persist_sup	3	61	0.0491803278688524	Within STARmap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+32	SMITH STARmap	STARmap scGIST	5	59	0.0847457627118644	Within STARmap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+32	STARmap persist_sup	STARmap scGIST	14	50	0.28	Within STARmap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST
+64	SMITH RIBOMap	RIBOMap persist_sup	18	110	0.1636363636363636	Within RIBOMap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+64	SMITH RIBOMap	RIBOMap scGIST	17	111	0.1531531531531531	Within RIBOMap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+64	SMITH RIBOMap	SMITH STARmap	6	122	0.0491803278688524	"Cross modality
+same algorithm"	SMITH	SMITH	Cross modality	Without spapros	SMITH	SMITH
+64	SMITH RIBOMap	STARmap persist_sup	8	120	0.0666666666666666	"Cross modality
+different algorithm"	SMITH	persist_sup	Cross modality	Without spapros	SMITH	PERSIST-class
+64	SMITH RIBOMap	STARmap scGIST	3	125	0.024	"Cross modality
+different algorithm"	SMITH	scGIST	Cross modality	Without spapros	SMITH	scGIST
+64	RIBOMap persist_sup	RIBOMap scGIST	31	97	0.3195876288659793	Within RIBOMap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST
+64	RIBOMap persist_sup	SMITH STARmap	6	122	0.0491803278688524	"Cross modality
+different algorithm"	persist_sup	SMITH	Cross modality	Without spapros	PERSIST-class	SMITH
+64	RIBOMap persist_sup	STARmap persist_sup	17	111	0.1531531531531531	"Cross modality
+same algorithm"	persist_sup	persist_sup	Cross modality	Without spapros	PERSIST-class	PERSIST-class
+64	RIBOMap persist_sup	STARmap scGIST	12	116	0.1034482758620689	"Cross modality
+different algorithm"	persist_sup	scGIST	Cross modality	Without spapros	PERSIST-class	scGIST
+64	RIBOMap scGIST	SMITH STARmap	5	123	0.040650406504065	"Cross modality
+different algorithm"	scGIST	SMITH	Cross modality	Without spapros	scGIST	SMITH
+64	RIBOMap scGIST	STARmap persist_sup	16	112	0.1428571428571428	"Cross modality
+different algorithm"	scGIST	persist_sup	Cross modality	Without spapros	scGIST	PERSIST-class
+64	RIBOMap scGIST	STARmap scGIST	11	117	0.094017094017094	"Cross modality
+same algorithm"	scGIST	scGIST	Cross modality	Without spapros	scGIST	scGIST
+64	SMITH STARmap	STARmap persist_sup	8	120	0.0666666666666666	Within STARmap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+64	SMITH STARmap	STARmap scGIST	10	118	0.0847457627118644	Within STARmap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+64	STARmap persist_sup	STARmap scGIST	30	98	0.3061224489795918	Within STARmap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST
+128	SMITH RIBOMap	RIBOMap persist_sup	47	209	0.2248803827751196	Within RIBOMap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+128	SMITH RIBOMap	RIBOMap scGIST	51	205	0.248780487804878	Within RIBOMap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+128	SMITH RIBOMap	SMITH STARmap	8	248	0.032258064516129	"Cross modality
+same algorithm"	SMITH	SMITH	Cross modality	Without spapros	SMITH	SMITH
+128	SMITH RIBOMap	STARmap persist_sup	9	247	0.0364372469635627	"Cross modality
+different algorithm"	SMITH	persist_sup	Cross modality	Without spapros	SMITH	PERSIST-class
+128	SMITH RIBOMap	STARmap scGIST	10	246	0.040650406504065	"Cross modality
+different algorithm"	SMITH	scGIST	Cross modality	Without spapros	SMITH	scGIST
+128	RIBOMap persist_sup	RIBOMap scGIST	76	180	0.4222222222222222	Within RIBOMap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST
+128	RIBOMap persist_sup	SMITH STARmap	15	241	0.0622406639004149	"Cross modality
+different algorithm"	persist_sup	SMITH	Cross modality	Without spapros	PERSIST-class	SMITH
+128	RIBOMap persist_sup	STARmap persist_sup	29	227	0.1277533039647577	"Cross modality
+same algorithm"	persist_sup	persist_sup	Cross modality	Without spapros	PERSIST-class	PERSIST-class
+128	RIBOMap persist_sup	STARmap scGIST	23	233	0.0987124463519313	"Cross modality
+different algorithm"	persist_sup	scGIST	Cross modality	Without spapros	PERSIST-class	scGIST
+128	RIBOMap scGIST	SMITH STARmap	7	249	0.0281124497991967	"Cross modality
+different algorithm"	scGIST	SMITH	Cross modality	Without spapros	scGIST	SMITH
+128	RIBOMap scGIST	STARmap persist_sup	26	230	0.1130434782608695	"Cross modality
+different algorithm"	scGIST	persist_sup	Cross modality	Without spapros	scGIST	PERSIST-class
+128	RIBOMap scGIST	STARmap scGIST	23	233	0.0987124463519313	"Cross modality
+same algorithm"	scGIST	scGIST	Cross modality	Without spapros	scGIST	scGIST
+128	SMITH STARmap	STARmap persist_sup	17	239	0.0711297071129707	Within STARmap	SMITH	persist_sup	Same modality	Without spapros	SMITH	PERSIST-class
+128	SMITH STARmap	STARmap scGIST	20	236	0.0847457627118644	Within STARmap	SMITH	scGIST	Same modality	Without spapros	SMITH	scGIST
+128	STARmap persist_sup	STARmap scGIST	61	195	0.3128205128205128	Within STARmap	persist_sup	scGIST	Same modality	Without spapros	PERSIST-class	scGIST

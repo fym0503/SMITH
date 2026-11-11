@@ -10,12 +10,15 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import yaml
 from scipy import sparse
 
 import anndata as ad
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+TRAINING_MODEL_CONFIG = REPO_ROOT / "reproducibility/configs/training_models.yaml"
+TUTORIAL_PROFILE_CONFIG = REPO_ROOT / "reproducibility/configs/tutorial_profiles.yaml"
 
 
 def sha256(path: str | Path) -> str:
@@ -110,6 +113,43 @@ def write_top_panel(ranking_path: str | Path, output_path: str | Path, panel_siz
     return output_path
 
 
+def resolve_training_model(model_profile: str) -> dict[str, Any]:
+    """Resolve a named training implementation from the checked-in model profiles."""
+    payload = yaml.safe_load(TRAINING_MODEL_CONFIG.read_text(encoding="utf-8"))
+    try:
+        model = dict(payload["models"][model_profile])
+    except KeyError as exc:
+        raise ValueError(
+            f"Unknown training model {model_profile!r}; choose from {', '.join(payload['models'])}"
+        ) from exc
+    model["profile"] = model_profile
+    model["entrypoint"] = REPO_ROOT / model["entrypoint"]
+    if model["training_backend"] == "paper_20260428":
+        import json
+
+        manifest = json.loads((REPO_ROOT / model["source_manifest"]).read_text(encoding="utf-8"))
+        for item in manifest["files"]:
+            path = model["entrypoint"].parent / item["path"]
+            if sha256(path) != item["sha256"]:
+                raise ValueError(f"Manuscript backend checksum mismatch: {item['path']}")
+    return model
+
+
+def resolve_tutorial_profile(profile_id: str) -> dict[str, Any]:
+    """Resolve a user-facing, task-specific training and evaluation profile."""
+    payload = yaml.safe_load(TUTORIAL_PROFILE_CONFIG.read_text(encoding="utf-8"))
+    profiles = payload["profiles"]
+    aliases = {alias.lower(): key for key, value in profiles.items() for alias in [key, *value.get("aliases", [])]}
+    try:
+        canonical = aliases[str(profile_id).strip().lower()]
+    except KeyError as exc:
+        raise ValueError(f"Unknown tutorial profile {profile_id!r}; choose from {', '.join(profiles)}") from exc
+    profile = dict(profiles[canonical])
+    profile["id"] = canonical
+    profile["training_model"] = resolve_training_model(profile["training_model"])
+    return profile
+
+
 def ranked_genes(ranking: pd.DataFrame, panel_size: int | None = None) -> list[str]:
     """Return unique normalized genes from an in-memory SMITH ranking."""
     gene_column = next(
@@ -185,6 +225,12 @@ def run_smith(
     force: bool = False,
     adata: ad.AnnData | None = None,
     include_in_memory: bool = False,
+    model_options: dict[str, Any] | None = None,
+    validation: bool = True,
+    record_interval: int | None = None,
+    model_profile: str = "smith_current",
+    tutorial_profile: str | None = None,
+    training_backend: str | None = None,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir).resolve()
     if force and output_dir.exists():
@@ -217,10 +263,22 @@ def run_smith(
                 result["panel_genes"] = ranked_genes(ranking_frame, panel_size)
             return result
 
-    record = max(1, int(epochs))
+    record = record_interval or max(1, int(epochs))
+    selected_tutorial_profile = None
+    if tutorial_profile is not None:
+        selected_tutorial_profile = resolve_tutorial_profile(tutorial_profile)
+        model_profile = selected_tutorial_profile["training_model"]["profile"]
+    if training_backend is not None:
+        legacy_profiles = {"current": "smith_current", "paper_20260428": "smith_paper_20260428"}
+        try:
+            model_profile = legacy_profiles[training_backend]
+        except KeyError as exc:
+            raise ValueError(f"Unknown legacy training backend: {training_backend}") from exc
+    model = resolve_training_model(model_profile)
+    entrypoint = model["entrypoint"]
     command = [
         sys.executable,
-        str(REPO_ROOT / "scripts" / "main.py"),
+        str(entrypoint),
         "--adata_file", str(Path(adata_file).resolve()),
         "--saving_dir", str(saving_dir),
         "--log_dir", str(log_dir),
@@ -236,15 +294,30 @@ def run_smith(
         "--balance_mode", balance_mode,
         "--balance_cap", str(balance_cap),
         "--sampling_strategy", sampling_strategy,
-        "--val",
     ]
+    if validation:
+        command.append("--val")
+    allowed = {"learning_rate", "dim", "rep_dim", "rep_hidden_dims", "head_hidden_dims",
+               "dropout_rate", "lam", "sigma", "activation", "optimizer"}
+    for name, value in (model_options or {}).items():
+        if name not in allowed:
+            raise ValueError(f"Unsupported model option: {name}")
+        command.extend([f"--{name}", str(value)])
     if time_label:
         command.extend(["--time_label", time_label])
     if max_cells:
         command.extend(["--max_cells", str(max_cells)])
     if save_model:
         command.append("--save")
-    write_json(output_dir / "command.json", {"command": command})
+    write_json(output_dir / "command.json", {
+        "model_profile": model_profile,
+        "tutorial_profile": selected_tutorial_profile["id"] if selected_tutorial_profile else None,
+        "tutorial_profile_settings": selected_tutorial_profile.get("parameters", {}) if selected_tutorial_profile else {},
+        "training_backend": model["training_backend"],
+        "model_description": model["description"],
+        "model_options": model_options or {},
+        "command": command,
+    })
     run_command(command, output_dir / "training.log")
     ranking = latest_epoch_csv(saving_dir)
     panel_path = output_dir / f"panel_top{panel_size}.csv"
@@ -256,6 +329,8 @@ def run_smith(
         "ranking_csv": str(ranking),
         "panel_csv": str(panel_path),
         "output_dir": str(output_dir),
+        "model_profile": model_profile,
+        "tutorial_profile": selected_tutorial_profile["id"] if selected_tutorial_profile else None,
         "command": command,
         "checkpoint_file": str(checkpoint) if checkpoint.is_file() else None,
     }

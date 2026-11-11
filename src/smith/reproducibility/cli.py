@@ -24,8 +24,14 @@ def main() -> None:
     run.add_argument("case")
     run.add_argument("--output-dir", default=None)
     run.add_argument("--data-root", required=True)
-    run.add_argument("workflow_args", nargs=argparse.REMAINDER)
-    args = parser.parse_args()
+    # Forward workflow options after an explicit separator.
+    import sys
+    argv = sys.argv[1:]
+    separator = argv.index("--") if "--" in argv else len(argv)
+    args = parser.parse_args(argv[:separator])
+    workflow_args = argv[separator + 1:]
+    if workflow_args and args.command != "run":
+        parser.error("Workflow arguments are supported only by run.")
 
     cases = load_cases(args.root)
     if args.command == "list":
@@ -37,7 +43,7 @@ def main() -> None:
         return
     case = cases[args.case]
     output_dir = Path(args.output_dir or Path("outputs") / "reproducibility" / case.id)
-    _print(run_case(case, output_dir, args.root, args.data_root, args.workflow_args))
+    _print(run_case(case, output_dir, args.root, args.data_root, workflow_args))
 
 
 if __name__ == "__main__":

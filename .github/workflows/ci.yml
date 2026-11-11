@@ -20,9 +20,38 @@ jobs:
           python -m pip install -e '.[docs,notebooks]'
       - name: Run tests and validate tutorial notebooks
         run: |
-          python -m pytest -q tests
           python scripts/build_tutorial_notebooks.py
+          python -m pytest -q tests
       - name: Build documentation
         run: sphinx-build -W -b html docs/source docs/_build/html
-      - name: Build wheel
-        run: python -m pip install build && python -m build --wheel
+      - name: Build and inspect release distributions
+        run: |
+          python -m pip install build
+          python -m build --sdist --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          dist = Path("dist")
+          sdist = next(dist.glob("*.tar.gz"))
+          wheel = next(dist.glob("*.whl"))
+          with tarfile.open(sdist, "r:gz") as archive:
+              names = archive.getnames()
+              assert any(name.endswith("/README.md") for name in names)
+              assert any(name.endswith("/SMITH_illu.png") for name in names)
+              assert not any("/docs/internal/" in name for name in names)
+              assert not any("/reproducibility/validation/" in name for name in names)
+              assert not any("/sessions/" in name for name in names)
+              text_names = [name for name in names if name.endswith((".yaml", ".yml", ".md", ".json", ".tsv", ".py"))]
+              for name in text_names:
+                  if name in names and not name.endswith("/"):
+                      body = archive.extractfile(name)
+                      if body:
+                          assert (b"/workspace/" + b"fanyimin/") not in body.read(), name
+          with zipfile.ZipFile(wheel) as archive:
+              names = archive.namelist()
+              assert any("smith_agent/resources/backends/paper_20260428/main.py" in name for name in names)
+              assert not any("__pycache__" in name for name in names)
+          print(f"Inspected {sdist.name} and {wheel.name}")
+          PY

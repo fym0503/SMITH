@@ -35,6 +35,7 @@ class SmithSelectionConfig:
     sigma: float = 0.5
     activation: str = "tanh"
     optimizer: str = "Adam"
+    task_profile: str = "TF_profile"
     prior_file: Path | None = None
     forbidden_file: Path | None = None
     extra_args: dict[str, Any] | None = None
@@ -107,6 +108,23 @@ def run_smith_selection(config: SmithSelectionConfig, execute: bool = False) -> 
     ensure_dir(config.log_dir)
     command = build_smith_command(config)
     manifest = {
+        "task_profile": config.task_profile,
+        "profile_parameters": {
+            "epoch": config.epoch,
+            "record": config.record,
+            "batch_size": config.batch_size,
+            "learning_rate": config.learning_rate,
+            "dim": config.dim,
+            "rep_dim": config.rep_dim,
+            "rep_hidden_dims": config.rep_hidden_dims,
+            "head_hidden_dims": config.head_hidden_dims,
+            "dropout_rate": config.dropout_rate,
+            "lam": config.lam,
+            "sigma": config.sigma,
+            "activation": config.activation,
+            "optimizer": config.optimizer,
+        },
+        "entrypoint": str(config.smith_root / "main.py"),
         "command": command,
         "execute": execute,
         "saving_dir": str(config.saving_dir),

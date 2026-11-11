@@ -11,8 +11,12 @@ venv/
 .env
 ._*
 docs/_build/
+docs/source/_build/
+docs/source/.jupyter_cache/
 reports/
 sessions/
+package_audit_*/
+release_candidate/
 
 data/*
 !data/.gitkeep

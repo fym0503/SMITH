@@ -44,12 +44,7 @@ def run_probe_feasibility_loaded(
     max_genes: int | None = None,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Run ODT/OligoMiner/ProbeDealer and return current-run tables in memory.
-
-    The two legacy scripts are used only as backend runners. Their newly created
-    files are loaded immediately into memory, summarized, and saved as audit
-    artifacts; no prior output is accepted as an input.
-    """
+    """Run ODT, OligoMiner and ProbeDealer and summarize their output tables."""
     root = Path(project_root).resolve()
     out = Path(output_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)

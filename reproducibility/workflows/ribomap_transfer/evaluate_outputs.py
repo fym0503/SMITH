@@ -47,6 +47,7 @@ def evaluate_panel_loaded(
     label_column: str | None = None,
     output_dir: str | Path | None = None,
     neighbors: int = 5,
+    protocol: str = "tutorial",
 ) -> tuple[dict, pd.DataFrame]:
     column = label_column or next((name for name in LABEL_COLUMNS if name in adata.obs), None)
     if not column:
@@ -59,7 +60,11 @@ def evaluate_panel_loaded(
     matrix = adata.X[:, [index[gene] for gene in shared]]
     if sparse.issparse(matrix):
         matrix = matrix.toarray()
-    x = StandardScaler().fit_transform(np.asarray(matrix, dtype=np.float32))
+    if protocol not in {"tutorial", "paper"}:
+        raise ValueError(f"Unknown evaluation protocol: {protocol}")
+    x = np.asarray(matrix, dtype=np.float32)
+    if protocol == "tutorial":
+        x = StandardScaler().fit_transform(x)
     labels = adata.obs[column].astype(str).to_numpy()
     n_classes = len(np.unique(labels))
     if n_classes < 2 or n_classes >= len(labels):
@@ -67,14 +72,16 @@ def evaluate_panel_loaded(
     # A stratified holdout must contain at least one observation per class.
     test_fraction = max(0.2, n_classes / len(labels))
     train, test = train_test_split(
-        np.arange(adata.n_obs), test_size=test_fraction, random_state=seed, stratify=labels
+        np.arange(adata.n_obs), test_size=test_fraction, random_state=seed,
+        stratify=labels if protocol == "tutorial" else None,
     )
     n_neighbors = max(1, min(neighbors, len(train)))
-    classifier = KNeighborsClassifier(n_neighbors=n_neighbors, weights="distance")
+    classifier = KNeighborsClassifier(n_neighbors=n_neighbors, weights="distance" if protocol == "tutorial" else "uniform")
     classifier.fit(x[train], labels[train])
     prediction = classifier.predict(x[test])
     result = {
         "label_column": column,
+        "evaluation_protocol": protocol,
         "panel_size_requested": int(panel_size),
         "panel_size_evaluated": len(shared),
         "shared_genes": shared,

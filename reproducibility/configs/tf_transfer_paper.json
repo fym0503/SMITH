@@ -1,0 +1,29 @@
+{
+  "activation": "selu",
+  "balance_cap": 500,
+  "balance_mode": "mean",
+  "batch_size": 128,
+  "dim": 128,
+  "disable_spatial": true,
+  "dropout_rate": 0.2,
+  "epoch": 45,
+  "head_hidden_dims": "128",
+  "hurdle": false,
+  "lam": 2.0,
+  "learning_rate": 0.0001,
+  "optimizer": "Adam",
+  "panel_size": 128,
+  "panel_sizes": [
+    32,
+    64,
+    128
+  ],
+  "record": 45,
+  "rep_dim": 32,
+  "rep_hidden_dims": "128",
+  "scrna_label_key": "cell_type",
+  "scrna_subset_mode": "shared_cellname",
+  "seed": 14223,
+  "sigma": 0.6,
+  "task_name": "elegans_scrna_to_tf_paper_panel"
+}

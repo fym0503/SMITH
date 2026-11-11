@@ -486,8 +486,6 @@ def run(args: argparse.Namespace) -> dict:
     manifest = {
         "workflow": "02_regulatory_activity",
         "manuscript_reference": "Figure 3c-k" if args.paper_analyses else "Figure 3c-f",
-        "reproduction_status": "not_numerically_validated",
-        "validation_record": "reproducibility/validation/figure3_validation.yaml",
         "configuration": vars(args),
         "inputs": list({item["path"]: item for item in inputs}.values()),
         "training_runs": runs,

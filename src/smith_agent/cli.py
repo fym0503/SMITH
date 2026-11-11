@@ -16,7 +16,7 @@ def _print_json(payload: Any) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="smith-cli")
+    parser = argparse.ArgumentParser(description="SMITH panel-design agent")
     parser.add_argument("--config", default=None)
     parser.add_argument("--session-id", default=None)
     subparsers = parser.add_subparsers(dest="command", required=False)

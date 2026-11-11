@@ -1,0 +1,26 @@
+schema_version: 1
+models:
+  smith_current:
+    training_backend: current
+    entrypoint: scripts/main.py
+    description: Current SMITH implementation in this repository.
+    default: true
+    capabilities:
+      - current_optimizer
+      - forbidden_targets
+      - prior_targets
+    options:
+      dropout_rate: 0.2
+      classification_head: log_softmax
+      multitask_solver: frank_wolfe
+  smith_paper_20260428:
+    training_backend: paper_20260428
+    entrypoint: reproducibility/backends/paper_20260428/main.py
+    description: Checksum-pinned training implementation used by the manuscript runs verified in the tutorial bundle.
+    source_manifest: reproducibility/backends/paper_20260428/source_manifest.json
+    capabilities:
+      - prior_targets
+    options:
+      dropout_rate: model_configured
+      classification_head: raw_logits
+      multitask_solver: min_norm_solver

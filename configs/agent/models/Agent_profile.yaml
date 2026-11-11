@@ -1,0 +1,29 @@
+id: Agent_profile
+backend: smith
+entrypoint: reproducibility/backends/paper_20260428/main.py
+description: Five-reference liver panel design with fixed weights and held-out MERFISH
+  evaluation.
+capabilities:
+- panel_selection
+- reference_aggregation
+aliases:
+- agent_profile
+- liver_agent
+metadata:
+  python_executable: python
+  tutorial_profile: Agent_profile
+  training_profile: Agent_profile
+  source_manifest: reproducibility/backends/paper_20260428/source_manifest.json
+  parameters:
+    epoch: 200
+    record: 50
+    batch_size: 64
+    source_weight: 0.5
+    reference_weight: 0.5
+    training_seeds:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    evaluation_seed: 42

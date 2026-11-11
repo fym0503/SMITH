@@ -1,6 +1,6 @@
 # Command-line Reference
 
-Use this page when you already know which workflow you want to run and need the exact command names. The biological rationale and worked examples are in [Introduction](introduction/index) and [Paper examples](tutorials/index).
+Use these commands to train panels, inspect Agent registries and run the tutorial workflows. The biological background is in [Introduction](introduction/index); worked analyses are in [Paper examples](tutorials/index).
 
 ## Core optimizer
 
@@ -16,20 +16,19 @@ command-oriented interface):
 python -m pip install -e .
 ```
 
-Configure an OpenAI-compatible planner before using free-form natural-language
-requests. The agent still exposes deterministic tools when no planner is
-configured, but it cannot interpret arbitrary questions without a model:
+Configure an OpenAI-compatible planner to route natural-language requests. Registry tools can also be invoked directly:
 
 ```bash
 export OPENAI_BASE_URL=https://api.babelark.com/v1
-export OPENAI_MODEL=<model-name>
-export OPENAI_API_KEY=<api-key>
+export OPENAI_MODEL="your-model-id"
+read -r -s -p "API key: " OPENAI_API_KEY
+export OPENAI_API_KEY
 smith-agent --config configs/agent/agent.yaml shell
 ```
 
 The shell accepts dataset paths in a message with an `@/absolute/path.h5ad`
 mention, then can run registered SMITH, evaluation, feasibility, and reporting
-tools. It is a terminal interface; the package does not provide a web server.
+tools. The command starts an interactive terminal session.
 
 ```bash
 smith-cli tools
@@ -44,7 +43,7 @@ smith-cli run-tool <tool> --arguments-json '{}'
 ```bash
 smith-repro list
 smith-repro check [case|all]
-smith-repro run <case> [--output-dir PATH]
+smith-repro run <case> --data-root PATH [--output-dir PATH]
 ```
 
-Public case ids are `02_regulatory_activity`, `03_ribomap_transfer` and `05_agent`. Check downloaded H5AD inputs with `smith-repro check <case> --data-root data/tutorials`. End-to-end `smith-repro run` commands require a SMITH GitHub checkout because the workflows and notebooks are repository artifacts.
+Workflow ids are `02_regulatory_activity`, `03_ribomap_transfer` and `05_agent`. Check H5AD inputs with `smith-repro check <case> --data-root data/tutorials`, then run a workflow with `smith-repro run <case> --data-root data/tutorials`.

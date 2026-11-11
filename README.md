@@ -1,211 +1,186 @@
-# SMITH: Agentic and Transferable Panel Design
+<p align="center">
+  <img src="SMITH_illu.png" alt="SMITH logo: a compact spatial target panel linked to a molecular reference" width="1000">
+</p>
 
-SMITH is a computational framework for target panel design in imaging-based spatial molecular profiling. It selects compact gene or molecular target panels from reference atlases so future targeted spatial assays can preserve cell identity, molecular profiles, spatial organization, temporal signals, or disease-associated variation under a fixed panel budget.
+<p align="center">
+  <strong>Agentic and Transferable Panel Design</strong><br>
+  Imaging-based spatial molecular profiling with compact panels that preserve the biological signals your assay needs.
+</p>
 
-This directory is a clean, repository-style package assembled from the local SMITH workspace. It follows the lightweight organization used by DeconX: source code in `src/`, runnable entry points in `scripts/`, configuration in `configs/`, documentation in `docs/`, and placeholder `data/` and `outputs/` directories.
+<p align="center">
+  <a href="https://smith-panel-design.readthedocs.io/en/latest/">Documentation</a> ·
+  <a href="https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html">Tutorials</a> ·
+  <a href="https://github.com/fym0503/SMITH/issues">Issues</a>
+</p>
 
-## Project Architecture
+---
 
-The package exposes two Python namespaces: the core optimizer and the agent workflow.
+SMITH learns a compact set of genes or molecular targets from single-cell, spatial or aligned reference data. Its multi-task objective can preserve cell identity, expression profiles, spatial organization and developmental signals; SMITH-Agent adds reference-aware workflow tools for panel design and evaluation.
 
-* **src/smith/**: Core SMITH optimization code.
-  * `stgmodel.py`: stochastic-gate target selection and task heads.
-  * `datasets.py`: AnnData loading, task tensor construction, balancing, and prior target lookup.
-  * `losses.py`: reconstruction/classification/regression losses, including hurdle loss support.
-  * `model_selector.py`: model and optimizer construction.
-  * `eval.py`: panel export and downstream evaluation helpers.
-  * `min_norm_solvers.py`: multi-task Pareto gradient solver.
-* **src/smith_agent/**: Agent and CLI orchestration layer.
-  * Parses panel-design intents into structured requests.
-  * Registers tools for dataset inspection, reference retrieval, SMITH selection, feasibility filtering, evaluation, plotting, and reporting.
-  * Provides the `smith-cli` command.
-  * `feasibility/` normalizes ODT/SCRINSHOT, OligoMiner, PaintSHOP, and ProbeDealer outputs.
-  * `probedealer/` contains the lightweight ProbeDealer-style implementation.
-* **scripts/**: Main execution entry points.
-  * `main.py`: original SMITH training and panel-selection runner.
-  * `eval.py`: downstream panel evaluation runner.
-  * `submit_eval.py`: original batch/evaluation helper.
-  * `agent_examples/`: analysis and figure-generation scripts from `smith-agent`.
-* **configs/agent/**: SMITH-Agent registries for datasets, tools, workflow skills, models, policies, and feasibility backends.
-* **docs/source/**: Local documentation copied from the original SMITH, baseline, interface, and agent workspaces.
-* **data/**: Placeholder for user-provided or downloaded datasets. Large H5AD files are intentionally not copied here.
-* **outputs/**: Placeholder for new runs. Historical HPO and benchmark outputs are intentionally excluded.
-* **reproducibility/**: Paper-section manifests and compact, checksum-pinned example inputs.
+## What SMITH does
 
-### Agent workflow skills
+| Need | SMITH workflow |
+|---|---|
+| Select a panel from a single-cell reference | Optimize a target ranking using expression reconstruction and cell labels |
+| Use spatial context | Include spatial coordinates and cell annotations in the selection objectives |
+| Transfer between studies or assays | Learn from a related reference and evaluate on a held-out target dataset |
+| Coordinate a panel-design workflow | Use SMITH-Agent tools to inspect data, select panels and evaluate results |
 
-The files in `configs/agent/skills/` are YAML workflow definitions loaded by SMITH-Agent. They describe task intake, reference retrieval, candidate assembly, panel selection, feasibility filtering, probe generation, baseline comparison, and reporting. They are application configuration, not Codex `SKILL.md` packages. The wheel embeds a runtime copy under `smith_agent.resources/configs/agent/skills/`; edit the source files in `configs/agent/skills/`.
+<p align="center">
+  <img src="docs/source/_static/figures/model_overview_c.png" alt="SMITH combines stochastic target selection with multiple biological objectives to produce a compact target panel" width="900">
+</p>
 
-### Paper reproducibility
+## Install
 
-Each main Results section has one representative executable example. The examples do not imply that every manuscript panel is rebuilt by the default command; data and tool requirements are documented separately.
+SMITH requires Python 3.10 or newer.
 
 ```bash
-smith-repro list
-smith-repro check
-smith-repro run 02_regulatory_activity
-smith-repro run 03_ribomap_transfer
-smith-repro check 02_regulatory_activity --data-root data/tutorials
-smith-repro run 02_regulatory_activity --data-root data/tutorials --output-dir outputs/tutorials/regulatory
-smith-repro run 05_agent
-```
-
-The runnable biological examples are documented under `docs/source/tutorials/`; their workflows write input checksums, model rankings, panels, evaluations and run manifests to the selected output directory.
-
-## Technical Workflow
-
-1. **Define the panel-design task.** Specify the assay context, panel size, candidate targets, optional prior targets, and objectives such as cell type recovery, profile reconstruction, spatial preservation, time prediction, or disease-aware variation.
-2. **Load reference data.** Use matched scRNA-seq, spatial references, modality-related references, or aligned single-cell/spatial representations.
-3. **Run SMITH optimization.** A stochastic gate layer learns target weights while objective-specific heads evaluate complementary biological signals.
-4. **Balance objectives.** Pareto multi-task optimization combines gradients without hand-tuned objective weights.
-5. **Transfer and evaluate.** Panels can be selected from scRNA-seq, spatial references, aligned scRNA+spatial data, or cross-modality references and evaluated on held-out target assays.
-6. **Optionally run SMITH-Agent.** The agent workflow can retrieve references, run feasibility filters, tune hyperparameters, evaluate panels, generate probe candidates, and build reports.
-
-## Installation
-
-Create an environment with Python 3.10+ and install the package in editable mode:
-
-```bash
+git clone https://github.com/fym0503/SMITH.git
+cd SMITH
+python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-For the original SMITH optimizer, the important scientific dependencies are:
+For notebooks and plotting, install the notebook dependencies too:
 
 ```bash
-python -m pip install numpy pandas scipy scikit-learn scanpy anndata torch tqdm h5py
+python -m pip install -e '.[notebooks]'
 ```
 
-For SMITH-Agent, install:
+## Quick start
 
-```bash
-python -m pip install pyyaml requests rich prompt-toolkit biopython
-```
-
-Some optional feasibility backends depend on external tools and reference indexes. See `docs/source/interface_readme.md` and `configs/agent/feasibility_backends/`.
-
-## Packaging
-
-Build source and wheel distributions:
-
-```bash
-python -m build --sdist --wheel
-```
-
-The source distribution keeps the DeconX-style project layout: `configs/`, `scripts/`, `docs/`, `manifests/`, `tests/`, `data/.gitkeep`, and `outputs/.gitkeep` are included. The wheel also embeds default agent configs, scripts, docs, and manifests under `smith_agent.resources`, so installed CLI commands can load the default registry without a local source checkout. Runtime outputs still go to the current working directory unless `SMITH_RUNTIME_ROOT` is set.
-
-## Usage
-
-Run the original SMITH optimizer on an AnnData object:
+Prepare an AnnData `.h5ad` file with targets in `adata.var_names`. For a cell-type task, include cell labels in `adata.obs['celltype']` (or `cell_type` or `subclass`). Then run:
 
 ```bash
 python scripts/main.py \
-  --adata_file data/example.h5ad \
-  --saving_dir outputs/example/saving \
-  --log_dir outputs/example/log \
+  --adata_file data/your_reference.h5ad \
+  --saving_dir outputs/my_panel \
+  --log_dir outputs/my_panel/logs \
   --tasks recon,cls \
   --task_name celltype \
   --panel_size 64 \
   --epoch 100 \
-  --record 10 \
   --device cpu
 ```
 
-Inspect SMITH-Agent registries from the source tree:
+Set `--device cuda` to train on a CUDA-enabled GPU. The run writes ranked targets and training logs under the output directories.
+
+### Add spatial information
+
+If the AnnData object stores coordinates in `adata.obsm['spatial']`, add the spatial objective:
+
+```bash
+--tasks recon,cls,coordination
+```
+
+Use `--layer counts` to train from a named AnnData layer rather than `adata.X`.
+
+## SMITH-Agent
+
+Start an interactive session with `smith-agent`, or inspect the packaged registries:
+
+```bash
+smith-agent tools
+smith-agent datasets
+smith-agent models
+smith-agent
+```
+
+To use configuration files from a source checkout, pass the registry explicitly:
 
 ```bash
 smith-cli --config configs/agent/agent.yaml tools
-smith-cli --config configs/agent/agent.yaml datasets
-```
-
-After installing the wheel, the default packaged registry is available without `--config`:
-
-```bash
-smith-cli tools
-smith-cli datasets
-```
-
-Start the interactive agent shell:
-
-```bash
 smith-cli --config configs/agent/agent.yaml shell
 ```
 
-## Notebook Tutorials
-
-The paper-oriented examples are executable Jupyter notebooks grouped by manuscript Results section. Editable and pre-executed notebooks live under `docs/source/tutorials/notebooks/` and are published in the [online tutorials](https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html).
+For natural-language planning, configure an OpenAI-compatible endpoint and model before starting the shell:
 
 ```bash
-python -m pip install -e '.[notebooks]'
+export OPENAI_BASE_URL="https://your-provider.example/v1"
+export OPENAI_MODEL="your-model-id"
+read -r -s -p "API key: " OPENAI_API_KEY
+export OPENAI_API_KEY
+smith-agent
+```
+
+Replace the example URL and model ID with your provider's values. The bundled endpoint defaults to `https://api.babelark.com/v1`; set `OPENAI_BASE_URL` explicitly for another provider. The startup dashboard shows whether planner settings are present; connectivity is checked when a request is made.
+
+Use `/help`, `/models`, `/tools` and `/status` to inspect the session. Enter `@/absolute/path/to/input.h5ad` to mount your data. Dataset registry entries need their corresponding H5AD files; probe-design tools also need their external backends and reference indexes. See [`configs/agent/`](configs/agent/) for registry entries.
+
+The shell and explicit `smith-agent run-tool` commands work without a language model. `smith-cli` is an alias for the same entry point.
+
+## Tutorials
+
+The tutorial notebooks walk through three biological settings:
+
+| Notebook | Example |
+|---|---|
+| `02_SMITH_Regulatory_Activity` | TF activity in *C. elegans* |
+| `03_SMITH_RIBOMap_Transfer` | Transfer from Deep-RIBOmap and STARmap into RIBOMap |
+| `05_SMITH_Agent_Evaluation` | Liver panel design with spatial references and MERFISH evaluation |
+
+Read the rendered notebooks in the [tutorial documentation](https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html), or open their `_source.ipynb` companions for fresh runs:
+
+```bash
 jupyter lab docs/source/tutorials/notebooks
 ```
 
-Use `python scripts/build_tutorial_notebooks.py --execute` to regenerate every documented notebook and its figures.
+Tutorial H5AD files are listed with their expected directory structure and SHA-256 checksums in [`reproducibility/data_manifest.yaml`](reproducibility/data_manifest.yaml). Set `SMITH_TUTORIAL_DATA` to the directory containing those inputs before running a notebook. The data bundles are not hosted yet; until a public archive URL is added to the manifest, place the licensed input files at the listed paths.
 
-## Run Without External Data
+## Reproduce paper analyses
 
-The package includes a synthetic AnnData generator so the optimizer can be tested without downloading manuscript-scale datasets:
-
-```bash
-python scripts/make_smoke_h5ad.py --output data/smoke/smoke_panel.h5ad
-python scripts/main.py \
-  --adata_file data/smoke/smoke_panel.h5ad \
-  --saving_dir outputs/smoke/saving \
-  --log_dir outputs/smoke/logs \
-  --tasks recon,cls,region,pathology,coordination \
-  --task_name celltype \
-  --panel_size 8 \
-  --epoch 2 \
-  --record 1 \
-  --batch_size 16 \
-  --rep_dim 8 \
-  --rep_hidden_dims 8 \
-  --head_hidden_dims 8 \
-  --dim 8 \
-  --device cpu \
-  --balance_mode off
-```
-
-The selected target ranking is written to `outputs/smoke/saving/epoch_*.csv`.
-
-Run the test suite:
+List the packaged workflows and check whether their input data are available locally:
 
 ```bash
-python -m pytest tests
+smith-repro list
+smith-repro check
 ```
 
-## Input AnnData Schema
+Run a workflow after its required data are in place:
 
-SMITH expects an `.h5ad` file with genes or molecular targets in `adata.var_names` and observations in `adata.obs_names`. The core optimizer reads `adata.X` by default. If `--layer <name>` is supplied, it reads `adata.layers[<name>]` instead.
+```bash
+smith-repro run 03_ribomap_transfer --data-root data/tutorials
+```
 
-Supported task fields:
+Each workflow writes panels, metrics and a run manifest to its output directory. See [`reproducibility/`](reproducibility/) for workflow definitions and data requirements.
 
-* `recon`: uses the expression matrix itself and requires no extra annotation.
-* `cls`: reads the first available column from `obs['celltype']`, `obs['cell_type']`, or `obs['subclass']`.
-* `region`: reads `obs['region']`.
-* `pathology`: reads `obs['pathology']`.
-* `coordination` or `standard_coordination`: reads `obsm['spatial']` and optimizes coordinate regression as `coo`.
+## AnnData fields
 
-Prior targets can be supplied with `--prior_file`, a CSV containing a `names` column matching `adata.var_names`.
+| Objective | Required data |
+|---|---|
+| `recon` | Expression matrix in `adata.X`, or the layer selected with `--layer` |
+| `cls` | Cell labels in `adata.obs['celltype']`, `cell_type` or `subclass` |
+| `region` | Region labels in `adata.obs['region']` |
+| `pathology` | Labels in `adata.obs['pathology']` |
+| `coordination` | Coordinates in `adata.obsm['spatial']` |
+| Developmental time | Numeric time labels in the column specified by `--time_label` |
 
-## Data Policy
+Optional prior targets can be supplied with `--prior_file`, a CSV containing a `names` column that matches `adata.var_names`.
 
-This clean package intentionally excludes large local assets:
+## Repository map
 
-* raw and processed H5AD data bundles
-* benchmark/HPO output directories
-* conda environments
-* PDF build artifacts
-* Python caches
+```text
+src/smith/          Core panel-selection model
+src/smith_agent/    Agent workflow and command-line interface
+configs/            Dataset, model, tool and workflow registries
+scripts/            Training, evaluation and data utilities
+docs/               Tutorials and API documentation
+reproducibility/    Paper workflows, manifests and reference metrics
+tests/              Package and workflow tests
+```
 
-The packaged dataset registry uses relative paths under `data/` and stores the original local source path in `metadata.original_local_path`. The original local workspace still contains those assets under directories such as `SMITH_unified/`, `SMITH_htapp/`, `SMITH_data_ribomap/`, `SMITH_data_elegans/`, `SMITH_ribomap/`, and `smith-agent/outputs/`.
+## Development
 
-## Relationship to the Local Workspace
+Install the test dependencies and run the suite:
 
-This package was assembled from:
+```bash
+python -m pip install -e '.[dev]'
+python -m pytest
+```
 
-* `/workspace/fanyimin/SMITH_tool-main`
-* `/workspace/fanyimin/smith-agent`
-* `/workspace/fanyimin/smith_interface`
-* selected README files from baseline and data directories
+Build the source and wheel distributions with:
 
-Use this directory for code cleanup, documentation, packaging, and future repository publication. Use the original data/output directories only when reproducing the full benchmark experiments.
+```bash
+python -m pip install build
+python -m build
+```

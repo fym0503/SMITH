@@ -1,0 +1,84 @@
+schema_version: 1
+profiles:
+  ribomap_profile:
+    aliases:
+    - ribomap
+    task: RIBOMap cross-modality transfer
+    training_model: smith_paper_20260428
+    parameter_set: reproducibility/configs/ribomap_paper.json
+    evaluation_protocol: paper_uniform_5nn_unstratified
+    parameters:
+      panel_sizes:
+      - 32
+      - 64
+      - 128
+      training_configurations: 4
+      evaluation_seeds:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+  Agent_profile:
+    aliases:
+    - agent_profile
+    - liver_agent
+    task: five-reference liver panel design
+    training_model: smith_paper_20260428
+    parameters:
+      epochs: 200
+      batch_size: 64
+      training_seeds:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      source_weight: 0.5
+      reference_weight: 0.5
+      min_reference_support: 2
+      evaluation_seed: 42
+      panel_sizes:
+      - 32
+      - 64
+      - 128
+      source_max_cells: 30000
+      reference_max_cells: null
+      candidate_rank_size: 128
+      source_label: Cell_Type_final
+      reference_label: cell_type
+      merfish_label: Cell_Type
+      minimum_label_count: 5
+  TF_profile:
+    aliases:
+    - tf_profile
+    - elegans_regulatory
+    task: C. elegans TF regulatory activity
+    training_model: smith_paper_20260428
+    parameters:
+      epochs: 90
+      max_cells: null
+      training_seed: 8013
+      batch_size: 1024
+      datasets:
+      - elegans_tf
+      time_label: absolute_time
+      benchmark_sizes:
+        elegans_tf:
+        - 32
+        - 64
+        - 128
+      training_sizes:
+        elegans_tf:
+        - 128
+      transfer_panel_sizes:
+      - 32
+      - 64
+      - 128
+      splits:
+      - split_1
+      - split_2
+      - split_3
+      - split_4
+      - split_5
+    parameter_set: reproducibility/configs/tf_paper.json

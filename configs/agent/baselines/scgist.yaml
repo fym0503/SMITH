@@ -6,4 +6,3 @@ runtime:
   root: external/SMITH_baselines/GPS_tools-main/baselines/scGIST
 metadata:
   data_status: external_not_packaged
-  original_local_path: /workspace/fanyimin/SMITH_unified/code/SMITH_baselines/GPS_tools-main/baselines/scGIST

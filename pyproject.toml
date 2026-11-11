@@ -11,10 +11,21 @@ requires-python = ">=3.10"
 authors = [
   {name = "Yimin Fan"},
 ]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = [
   "anndata",
   "biopython",
   "h5py",
+  "matplotlib>=3.8",
   "numpy",
   "openpyxl>=3.1",
   "pandas",
@@ -23,11 +34,18 @@ dependencies = [
   "requests",
   "rich>=13.0",
   "scikit-learn",
+  "scanpy",
   "scipy",
   "torch",
   "tqdm",
   "umap-learn",
 ]
+
+[project.urls]
+Homepage = "https://github.com/fym0503/SMITH"
+Documentation = "https://smith-panel-design.readthedocs.io/en/latest/"
+Repository = "https://github.com/fym0503/SMITH"
+Issues = "https://github.com/fym0503/SMITH/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -75,13 +93,23 @@ include = ["smith", "smith.*", "smith_agent", "smith_agent.*"]
 "smith.reproducibility.resources" = [
   "README.md",
   "manifests/*.yaml",
+  "configs/*.yaml",
+  "configs/*.json",
 ]
 "smith_agent.resources" = [
   "requirements.txt",
   "configs/agent/*.yaml",
   "configs/agent/*/*.yaml",
-  "scripts/*.py",
+  "scripts/main.py",
+  "scripts/eval.py",
+  "scripts/make_smoke_h5ad.py",
+  "scripts/odt_property_only_runner.py",
+  "scripts/odt_scrinshot_feasibility_demo.py",
+  "scripts/run_odt_property_batches.py",
   "scripts/README.md",
-  "scripts/agent_examples/*.py",
   "manifests/*",
+  "backends/paper_20260428/README.md",
+  "backends/paper_20260428/*.py",
+  "backends/paper_20260428/*.json",
+  "backends/paper_20260428/Smith/*.py",
 ]

@@ -1,6 +1,6 @@
 # Transfer and SMITH-Agent
 
-The best reference for a new experiment is not always a matched single-cell dataset. **Spatial atlases** contain tissue organization that dissociated data cannot provide, and related assays can reveal modality-specific priorities. SMITH treats these references as **reusable design information**.
+A new experiment can draw on several kinds of reference data. **Spatial atlases** contribute tissue organization, while related assays reveal modality-specific priorities. SMITH treats both as **reusable design information**.
 
 :::{admonition} Key idea
 :class: tip
@@ -44,6 +44,6 @@ The core **`smith` package** answers: given a prepared reference, objectives, an
 3. run SMITH within each reference, convert rankings to a common percentile scale, and aggregate multi-reference evidence;
 4. evaluate candidate panels, apply assay-specific feasibility backends, and record the configuration, targets, metrics, and output files.
 
-The agent does not concatenate rankings blindly. Each reference contributes an **inspectable ranking** before consensus is formed. Feasibility is also separate from biological informativeness: a highly ranked target may fail probe specificity or platform constraints. External probe-design backends and experimental review are therefore still required before deployment.
+Each reference contributes an **inspectable ranking** before consensus is formed. Feasibility tools add assay-specific probe and platform checks to the biological ranking, producing a traceable panel-design report.
 
-**SMITH-Agent is a decision-support layer around SMITH**, not a replacement for the optimizer or expert judgment. The optimizer learns from biological references; the agent makes the surrounding process structured, traceable, and repeatable.
+**SMITH-Agent organizes the workflow around the SMITH optimizer**. SMITH learns from biological references; the agent structures reference retrieval, ranking aggregation, evaluation and feasibility checks into a traceable process.

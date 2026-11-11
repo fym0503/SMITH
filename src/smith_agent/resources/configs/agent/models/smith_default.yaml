@@ -1,12 +1,35 @@
-id: smith_default
+id: TF_profile
 backend: smith
-entrypoint: scripts/main.py
-description: Default SMITH training and ranking entrypoint from this clean package.
+entrypoint: backends/paper_20260428/main.py
+description: C. elegans TF activity panel design with the recorded training configuration.
 capabilities:
-  - panel_selection
-  - transfer_learning
-  - multitask_optimization
+- panel_selection
+- transfer_learning
+- multitask_optimization
 aliases:
-  - smith
+- smith
+- smith_default
+- tf_profile
+- elegans_regulatory
 metadata:
   python_executable: python
+  tutorial_profile: TF_profile
+  training_profile: TF_profile
+  source_manifest: backends/paper_20260428/source_manifest.json
+  parameters:
+    epoch: 90
+    record: 90
+    seed: 8013
+    batch_size: 1024
+    learning_rate: 0.00144281
+    balance_mode: 'off'
+    balance_cap: 500
+    dim: 32
+    rep_dim: 128
+    rep_hidden_dims: 64,32
+    head_hidden_dims: '32'
+    dropout_rate: 0.3867
+    lam: 1.532275
+    sigma: 0.8241
+    activation: selu
+    optimizer: RMSprop

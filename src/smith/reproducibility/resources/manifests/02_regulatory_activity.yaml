@@ -1,49 +1,149 @@
 id: 02_regulatory_activity
 order: 2
 title: Developmental regulatory activity panels
-manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based Profiling
-figure: Tutorial analyses related to Figure 3c-k
-runtime: 10-60 minutes depending on cells, epochs and device
-data_access: Versioned external H5AD archive downloaded through reproducibility/data_manifest.yaml.
-summary: Starts from real TF and miRNA lineage-aware splits and demonstrates analyses related to Figure 3c-k. The hosted outputs are not numerical reproductions of the manuscript panels.
-claim: Compact regulatory panels retain both discrete cell identity and continuous developmental timing.
+manuscript_section: SMITH Preserves Developmental Regulatory Programs in Activity-Based
+  Profiling
+figure: Figures 3c-d, 3g, 3j-k
+runtime: About 10-60 minutes depending on hardware and dataset size.
+data_access: H5AD inputs listed in reproducibility/data_manifest.yaml.
+summary: Trains TF panels on five lineage-aware splits, evaluates cell identity and
+  developmental time, compares TF/scRNA correlation structure, and tests scRNA-to-TF
+  panel transfer.
+claim: Compact TF panels preserve cell identity and developmental timing across held-out
+  lineages; related scRNA-seq data also support TF-panel design.
 inputs:
-  - path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
-    kind: data
-    bytes: 171431555
-    sha256: 6b7bfa064ed119bf6e1891c88550894db94d454c99837d7ae53defbd3dbf4fcc
-  - path: regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad
-    kind: data
-    bytes: 115530989
-    sha256: 31ee972b9b5ad2131bd2f8cb80f5a0cae02b14e26dc2844fdff6495532bf871a
-  - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad
-    kind: data
-    bytes: 39587756
-    sha256: 9240ad2e17a70cdb4de50351d1be03284d98e8dc4cca89fd9714f01fc7b89333
-  - path: regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad
-    kind: data
-    bytes: 27111860
-    sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
-outputs: [runs/*/SMITH/ranking/epoch_*.csv, figure_data/figure3_c_f_values.tsv, figure_data/figure3_h_module_miss_rate.tsv, figure_data/figure3_i_coactivity.tsv, figure_data/figure3_j_tf_scrna_correlation.tsv, figure_data/figure3_k_transfer.tsv, figures/figure3_c.*, figures/figure3_d.*, figures/figure3_e.*, figures/figure3_f.*, figures/figure3_g.*, figures/figure3_h.*, figures/figure3_i.*, figures/figure3_j.*, figures/figure3_k.*, run_manifest.json]
-reproduced_panels: []
-related_panels: [Figure 3c, Figure 3d, Figure 3e, Figure 3f, Figure 3g, Figure 3h, Figure 3i, Figure 3j, Figure 3k]
-reproduction_status: tutorial_scale_not_numerically_validated
-validation_record: reproducibility/validation/figure3_validation.yaml
-not_reproduced:
-  Figure 3c-f: Hosted notebook uses one split, one method, 30 epochs, seed 1 and at most 3,000 cells; the manuscript uses five splits and all comparison methods.
-  Figure 3g: Hosted notebook renders an annotation heatmap rather than the manuscript schematic.
-  Figure 3h: Hosted notebook uses one newly trained SMITH panel per size; the manuscript comparison requires the exact manuscript panels for all methods.
-  Figure 3i: Hosted notebook contains SMITH only; the manuscript panel compares SMITH with PERSIST over repeated runs.
-  Figure 3j: The overall correlation of 0.38 has been reproduced, but visual identity with the manuscript panel has not been validated.
-  Figure 3k: Hosted notebook uses one split and SMITH only; the manuscript panel includes SMITH and PERSIST-class over five repeats.
+- path: regulatory_activity/elegans/splits/elegans_tf/split_1/train.h5ad
+  kind: data
+  bytes: 171431555
+  sha256: 6b7bfa064ed119bf6e1891c88550894db94d454c99837d7ae53defbd3dbf4fcc
+- path: regulatory_activity/elegans/splits/elegans_tf/split_1/test.h5ad
+  kind: data
+  bytes: 115530989
+  sha256: 31ee972b9b5ad2131bd2f8cb80f5a0cae02b14e26dc2844fdff6495532bf871a
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_1/train.h5ad
+  kind: data
+  bytes: 39587756
+  sha256: 9240ad2e17a70cdb4de50351d1be03284d98e8dc4cca89fd9714f01fc7b89333
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_1/test.h5ad
+  kind: data
+  bytes: 27111860
+  sha256: 0d3b1311e8b4b86d4eb39bbcc1b9902e6675100ec4a8b5e70a0e942cf8b413c1
+- path: regulatory_activity/elegans/splits/elegans_tf/split_2/train.h5ad
+  kind: data
+  bytes: 171603487
+  sha256: f1540f5f56da82e25d6936870193e26ea67d646365c3bd05ae0bee81216fd441
+- path: regulatory_activity/elegans/splits/elegans_tf/split_2/test.h5ad
+  kind: data
+  bytes: 115313553
+  sha256: e16b550418dff083326ba2b644a45c0a539a9d738bf8b34b6d8cd731cbe93b63
+- path: regulatory_activity/elegans/splits/elegans_tf/split_3/train.h5ad
+  kind: data
+  bytes: 173802951
+  sha256: 36e52417f61f9ee7828e48c9ebcad2acb29c89ac9e7b28f6922bb95919d0d6ef
+- path: regulatory_activity/elegans/splits/elegans_tf/split_3/test.h5ad
+  kind: data
+  bytes: 113140601
+  sha256: bf3ebab0737a111c3da3f400f35ce719a7f88294d507965b66ca12c0e53eebdc
+- path: regulatory_activity/elegans/splits/elegans_tf/split_4/train.h5ad
+  kind: data
+  bytes: 168778897
+  sha256: 7c6659f4526fce9a9c015aa5dc9240a9162c427a36a30b969eca2ca2f141f95f
+- path: regulatory_activity/elegans/splits/elegans_tf/split_4/test.h5ad
+  kind: data
+  bytes: 118182095
+  sha256: a324ef6e65940087a60b2aa53baf48110cbd5b44e279f35c9f18b3399c8a973d
+- path: regulatory_activity/elegans/splits/elegans_tf/split_5/train.h5ad
+  kind: data
+  bytes: 173296764
+  sha256: 572ce18ab500fa3ea51938e2711b007d46420af55c50259ecbd6caaa752e84b9
+- path: regulatory_activity/elegans/splits/elegans_tf/split_5/test.h5ad
+  kind: data
+  bytes: 113653988
+  sha256: 3e459c74417d7dc50a41abf4ce2a021a5736f5071bfb1d9f948f1fff51d664c2
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_2/train.h5ad
+  kind: data
+  bytes: 40292768
+  sha256: 24d3d8909eb02630c51445d130de4ca92473b439ee9f31691b866af143642be8
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_2/test.h5ad
+  kind: data
+  bytes: 26390448
+  sha256: 50d8a460a54b0d229faa46667b4469dc8466371e4154ad2a68c029dd10846be3
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_3/train.h5ad
+  kind: data
+  bytes: 40804672
+  sha256: bea0586858a8251fb2016323cf0e70cc8c40b3a04d92d23b00b00461e27c3250
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_3/test.h5ad
+  kind: data
+  bytes: 25910384
+  sha256: 07da0adf69a5d06bdcb4c598232e26c50150bc812768ad28178d08bf673d179e
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_4/train.h5ad
+  kind: data
+  bytes: 40318884
+  sha256: 44e1b3f4c00c98984edb2522a2f8425d43de139a7726f40c6d0a558530a72039
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_4/test.h5ad
+  kind: data
+  bytes: 26329428
+  sha256: 55417820eade3131cd1fa035bd8257bc8db91244d5d9faf557d1045d494531c8
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_5/train.h5ad
+  kind: data
+  bytes: 39937936
+  sha256: b29478519108c24d42b2c0a330b9b16ffbd5e0e4096d49810d6654d2a95b4926
+- path: regulatory_activity/elegans/splits/elegans_mirna/split_5/test.h5ad
+  kind: data
+  bytes: 26763128
+  sha256: e4632f404242345e2e50fe8acb7519fc9a2d150528d96ba06e18405bf2e1b3b0
+- path: regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
+  kind: data
+  bytes: 152768
+  sha256: d39d6c693464b184386e4c614d31c7cd3296ed137b46d3a234101fe812aae111
+- path: regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
+  kind: data
+  bytes: 1329105
+  sha256: 2f93647790211f438d3fec0d7201693fbde76ea49ed4831d62936658263555a1
+- path: regulatory_activity/elegans/reference/elegans_scrna.h5ad
+  kind: data
+  bytes: 745430695
+  sha256: 3e9e17fd2d43c7f4a11113320cdc54fd8eae1665e2f72341c85e85b18f6a367e
+outputs:
+- figure_data/figure3_c_d_values.tsv
+- figure_data/figure3_training_comparison.tsv
+- figure_data/figure3_g_module_annotations.tsv
+- figure_data/figure3_j_tf_scrna_correlation.tsv
+- figure_data/figure3_k_transfer.tsv
+- figures/figure3_c.*
+- figures/figure3_d.*
+- figures/figure3_g.*
+- figures/figure3_j.*
+- figures/figure3_k.*
+- run_manifest.json
+related_panels:
+- Figure 3c-d
+- Figure 3g
+- Figure 3j-k
 required_paper_inputs:
-  - regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
-  - regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
-  - regulatory_activity/elegans/reference/elegans_scrna.h5ad
+- regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv
+- regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
+- regulatory_activity/elegans/reference/elegans_scrna.h5ad
 full_workflow:
-  availability: public_data_external_download
-  data_ids: [elegans_scrna, elegans_tf_activity, elegans_mirna_activity, elegans_tf_modules, elegans_tf_regulatory_pairs]
+  availability: data_archive_pending_release
+  data_ids:
+  - elegans_scrna
+  - elegans_tf_activity
+  - elegans_mirna_activity
+  - elegans_tf_modules
+  - elegans_tf_regulatory_pairs
   source_scripts:
-    - reproducibility/workflows/regulatory_activity/run_tutorial.py
-    - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
-    - reproducibility/workflows/regulatory_activity/paper_analysis.py
+  - reproducibility/workflows/regulatory_activity/run_tutorial.py
+  - reproducibility/workflows/regulatory_activity/evaluate_outputs.py
+  - reproducibility/workflows/regulatory_activity/paper_analysis.py
+analysis_scope:
+  training_method: SMITH
+  training_splits: 5
+  reference_matches:
+    cell_type_and_time_points: 15
+    scRNA_transfer_points: 15
+  tf_scrna_mean_row_correlation: 0.3800585437653572
+figure_coverage:
+- Figure 3c-d
+- Figure 3g
+- Figure 3j-k

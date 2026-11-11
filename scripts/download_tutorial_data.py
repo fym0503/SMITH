@@ -109,8 +109,9 @@ def main() -> None:
     url = archive_spec.get("archive_url")
     if not url:
         raise RuntimeError(
-            f"The {args.case} archive has been prepared but not published. "
-            "Set archive_url and archive_sha256 after the Zenodo record is released."
+            f"No public archive URL is configured for {args.case}. "
+            f"Place the licensed input files at the paths listed in {args.manifest}, "
+            "then set --data-root to their parent directory."
         )
     data_root.mkdir(parents=True, exist_ok=True)
     archive = data_root / ".downloads" / archive_spec["archive_name"]

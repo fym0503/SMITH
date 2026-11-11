@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 import sys
 from pathlib import Path
@@ -531,9 +532,24 @@ def _handle_plot_evaluation_summary(runtime, arguments: dict[str, Any]) -> dict[
 
 
 def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str, Any]:
-    model_entry = runtime.registries.models["smith_default"]
+    requested_model = (arguments.get("model_id") or runtime.session.active_model_id or "TF_profile")
+    model_id = runtime.registries.resolve_model_id(str(requested_model))
+    if not model_id:
+        raise KeyError(f"Unknown SMITH model profile: {requested_model}")
+    model_entry = runtime.registries.models[model_id]
     entrypoint = _resolve_model_entrypoint(runtime, model_entry)
     smith_root = entrypoint.parent
+    task_profile = str(model_entry.metadata.get("tutorial_profile", model_id))
+    profile_parameters = dict(model_entry.metadata.get("parameters", {}))
+    source_manifest = str(model_entry.metadata.get("source_manifest", "")).strip()
+    if source_manifest:
+        manifest_path = _resolve_project_path(runtime.config, source_manifest)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in manifest.get("files", []):
+            source_path = manifest_path.parent / item["path"]
+            actual = hashlib.sha256(source_path.read_bytes()).hexdigest()
+            if actual != item["sha256"]:
+                raise ValueError(f"Model source checksum mismatch: {item['path']}")
     output_dir = Path(arguments.get("output_dir", runtime.working_dir / "smith_selection"))
     ensure_dir(output_dir)
     must_keep_genes = list(dict.fromkeys(str(gene).strip() for gene in arguments.get("must_keep_genes", []) if str(gene).strip()))
@@ -570,8 +586,14 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
     for key, caster in known_overrides.items():
         if key in arguments:
             resolved_overrides[key] = caster(arguments[key])
+            extra_args.pop(key, None)
         elif key in extra_args:
             resolved_overrides[key] = caster(extra_args.pop(key))
+        elif key in profile_parameters:
+            resolved_overrides[key] = caster(profile_parameters[key])
+    for key in ("balance_mode", "balance_cap"):
+        if key in profile_parameters:
+            extra_args.setdefault(key, profile_parameters[key])
     configured_python = str(model_entry.metadata.get("python_executable", "python3")).strip()
     # Keep model configs portable: a named interpreter may be absent on a
     # cluster, while the current agent process already has the right deps.
@@ -589,12 +611,12 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
         tasks=str(arguments["tasks"]),
         task_name=str(arguments["task_name"]),
         panel_size=int(arguments.get("panel_size", 64)),
-        epoch=int(arguments.get("epoch", 200)),
-        record=int(arguments.get("record", 50)),
+        epoch=int(arguments.get("epoch", profile_parameters.get("epoch", 200))),
+        record=int(arguments.get("record", profile_parameters.get("record", 50))),
         device=str(arguments.get("device", "cpu")),
-        seed=int(arguments.get("seed", 42)),
+        seed=int(arguments.get("seed", profile_parameters.get("seed", 42))),
         learning_rate=float(resolved_overrides.get("learning_rate", 0.001)),
-        batch_size=int(resolved_overrides.get("batch_size", 32)),
+        batch_size=int(resolved_overrides.get("batch_size", profile_parameters.get("batch_size", 32))),
         dim=int(resolved_overrides.get("dim", 32)),
         rep_dim=int(resolved_overrides.get("rep_dim", 32)),
         rep_hidden_dims=str(resolved_overrides.get("rep_hidden_dims", "32")),
@@ -604,6 +626,7 @@ def _handle_run_smith_selection(runtime, arguments: dict[str, Any]) -> dict[str,
         sigma=float(resolved_overrides.get("sigma", 0.5)),
         activation=str(resolved_overrides.get("activation", "tanh")),
         optimizer=str(resolved_overrides.get("optimizer", "Adam")),
+        task_profile=task_profile,
         prior_file=prior_file,
         forbidden_file=forbidden_file,
         extra_args=extra_args,
@@ -640,7 +663,11 @@ def _handle_build_decision_trace(runtime, arguments: dict[str, Any]) -> dict[str
 
 
 def _handle_evaluate_cross_dataset_panel(runtime, arguments: dict[str, Any]) -> dict[str, Any]:
-    model_entry = runtime.registries.models["smith_default"]
+    requested_model = arguments.get("model_id") or runtime.session.active_model_id or "smith_current"
+    model_id = runtime.registries.resolve_model_id(str(requested_model))
+    if not model_id:
+        raise KeyError(f"Unknown SMITH model profile: {requested_model}")
+    model_entry = runtime.registries.models[model_id]
     entrypoint = _resolve_model_entrypoint(runtime, model_entry)
     smith_root = entrypoint.parent
     results = evaluate_cross_dataset_panel(

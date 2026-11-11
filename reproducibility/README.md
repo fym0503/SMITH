@@ -1,21 +1,13 @@
-# SMITH reproducibility workflows
+# Reproducibility workflows
 
-The runnable cases start from real H5AD inputs and create fresh rankings, panels, metrics and run manifests. See `data_manifest.yaml` for external data and `workflows/` for portable entry points.
+This directory contains the input manifest, task-profile settings, reference metrics and runnable workflows for the TF activity, RIBOMap and liver MERFISH examples. The notebooks start from H5AD inputs and write panels, predictions, figures and run manifests.
 
-Historical aggregate tables are stored in `reference_outputs/` only for optional post-run comparison. They are not tutorial inputs. Controlled in-house disease data/workflows are excluded from the public package.
-
-For a completed multi-split C. elegans run, Figure 3h can be exported from the
-generated panel manifest with `scripts/compute_elegans_module_coverage.py`:
+## Check and run
 
 ```bash
-python scripts/compute_elegans_module_coverage.py \
-  --panels outputs/paper/regulatory/figure_data/generated_panels.tsv \
-  --module-file data/tutorials/regulatory_activity/elegans/annotations/tf_spatiotemporal_modules.tsv \
-  --output outputs/paper/regulatory/figure_data/figure3_h_module_miss_rate.tsv
+smith-repro list
+smith-repro check --data-root data/tutorials
+smith-repro run 03_ribomap_transfer --data-root data/tutorials
 ```
 
-The command requires the full method/split/seed/panel-size grid by default and
-fails explicitly when a panel is missing. Grid completeness alone does not
-establish manuscript equivalence; compare the resulting values and rendered
-structure against `validation/figure3_validation.yaml` before calling a panel
-reproduced.
+Expected input paths, file sizes and checksums are listed in `data_manifest.yaml`. H5AD data bundles are managed separately from the Git repository.

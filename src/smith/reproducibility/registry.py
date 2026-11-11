@@ -22,6 +22,8 @@ class ReproducibilityCase:
     data_access: str
     summary: str
     claim: str
+    figure_coverage: tuple[str, ...]
+    analysis_scope: dict[str, Any]
     inputs: tuple[dict[str, Any], ...]
     outputs: tuple[str, ...]
     full_workflow: dict[str, Any]
@@ -38,10 +40,12 @@ class ReproducibilityCase:
             "data_access": self.data_access,
             "summary": self.summary,
             "claim": self.claim,
+            "figure_coverage": list(self.figure_coverage),
+            "analysis_scope": self.analysis_scope,
             "inputs": list(self.inputs),
             "outputs": list(self.outputs),
             "full_workflow": self.full_workflow,
-            "manifest_path": str(self.manifest_path),
+            "manifest_path": self.manifest_path.name,
         }
 
 
@@ -71,6 +75,8 @@ def load_cases(root: str | Path | None = None) -> dict[str, ReproducibilityCase]
             data_access=str(payload["data_access"]),
             summary=str(payload["summary"]),
             claim=str(payload["claim"]),
+            figure_coverage=tuple(str(item) for item in payload.get("figure_coverage", [])),
+            analysis_scope=dict(payload.get("analysis_scope", {})),
             inputs=tuple(payload.get("inputs", [])),
             outputs=tuple(str(item) for item in payload.get("outputs", [])),
             full_workflow=dict(payload.get("full_workflow", {})),

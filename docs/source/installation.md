@@ -1,6 +1,6 @@
 # Installation
 
-SMITH requires Python 3.10 or newer. Install the source checkout in an isolated environment:
+SMITH requires Python 3.10 or newer. Create an isolated environment and install the package from a checkout:
 
 ```bash
 python -m venv .venv
@@ -9,19 +9,18 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-For documentation and tests:
+For notebook development and plotting, install the notebook extra:
 
 ```bash
-python -m pip install -e '.[dev,docs]'
+python -m pip install -e '.[notebooks]'
 ```
 
-Verify the optimizer, Agent registry and reproducibility layer:
+Check the installation and available workflows:
 
 ```bash
 smith-cli models
 smith-repro list
-smith-repro check
 python -m pytest -q tests
 ```
 
-ODT/SCRINSHOT, OligoMiner, PaintSHOP and ProbeDealer full screens require backend-specific executables, indexes and reference assets. Their absence does not prevent core SMITH training or the compact paper examples from running.
+External probe-design workflows need their respective executables, reference indexes and sequence files. Configure these with the environment variables described in the Agent backend settings.

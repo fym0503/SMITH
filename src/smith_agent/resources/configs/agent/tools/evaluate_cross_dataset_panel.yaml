@@ -1,5 +1,6 @@
 name: evaluate_cross_dataset_panel
-description: Evaluate a selected panel across a training AnnData and a separate test AnnData using SMITH split metrics.
+description: Evaluate a selected panel across a training AnnData and a separate test
+  AnnData using SMITH split metrics.
 domain: evaluation
 input_schema:
   panel_path:
@@ -10,6 +11,8 @@ input_schema:
     type: string
   panel_size:
     type: integer
+  model_id:
+    type: string
   label:
     type: string
   obsm_key:
@@ -17,6 +20,6 @@ input_schema:
   time_label:
     type: string
 outputs:
-  - cross_dataset_evaluation.csv
+- cross_dataset_evaluation.csv
 metadata:
   handler: evaluate_cross_dataset_panel

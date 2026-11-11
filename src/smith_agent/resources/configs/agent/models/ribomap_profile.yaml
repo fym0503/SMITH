@@ -1,0 +1,15 @@
+id: ribomap_profile
+backend: smith
+entrypoint: backends/paper_20260428/main.py
+description: RIBOMap cross-modality transfer profile with the recorded paper training
+  and evaluation settings.
+capabilities:
+- panel_selection
+- cross_modality_transfer
+aliases:
+- ribomap
+metadata:
+  python_executable: python
+  tutorial_profile: ribomap_profile
+  training_profile: ribomap_profile
+  source_manifest: backends/paper_20260428/source_manifest.json

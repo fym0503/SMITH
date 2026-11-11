@@ -10,8 +10,24 @@ input_schema:
     type: string
   panel_size:
     type: integer
+  model_id:
+    type: string
   execute:
     type: boolean
+  epoch:
+    type: integer
+  record:
+    type: integer
+  batch_size:
+    type: integer
+  device:
+    type: string
+  seed:
+    type: integer
+  output_dir:
+    type: string
+  extra_args:
+    type: object
   time_label:
     type: string
   spatial_key:
@@ -25,6 +41,6 @@ input_schema:
     items:
       type: string
 outputs:
-  - smith_run_manifest.json
+- smith_run_manifest.json
 metadata:
   handler: run_smith_selection

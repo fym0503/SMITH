@@ -1,4 +1,6 @@
 from importlib import resources
+import hashlib
+import json
 from pathlib import Path
 import sys
 
@@ -17,9 +19,10 @@ def test_agent_registry_loads_from_packaged_config():
     config = load_agent_config(repo / "configs" / "agent" / "agent.yaml")
     registries = load_registries(config)
     assert "run_smith_selection" in registries.tools
-    assert "smith_default" in registries.models
+    assert set(registries.models) == {"ribomap_profile", "Agent_profile", "TF_profile"}
+    assert registries.resolve_model_id("smith_default") == "TF_profile"
     assert len(registries.datasets) >= 1
-    assert registries.models["smith_default"].entrypoint == "scripts/main.py"
+    assert registries.models["TF_profile"].entrypoint == "reproducibility/backends/paper_20260428/main.py"
 
 
 def test_dataset_registry_uses_portable_paths():
@@ -27,9 +30,9 @@ def test_dataset_registry_uses_portable_paths():
     config = load_agent_config(repo / "configs" / "agent" / "agent.yaml")
     registries = load_registries(config)
     for entry in registries.datasets.values():
-        assert not entry.path.startswith("/workspace/fanyimin")
+        assert not Path(entry.path).is_absolute()
         assert entry.metadata.get("data_status") == "external_not_packaged"
-        assert entry.metadata.get("original_local_path", "").startswith("/workspace/fanyimin/")
+        assert "original_local_path" not in entry.metadata
 
 def test_packaged_resource_config_loads(monkeypatch, tmp_path):
     resource_root = Path(str(resources.files("smith_agent.resources")))
@@ -43,7 +46,7 @@ def test_packaged_resource_config_loads(monkeypatch, tmp_path):
     assert config.tools_dir == resource_root / "configs" / "agent" / "tools"
     assert config.external_roots["smith_unified_root"] == resource_root.resolve()
     assert "run_smith_selection" in registries.tools
-    assert "smith_default" in registries.models
+    assert set(registries.models) == {"ribomap_profile", "Agent_profile", "TF_profile"}
 
 
 def test_model_entrypoint_resolves_from_packaged_resources(monkeypatch, tmp_path):
@@ -55,10 +58,18 @@ def test_model_entrypoint_resolves_from_packaged_resources(monkeypatch, tmp_path
     monkeypatch.setenv("SMITH_RUNTIME_ROOT", str(tmp_path))
 
     runtime = build_runtime(config_path=config_path)
-    entrypoint = _resolve_model_entrypoint(runtime, runtime.registries.models["smith_default"])
+    entrypoint = _resolve_model_entrypoint(runtime, runtime.registries.models["TF_profile"])
 
-    assert entrypoint == resource_root / "scripts" / "main.py"
+    assert entrypoint == resource_root / "backends" / "paper_20260428" / "main.py"
     assert entrypoint.exists()
+    for profile in ("ribomap_profile", "Agent_profile"):
+        paper_entrypoint = _resolve_model_entrypoint(runtime, runtime.registries.models[profile])
+        assert paper_entrypoint == resource_root / "backends" / "paper_20260428" / "main.py"
+        assert paper_entrypoint.exists()
+        paper_manifest = paper_entrypoint.parent / "source_manifest.json"
+        assert paper_manifest.exists()
+        for item in json.loads(paper_manifest.read_text())["files"]:
+            assert hashlib.sha256((paper_entrypoint.parent / item["path"]).read_bytes()).hexdigest() == item["sha256"]
 
 
 def test_smith_selection_falls_back_to_current_python(monkeypatch, tmp_path):
@@ -87,3 +98,28 @@ def test_smith_selection_falls_back_to_current_python(monkeypatch, tmp_path):
     )
 
     assert captured["python_executable"] == sys.executable
+
+
+def test_selection_explicit_batch_size_wins_over_extra_args(monkeypatch, tmp_path):
+    from smith_agent.runtime import build_runtime
+    from smith_agent.tools import defaults
+    from smith_agent.adapters.smith_runner import build_smith_command
+
+    resource_root = Path(str(resources.files('smith_agent.resources')))
+    monkeypatch.setenv('SMITH_RUNTIME_ROOT', str(tmp_path))
+    runtime = build_runtime(config_path=resource_root / 'configs/agent/agent.yaml')
+    captured = {}
+
+    def capture(config, execute=False):
+        captured['command'] = build_smith_command(config)
+        return {'manifest_path': str(tmp_path / 'manifest.json'), 'status': 'planned'}
+
+    monkeypatch.setattr(defaults, 'run_smith_selection', capture)
+    defaults._handle_run_smith_selection(runtime, {
+        'adata_file': str(tmp_path / 'input.h5ad'), 'tasks': 'recon',
+        'task_name': 'check', 'batch_size': 32,
+        'extra_args': {'batch_size': 4096}, 'execute': False,
+    })
+    command = captured['command']
+    assert command.count('--batch_size') == 1
+    assert command[command.index('--batch_size') + 1] == '32'
