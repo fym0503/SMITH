@@ -1,6 +1,6 @@
 # Data Directory
 
-Large SMITH benchmark datasets are not included in this clean package.
+Store input H5AD files here. Tutorial paths and checksums are listed in `reproducibility/data_manifest.yaml`.
 
 Place external H5AD files under this directory when you want to run the packaged examples. The agent dataset registry uses these relative paths by default:
 

@@ -16,7 +16,7 @@ from smith_agent.adapters.feasibility_backends import run_probedealer_backend_sc
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.run_top128_feasibility_filtering import (
+from scripts.agent_examples.run_top128_feasibility_filtering import (
     HUMAN_REFERENCE_DIR,
     SMITH_PACKAGE_ROOT,
     build_local_probe_candidate_manifest,

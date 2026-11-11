@@ -1,13 +1,16 @@
 anndata
 biopython
 h5py
+matplotlib>=3.8
 numpy
+openpyxl>=3.1
 pandas
 prompt-toolkit>=3.0
 pyyaml
 requests
 rich>=13.0
 scikit-learn
+scanpy
 scipy
 torch
 tqdm

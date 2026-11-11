@@ -1,8 +1,4 @@
-"""In-memory analysis helpers for the manuscript's Agent feasibility panels.
-
-The backend runners may materialize audit files, but these functions consume the
-freshly returned tables and never use a reference output as an analysis input.
-"""
+"""Summarize probe-screen tables for the Agent feasibility panels."""
 
 from __future__ import annotations
 

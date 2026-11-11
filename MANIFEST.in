@@ -20,3 +20,7 @@ recursive-include reproducibility/reference_outputs *.csv *.tsv *.json *.md
 recursive-include src/smith_agent/resources/configs *.yaml
 recursive-include src/smith_agent/resources/manifests *.tsv *.md
 recursive-include src/smith_agent/resources/scripts *.py *.md
+prune docs/_build
+prune docs/source/_build
+prune docs/source/.jupyter_cache
+global-exclude .DS_Store ._* *.py[cod]

@@ -119,3 +119,12 @@ def test_selection_explicit_batch_size_wins_over_extra_args(monkeypatch, tmp_pat
     command = captured['command']
     assert command.count('--batch_size') == 1
     assert command[command.index('--batch_size') + 1] == '32'
+
+
+def test_packaged_registries_match_source():
+    import yaml
+    root = Path(__file__).resolve().parents[1]
+    resource_root = root / 'src/smith_agent/resources'
+    for source in (root / 'configs/agent').rglob('*.yaml'):
+        packaged = resource_root / source.relative_to(root)
+        assert yaml.safe_load(source.read_text()) == yaml.safe_load(packaged.read_text()), source

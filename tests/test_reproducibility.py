@@ -120,16 +120,19 @@ def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
     )
 
 
-def test_agent_manifest_exposes_reproducibility_and_full_archives():
+def test_agent_download_and_archive_include_all_tutorial_inputs():
+    from scripts.download_tutorial_data import file_specs
+    from scripts.publish_tutorial_data import selected_packages
     root = Path(__file__).resolve().parents[1]
-    manifest = yaml.safe_load((root / "reproducibility" / "data_manifest.yaml").read_text())
-    variants = manifest["cases"]["05_agent"]["archive_variants"]
-    assert set(variants) == {"reproducibility", "full"}
-    assert len(case_files(manifest["cases"]["05_agent"], "reproducibility")) == 4
-    assert len(case_files(manifest["cases"]["05_agent"], "full")) == 8
-    assert variants["reproducibility"]["prepared_archive_sha256"] != variants["full"]["prepared_archive_sha256"]
-    with pytest.raises(ValueError, match="choose --variant"):
-        case_files(manifest["cases"]["05_agent"])
+    manifest = yaml.safe_load((root / "reproducibility/data_manifest.yaml").read_text())
+    case = manifest["cases"]["05_agent"]
+    files = case_files(case)
+    assert len(files) == 8
+    assert file_specs(case) == files
+    assert len([f for f in files if "/references/" in f["path"]]) == 5
+    assert selected_packages(manifest, ["05_agent"]) == [("05_agent", case)]
+    required = {f["path"] for f in load_cases()["05_agent"].inputs}
+    assert required <= {f["path"] for f in files}
 
 
 def test_safe_extract_rejects_path_traversal(tmp_path: Path):
@@ -143,7 +146,7 @@ def test_safe_extract_rejects_path_traversal(tmp_path: Path):
         safe_extract(archive, tmp_path / "extract")
 
 
-def test_notebooks_call_workflows_and_do_not_read_reference_outputs():
+def test_notebooks_train_panels_and_load_documented_reference_tables():
     root = Path(__file__).resolve().parents[1]
     sources = sorted(
         path for path in (root / "docs" / "source" / "tutorials" / "notebooks").glob("**/*_source.ipynb")
@@ -355,7 +358,6 @@ def test_ribomap_plot_has_no_placeholder_panel():
 
 def test_plotters_export_independent_manuscript_panels():
     root = Path(__file__).resolve().parents[1]
-    notebook_builder = (root / "scripts" / "build_tutorial_notebooks.py").read_text()
     expected = {
         "regulatory_activity/plot_figure3.py": ["figure3_c", "figure3_d", "figure3_e", "figure3_f", "figure3_g", "figure3_h", "figure3_i", "figure3_j", "figure3_k"],
         "ribomap_transfer/plot_figure4.py": [
@@ -373,7 +375,7 @@ def test_plotters_export_independent_manuscript_panels():
             assert f'outputs[f"{dynamic_prefix}_{{letter}}"]' in text
         for stem in stems:
             suffix = stem.rsplit("_", 1)[-1]
-            assert stem in text or f'outputs[f"{dynamic_prefix}_{{letter}}"]' in text or stem in notebook_builder
+            assert stem in text or f'outputs[f"{dynamic_prefix}_{{letter}}"]' in text
 
 
 def test_ribomap_analysis_formulas_are_manuscript_defined():
@@ -768,3 +770,18 @@ def test_repro_cli_accepts_options_after_case_and_forwards_workflow_args(monkeyp
         "extra": ["--training-seeds", "1,2,3,4,5"],
     }
     assert '"status": "completed"' in capsys.readouterr().out
+
+
+def test_notebook_validation_rejects_stale_sources_and_failed_outputs():
+    from scripts.build_tutorial_notebooks import validate_pair
+    source = nbformat.v4.new_notebook(cells=[nbformat.v4.new_code_cell('x = 1')])
+    executed = nbformat.from_dict(source)
+    validate_pair(source, executed)
+    stale = nbformat.v4.new_notebook(cells=[nbformat.v4.new_code_cell('x = 2')])
+    with pytest.raises(ValueError, match='differ'):
+        validate_pair(source, stale)
+    failed = nbformat.v4.new_notebook(cells=[nbformat.v4.new_code_cell('x = 1', outputs=[
+        nbformat.v4.new_output('error', ename='RuntimeError', evalue='failed', traceback=[])
+    ])])
+    with pytest.raises(ValueError, match='failed cell'):
+        validate_pair(source, failed)

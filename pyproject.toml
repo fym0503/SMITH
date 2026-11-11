@@ -51,9 +51,6 @@ Issues = "https://github.com/fym0503/SMITH/issues"
 dev = [
   "pytest",
 ]
-scanpy = [
-  "scanpy",
-]
 cellxgene = [
   "cellxgene-census>=1.17",
   "tiledbsoma>=1.15.3",
@@ -70,10 +67,8 @@ docs = [
 notebooks = [
   "ipykernel>=6.29",
   "jupyterlab>=4.0",
-  "matplotlib>=3.8",
   "nbclient>=0.10",
   "nbformat>=5.10",
-  "scanpy",
 ]
 
 [project.scripts]
@@ -97,7 +92,6 @@ include = ["smith", "smith.*", "smith_agent", "smith_agent.*"]
   "configs/*.json",
 ]
 "smith_agent.resources" = [
-  "requirements.txt",
   "configs/agent/*.yaml",
   "configs/agent/*/*.yaml",
   "scripts/main.py",

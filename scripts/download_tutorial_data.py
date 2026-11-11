@@ -52,30 +52,13 @@ def download(url: str, destination: Path) -> None:
     partial.replace(destination)
 
 
-def selected_variant(case: dict, variant: str | None) -> tuple[dict, str | None]:
-    variants = case.get("archive_variants", {})
-    if not variants:
-        if variant is not None:
-            raise ValueError(f"Case has no archive variants; remove --variant {variant!r}")
-        return case, None
-    selected = variant or "reproducibility"
-    if selected not in variants:
-        raise KeyError(f"Unknown archive variant {selected!r}; choose {', '.join(sorted(variants))}")
-    return variants[selected], selected
+def file_specs(case: dict) -> list[dict]:
+    return list(case.get("files", [])) + list(case.get("paper_inputs", {}).get("files", []))
 
 
-def file_specs(case: dict, variant: str | None = None) -> list[dict]:
-    archive_spec, selected = selected_variant(case, variant)
-    if selected is not None:
-        return list(archive_spec.get("files", []))
-    specs = list(case.get("files", []))
-    specs.extend(case.get("paper_inputs", {}).get("files", []))
-    return specs
-
-
-def verify_files(case: dict, data_root: Path, variant: str | None = None) -> list[str]:
+def verify_files(case: dict, data_root: Path) -> list[str]:
     errors = []
-    for spec in file_specs(case, variant):
+    for spec in file_specs(case):
         path = data_root / spec["path"]
         if not path.is_file():
             errors.append(f"missing: {path}")
@@ -90,8 +73,6 @@ def verify_files(case: dict, data_root: Path, variant: str | None = None) -> lis
 def main() -> None:
     parser = argparse.ArgumentParser(description="Download and verify a versioned SMITH tutorial data archive.")
     parser.add_argument("--case", required=True)
-    parser.add_argument("--variant", choices=("reproducibility", "full"), default=None,
-                        help="Data package variant; defaults to reproducibility when available.")
     parser.add_argument("--data-root", default="data/tutorials")
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--force", action="store_true")
@@ -100,9 +81,9 @@ def main() -> None:
     if args.case not in manifest["cases"]:
         raise KeyError(f"Unknown tutorial case: {args.case}")
     case = manifest["cases"][args.case]
-    archive_spec, selected_variant_name = selected_variant(case, args.variant)
+    archive_spec = case
     data_root = Path(args.data_root).resolve()
-    existing_errors = verify_files(case, data_root, selected_variant_name)
+    existing_errors = verify_files(case, data_root)
     if not existing_errors:
         print(f"All files for {args.case} already exist and pass checksum validation.")
         return
@@ -123,7 +104,7 @@ def main() -> None:
     if expected and sha256(archive) != expected:
         archive.unlink(missing_ok=True)
         raise ValueError(f"Archive checksum mismatch for {archive}")
-    staging_name = args.case if selected_variant_name is None else f"{args.case}-{selected_variant_name}"
+    staging_name = args.case
     staging = data_root / ".extracting" / staging_name
     if staging.exists():
         shutil.rmtree(staging)
@@ -140,7 +121,7 @@ def main() -> None:
             shutil.move(str(child), target)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
-    errors = verify_files(case, data_root, selected_variant_name)
+    errors = verify_files(case, data_root)
     if errors:
         raise ValueError("Data verification failed:\n" + "\n".join(errors))
     print(f"Downloaded and verified {args.case} under {data_root}")

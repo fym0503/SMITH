@@ -5,16 +5,12 @@ manuscript_section: SMITH-Agent Connects Panel Optimization to Probe-Level Assay
 figure: Figure 6c-d and 6f-g
 runtime: Five training seeds across the source and five spatial references; runtime
   depends on hardware.
-data_access: H5AD inputs and archive variants are listed in reproducibility/data_manifest.yaml.
+data_access: Complete H5AD inputs are listed in reproducibility/data_manifest.yaml.
 summary: Trains source and spatial-reference models across five seeds, combines rankings
   with fixed source/reference weights, and evaluates panels in MERFISH. Probe-screen
   figures use the recorded screen outputs.
 claim: Spatial-reference rankings improve MERFISH cell-identity accuracy and expression
   support at larger panel sizes.
-archives:
-  reproducibility: Four hosted-notebook inputs (snRNA-seq, MERFISH and two representative
-    Visium references), about 2 GB compressed.
-  full: All five spatial references and the candidate universe for probe screening.
 inputs:
 - path: agent/liver_merfish/adata_healthy_nucseq.h5ad
   kind: data

@@ -1,4 +1,4 @@
-```{image} _static/brand/SMITH_illu.png
+```{image} ../../SMITH_illu.png
 :alt: SMITH logo showing target selection from a spatial reference
 :width: 900px
 :align: center

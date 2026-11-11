@@ -76,9 +76,8 @@ def probe_property_screen_loaded(
 ) -> dict[str, Any]:
     """Resolve current panel transcripts and run the local ProbeDealer screen.
 
-    This is a sequence-property/deployment screen, not a transcriptome-wide
-    specificity result.  The returned DataFrame comes from the backend invoked
-    in this function and is never loaded from a prior tutorial run.
+    Returns sequence-property and deployment checks. Transcriptome-wide
+    specificity is evaluated by the full reference-screening workflow.
     """
     from smith_agent.adapters.probedealer_adapter import run_probedealer_screen_light
     from smith_agent.bridge.transcripts import build_probe_candidate_manifest

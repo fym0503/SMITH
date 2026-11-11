@@ -51,6 +51,7 @@ jobs:
               assert not any("/reproducibility/validation/" in name for name in names)
               assert not any("/outputs/" in name and not name.endswith("/outputs/.gitkeep") for name in names)
               assert not any("/sessions/" in name for name in names)
+              assert not any("/_build/" in name or "/.jupyter_cache/" in name for name in names)
               text_names = [name for name in names if name.endswith((".yaml", ".yml", ".md", ".json", ".tsv", ".py"))]
               for name in text_names:
                   if name in names and not name.endswith("/"):
@@ -63,6 +64,7 @@ jobs:
               assert any("smith_agent/resources/configs/agent/models/Agent_profile.yaml" in name for name in names)
               assert any("smith_agent/resources/configs/agent/models/ribomap_profile.yaml" in name for name in names)
               assert not any("agent_examples" in name for name in names)
+              assert not any("resources/backends/" in name for name in names)
               assert not any("__pycache__" in name for name in names)
           print(f"Inspected {sdist.name} and {wheel.name}")
           PY

@@ -13,10 +13,6 @@ input_schema:
   use_transcriptome_reference:
     type: boolean
     default: true
-  use_full_mouse_reference:
-    type: boolean
-    default: true
-    deprecated: true
 outputs:
   - probedealer_summary_tsv
 metadata:

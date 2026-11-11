@@ -31,49 +31,23 @@ def request_json(session: requests.Session, method: str, url: str, **kwargs: Any
     return response.json() if response.content else {}
 
 
-def selected_packages(manifest: dict[str, Any], package_args: list[str] | None) -> list[tuple[str, str | None, dict[str, Any]]]:
-    """Resolve upload packages as (case id, variant, archive metadata)."""
+def selected_packages(manifest: dict[str, Any], package_args: list[str] | None) -> list[tuple[str, dict[str, Any]]]:
+    """Resolve upload packages as (case id, archive metadata)."""
     cases = manifest.get("cases", {})
-    if not package_args:
-        result = []
-        for case_id, case in cases.items():
-            variants = case.get("archive_variants", {})
-            if variants:
-                raise ValueError(
-                    f"Case {case_id} has multiple archives; pass --package {case_id}:reproducibility "
-                    f"and/or --package {case_id}:full explicitly."
-                )
-            result.append((case_id, None, case))
-        return result
-    result = []
-    for value in package_args:
-        if ":" in value:
-            case_id, variant = value.split(":", 1)
-        else:
-            case_id, variant = value, None
+    selected = package_args or list(cases)
+    for case_id in selected:
         if case_id not in cases:
             raise KeyError(f"Unknown tutorial case: {case_id}")
-        case = cases[case_id]
-        variants = case.get("archive_variants", {})
-        if variants:
-            variant = variant or "reproducibility"
-            if variant not in variants:
-                raise KeyError(f"Unknown archive variant {case_id}:{variant}")
-            result.append((case_id, variant, variants[variant]))
-        else:
-            if variant is not None:
-                raise ValueError(f"Case {case_id} has no archive variants")
-            result.append((case_id, None, case))
-    return result
+    return [(case_id, cases[case_id]) for case_id in selected]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Publish the versioned SMITH tutorial archives to Zenodo.")
     parser.add_argument("--archive-dir", required=True, help="Directory containing archives from build_tutorial_archives.py.")
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
-    parser.add_argument("--package", action="append", help="Upload package as CASE[:VARIANT]; repeat for multiple archives.")
+    parser.add_argument("--package", action="append", help="Tutorial case ID; repeat to upload multiple complete archives.")
     parser.add_argument("--token-env", default="ZENODO_TOKEN")
-    parser.add_argument("--title", default="SMITH tutorial data release 2026.08")
+    parser.add_argument("--title", default="SMITH tutorial data")
     parser.add_argument("--sandbox", action="store_true", help="Use sandbox.zenodo.org instead of zenodo.org.")
     parser.add_argument("--publish", action="store_true", help="Publish the deposition after all uploads succeed.")
     parser.add_argument("--deposition-id", type=int, help="Resume an existing unpublished Zenodo deposition.")
@@ -92,7 +66,7 @@ def main() -> None:
     if not cases:
         raise ValueError("The manifest contains no tutorial cases.")
     packages = selected_packages(manifest, args.package)
-    pending = [case_id for case_id, _, _ in packages if cases[case_id].get("upstream_license") == "pending_verification"]
+    pending = [case_id for case_id, _ in packages if cases[case_id].get("upstream_license") == "pending_verification"]
     if pending and not args.allow_pending_license:
         raise RuntimeError(
             "Upstream licenses are still pending for: " + ", ".join(pending) + ". "
@@ -101,20 +75,20 @@ def main() -> None:
 
     token = os.environ.get(args.token_env)
     if not token:
-        raise RuntimeError(f"Set {args.token_env} in the environment; no token was read from disk or committed files.")
+        raise RuntimeError(f"Set {args.token_env} in the environment.")
 
     host = "https://sandbox.zenodo.org" if args.sandbox else "https://zenodo.org"
     api = f"{host}/api"
     archive_dir = Path(args.archive_dir).resolve()
-    archives: list[tuple[str, str | None, Path, dict[str, Any]]] = []
-    for case_id, variant, package in packages:
+    archives: list[tuple[str, Path, dict[str, Any]]] = []
+    for case_id, package in packages:
         archive = archive_dir / package["archive_name"]
         if not archive.is_file():
             raise FileNotFoundError(archive)
         expected = package.get("prepared_archive_sha256") or package.get("archive_sha256")
         if expected and sha256(archive) != expected:
             raise ValueError(f"Archive checksum mismatch: {archive}")
-        archives.append((case_id, variant, archive, package))
+        archives.append((case_id, archive, package))
 
     session = requests.Session()
     session.params = {"access_token": token}
@@ -141,15 +115,15 @@ def main() -> None:
         )
     deposition_id = deposition["id"]
     bucket = deposition["links"]["bucket"]
-    uploaded: list[tuple[str, str | None, dict[str, Any]]] = []
+    uploaded: list[tuple[str, dict[str, Any]]] = []
     try:
-        for case_id, variant, archive, package in archives:
+        for case_id, archive, package in archives:
             with archive.open("rb") as handle:
                 file_response = session.put(
                     f"{bucket}/{archive.name}", data=handle, timeout=(30, args.upload_timeout)
                 )
             file_response.raise_for_status()
-            uploaded.append((case_id, variant, {
+            uploaded.append((case_id, {
                 "archive_url": f"{host}/records/{deposition_id}/files/{archive.name}",
                 "archive_sha256": sha256(archive),
                 "prepared_archive_bytes": archive.stat().st_size,
@@ -169,11 +143,8 @@ def main() -> None:
     manifest["zenodo_record_url"] = f"{host}/records/{record_id}"
     manifest["zenodo_record_id"] = record_id
     manifest["publication_status"] = "published" if args.publish else "uploaded_unpublished"
-    for case_id, variant, values in uploaded:
-        if variant is None:
-            manifest["cases"][case_id].update(values)
-        else:
-            manifest["cases"][case_id]["archive_variants"][variant].update(values)
+    for case_id, values in uploaded:
+        manifest["cases"][case_id].update(values)
     manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False, allow_unicode=False), encoding="utf-8")
     print(f"Zenodo record: {manifest['zenodo_record_url']}")
     print(f"Manifest updated: {manifest_path}")
