@@ -16,10 +16,9 @@ command-oriented interface):
 python -m pip install -e .
 ```
 
-Configure an OpenAI-compatible planner to route natural-language requests. Registry tools can also be invoked directly:
+Set your OpenAI model and API key to route natural-language requests. Registry tools can also be invoked directly:
 
 ```bash
-export OPENAI_BASE_URL=https://api.babelark.com/v1
 export OPENAI_MODEL="your-model-id"
 read -r -s -p "API key: " OPENAI_API_KEY
 export OPENAI_API_KEY

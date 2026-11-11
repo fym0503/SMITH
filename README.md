@@ -97,17 +97,16 @@ smith-cli --config configs/agent/agent.yaml tools
 smith-cli --config configs/agent/agent.yaml shell
 ```
 
-For natural-language planning, configure an OpenAI-compatible endpoint and model before starting the shell:
+For natural-language planning, set your OpenAI model and API key before starting the shell:
 
 ```bash
-export OPENAI_BASE_URL="https://your-provider.example/v1"
 export OPENAI_MODEL="your-model-id"
 read -r -s -p "API key: " OPENAI_API_KEY
 export OPENAI_API_KEY
 smith-agent
 ```
 
-Replace the example URL and model ID with your provider's values. The bundled endpoint defaults to `https://api.babelark.com/v1`; set `OPENAI_BASE_URL` explicitly for another provider. The startup dashboard shows whether planner settings are present; connectivity is checked when a request is made.
+Replace `your-model-id` with the OpenAI model you want to use.
 
 Use `/help`, `/models`, `/tools` and `/status` to inspect the session. Enter `@/absolute/path/to/input.h5ad` to mount your data. Dataset registry entries need their corresponding H5AD files; probe-design tools also need their external backends and reference indexes. See [`configs/agent/`](configs/agent/) for registry entries.
 

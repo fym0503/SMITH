@@ -21,7 +21,7 @@ def _normalize_base_url(value: str) -> str:
 class LLMSettings:
     provider: str = "openai"
     model: str = ""
-    base_url: str = "https://api.babelark.com/v1"
+    base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     api_key: str = ""
     temperature: float = 0.2
@@ -150,7 +150,7 @@ def load_agent_config(config_path: str | Path | None = None) -> AgentConfig:
     llm = LLMSettings(
         provider=str(llm_payload.get("provider", "openai")),
         model=str(os.environ.get("OPENAI_MODEL", llm_payload.get("model", ""))),
-        base_url=_normalize_base_url(str(os.environ.get("OPENAI_BASE_URL", llm_payload.get("base_url", "https://api.babelark.com/v1")))),
+        base_url=_normalize_base_url(str(os.environ.get("OPENAI_BASE_URL", llm_payload.get("base_url", "https://api.openai.com/v1")))),
         api_key_env=str(llm_payload.get("api_key_env", "OPENAI_API_KEY")),
         api_key=str(llm_payload.get("api_key", "")),
         temperature=float(llm_payload.get("temperature", 0.2)),
