@@ -1,8 +1,7 @@
 schema_version: 1
-release_version: 2026.08
-zenodo_record_url: null
-publication_status: archives_prepared_links_pending
-license_note: Verify upstream data licenses before publishing the archive URLs.
+release_version: 2026.11.10
+zenodo_record_url: https://zenodo.org/records/24137308
+publication_status: published
 cases:
   02_regulatory_activity:
     title: C. elegans regulatory activity
@@ -180,3 +179,13 @@ cases:
     - path: agent/references/H35_sample2_visium.h5ad
       bytes: 1177683302
       sha256: 5ecf1f438d7647db591c48dd1febb6e253252c214f23ba9cdcfab191f30c3ecb
+zenodo_record_id: 24137308
+doi: 10.5281/zenodo.24137308
+complete_archive:
+  archive_name: SMITH_tutorial_complete_20261110.tar.gz
+  archive_url: https://zenodo.org/records/24137308/files/SMITH_tutorial_complete_20261110.tar.gz?download=1
+  archive_bytes: 7101594667
+  archive_sha256: 3f9d537ca061265c304bd8626cad3c2e0686a7ad578648ab03b5e9e6bfd14aee
+  archive_md5: 502502d92adf564085efffb637dd0891
+  archive_root: SMITH_tutorial_complete
+  unpacked_bytes: 11201531547

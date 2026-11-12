@@ -124,13 +124,21 @@ The tutorial notebooks walk through three biological settings:
 | `03_SMITH_RIBOMap_Transfer` | Transfer from Deep-RIBOmap and STARmap into RIBOMap |
 | `05_SMITH_Agent_Evaluation` | Liver panel design with spatial references and MERFISH evaluation |
 
-Read the rendered notebooks in the [tutorial documentation](https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html), or open their `_source.ipynb` companions for fresh runs:
+Read the [rendered tutorials](https://smith-panel-design.readthedocs.io/en/latest/tutorials/index.html), or run the `_source.ipynb` files locally.
+
+Download the complete data bundle from [Zenodo](https://doi.org/10.5281/zenodo.24137308) (7.10 GB download; about 11.2 GB of input data). One download supplies all three tutorials, including the five TF lineage splits and five liver spatial references.
+
+From the SMITH repository root, run:
 
 ```bash
+python scripts/download_tutorial_data.py --data-root data/tutorials
+export SMITH_TUTORIAL_DATA="$PWD/data/tutorials"
 jupyter lab docs/source/tutorials/notebooks
 ```
 
-Tutorial H5AD files are listed with their expected directory structure and SHA-256 checksums in [`reproducibility/data_manifest.yaml`](reproducibility/data_manifest.yaml). Set `SMITH_TUTORIAL_DATA` to the directory containing those inputs before running a notebook. The data bundles are not hosted yet; until a public archive URL is added to the manifest, place the licensed input files at the listed paths.
+The script verifies the archive SHA-256, extracts the inputs into `data/tutorials/`, and checks each input file. Allow about 20 GB of free disk space for the archive and extracted data, plus space for training outputs.
+
+If you already downloaded the archive, add `--archive /path/to/SMITH_tutorial_complete_20261110.tar.gz` to the download command. If you extracted it manually, set `SMITH_TUTORIAL_DATA` to the extracted `SMITH_tutorial_complete/` directory. Keep its `regulatory_activity/`, `ribomap_transfer/` and `agent/` subdirectories together.
 
 ## Reproduce paper analyses
 

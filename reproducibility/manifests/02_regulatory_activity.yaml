@@ -125,7 +125,7 @@ required_paper_inputs:
 - regulatory_activity/elegans/annotations/tf_regulatory_pairs.tsv
 - regulatory_activity/elegans/reference/elegans_scrna.h5ad
 full_workflow:
-  availability: data_archive_pending_release
+  availability: published
   data_ids:
   - elegans_scrna
   - elegans_tf_activity

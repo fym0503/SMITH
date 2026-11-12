@@ -4,7 +4,7 @@
 
 - `main.py`: train SMITH and export ranked targets.
 - `eval.py`: evaluate a selected target panel.
-- `download_tutorial_data.py`: download and verify a tutorial archive after its URL is published.
+- `download_tutorial_data.py`: download the complete tutorial bundle from Zenodo and verify its inputs.
 - `build_tutorial_notebooks.py`: validate the editable tutorial notebooks and optionally execute them.
 - `make_smoke_h5ad.py`: generate a small synthetic AnnData object for an installation check.
 

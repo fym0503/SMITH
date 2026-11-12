@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import shutil
 import tarfile
 from pathlib import Path
 
@@ -37,13 +36,16 @@ def safe_extract(archive: Path, destination: Path) -> None:
 
 def download(url: str, destination: Path) -> None:
     partial = destination.with_suffix(destination.suffix + ".part")
-    headers = {"Range": f"bytes={partial.stat().st_size}-"} if partial.exists() else {}
+    offset = partial.stat().st_size if partial.exists() else 0
+    headers = {"Range": f"bytes={offset}-"} if offset else {}
     with requests.get(url, headers=headers, stream=True, timeout=(30, 300)) as response:
         if headers and response.status_code == 200:
             partial.unlink()
             mode = "wb"
         else:
             response.raise_for_status()
+            if response.status_code == 206 and not response.headers.get("Content-Range", "").startswith(f"bytes {offset}-"):
+                raise ValueError("Download server returned an unexpected byte range")
             mode = "ab" if response.status_code == 206 else "wb"
         with partial.open(mode) as handle:
             for chunk in response.iter_content(chunk_size=1024 * 1024):
@@ -70,61 +72,61 @@ def verify_files(case: dict, data_root: Path) -> list[str]:
     return errors
 
 
+def install_archive(archive: Path, data_root: Path, archive_spec: dict, cases: list[dict]) -> None:
+    """Verify the complete archive and install only manifest-listed inputs."""
+    expected_size = archive_spec.get("archive_bytes")
+    if expected_size is not None and archive.stat().st_size != int(expected_size):
+        raise ValueError(f"Archive size mismatch: {archive}")
+    if sha256(archive) != archive_spec["archive_sha256"]:
+        raise ValueError(f"Archive checksum mismatch: {archive}")
+    import tempfile
+    data_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".extracting-", dir=data_root) as directory:
+        staging = Path(directory)
+        safe_extract(archive, staging)
+        inputs = staging / archive_spec.get("archive_root", "")
+        errors = [error for case in cases for error in verify_files(case, inputs)]
+        if errors:
+            raise ValueError("Data verification failed:\n" + "\n".join(errors))
+        paths = {spec["path"] for case in cases for spec in file_specs(case)}
+        for relative in sorted(paths):
+            relative_path = Path(relative)
+            if relative_path.is_absolute() or ".." in relative_path.parts:
+                raise ValueError(f"Invalid input path: {relative}")
+            target = data_root / relative_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            (inputs / relative_path).replace(target)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Download and verify a versioned SMITH tutorial data archive.")
-    parser.add_argument("--case", required=True)
+    parser = argparse.ArgumentParser(description="Download and verify the complete SMITH tutorial data bundle.")
+    parser.add_argument("--case", default="all", help="Case to verify/install, or all (default). The download contains all cases.")
     parser.add_argument("--data-root", default="data/tutorials")
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
-    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--archive", type=Path, help="Use an already downloaded complete archive.")
+    parser.add_argument("--force", action="store_true", help="Reinstall inputs, downloading a fresh archive unless --archive is supplied.")
     args = parser.parse_args()
     manifest = yaml.safe_load(Path(args.manifest).read_text(encoding="utf-8"))
-    if args.case not in manifest["cases"]:
-        raise KeyError(f"Unknown tutorial case: {args.case}")
-    case = manifest["cases"][args.case]
-    archive_spec = case
-    data_root = Path(args.data_root).resolve()
-    existing_errors = verify_files(case, data_root)
-    if not existing_errors:
+    if args.case != "all" and args.case not in manifest["cases"]:
+        parser.error(f"Unknown tutorial case: {args.case}")
+    cases = list(manifest["cases"].values()) if args.case == "all" else [manifest["cases"][args.case]]
+    data_root = Path(args.data_root).expanduser().resolve()
+    if not args.force and not any(verify_files(case, data_root) for case in cases):
         print(f"All files for {args.case} already exist and pass checksum validation.")
         return
-    url = archive_spec.get("archive_url")
-    if not url:
-        raise RuntimeError(
-            f"No public archive URL is configured for {args.case}. "
-            f"Place the licensed input files at the paths listed in {args.manifest}, "
-            "then set --data-root to their parent directory."
-        )
-    data_root.mkdir(parents=True, exist_ok=True)
-    archive = data_root / ".downloads" / archive_spec["archive_name"]
-    archive.parent.mkdir(parents=True, exist_ok=True)
-    if args.force and archive.exists():
-        archive.unlink()
-    download(url, archive)
-    expected = archive_spec.get("archive_sha256")
-    if expected and sha256(archive) != expected:
-        archive.unlink(missing_ok=True)
-        raise ValueError(f"Archive checksum mismatch for {archive}")
-    staging_name = args.case
-    staging = data_root / ".extracting" / staging_name
-    if staging.exists():
-        shutil.rmtree(staging)
-    staging.mkdir(parents=True)
-    try:
-        safe_extract(archive, staging)
-        for child in staging.iterdir():
-            target = data_root / child.name
-            if target.exists():
-                if target.is_dir():
-                    shutil.rmtree(target)
-                else:
-                    target.unlink()
-            shutil.move(str(child), target)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
-    errors = verify_files(case, data_root)
-    if errors:
-        raise ValueError("Data verification failed:\n" + "\n".join(errors))
-    print(f"Downloaded and verified {args.case} under {data_root}")
+    archive_spec = manifest["complete_archive"]
+    archive = args.archive.expanduser().resolve() if args.archive else data_root / ".downloads" / archive_spec["archive_name"]
+    if args.archive:
+        if not archive.is_file():
+            raise FileNotFoundError(archive)
+    elif args.force or not archive.exists():
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        print(f"Downloading {archive_spec['archive_bytes']:,} bytes from Zenodo...", flush=True)
+        download(archive_spec["archive_url"], archive)
+    print("Verifying and extracting tutorial inputs...", flush=True)
+    install_archive(archive, data_root, archive_spec, cases)
+    print(f"Verified {args.case} under {data_root}")
+    print(f"Set SMITH_TUTORIAL_DATA to {data_root}")
 
 
 if __name__ == "__main__":

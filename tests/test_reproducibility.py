@@ -98,11 +98,13 @@ def test_missing_data_cannot_run(tmp_path: Path):
         run_case(load_cases()["02_regulatory_activity"], tmp_path / "out", data_root=tmp_path)
 
 
-def test_data_manifest_has_sizes_checksums_and_unpublished_zenodo():
+def test_data_manifest_has_sizes_checksums_and_published_zenodo():
     root = Path(__file__).resolve().parents[1]
     manifest = yaml.safe_load((root / "reproducibility" / "data_manifest.yaml").read_text())
-    assert manifest["zenodo_record_url"] is None
-    assert manifest["publication_status"] == "archives_prepared_links_pending"
+    assert manifest["zenodo_record_url"] == "https://zenodo.org/records/24137308"
+    assert manifest["publication_status"] == "published"
+    assert manifest["complete_archive"]["archive_bytes"] == 7101594667
+    assert len(manifest["complete_archive"]["archive_sha256"]) == 64
     assert set(manifest["cases"]) == EXPECTED_CASES
     for case in manifest["cases"].values():
         assert case["archive_url"] is None
@@ -785,3 +787,29 @@ def test_notebook_validation_rejects_stale_sources_and_failed_outputs():
     ])])
     with pytest.raises(ValueError, match='failed cell'):
         validate_pair(source, failed)
+
+
+def test_complete_archive_strips_root_and_preserves_existing_files(tmp_path):
+    import hashlib
+    from scripts.download_tutorial_data import install_archive
+    archive = tmp_path / 'bundle.tar.gz'
+    content = b'tutorial input'
+    with tarfile.open(archive, 'w:gz') as handle:
+        for name, body in [('SMITH_tutorial_complete/agent/input.h5ad', content),
+                           ('SMITH_tutorial_complete/assembly_report.json', b'private paths')]:
+            member = tarfile.TarInfo(name)
+            member.size = len(body)
+            handle.addfile(member, io.BytesIO(body))
+    spec = {'archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+            'archive_bytes': archive.stat().st_size, 'archive_root': 'SMITH_tutorial_complete'}
+    case = {'files': [{'path': 'agent/input.h5ad', 'bytes': len(content),
+                      'sha256': hashlib.sha256(content).hexdigest()}]}
+    dest = tmp_path / 'inputs'
+    (dest / 'agent').mkdir(parents=True)
+    (dest / 'agent/user.txt').write_text('keep')
+    install_archive(archive, dest, spec, [case])
+    assert (dest / 'agent/input.h5ad').read_bytes() == content
+    assert (dest / 'agent/user.txt').read_text() == 'keep'
+    assert not (dest / 'assembly_report.json').exists()
+    with pytest.raises(ValueError, match='checksum'):
+        install_archive(archive, dest, {**spec, 'archive_sha256': 'bad'}, [case])

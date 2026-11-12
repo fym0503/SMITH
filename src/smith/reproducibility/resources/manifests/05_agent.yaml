@@ -47,7 +47,7 @@ outputs:
 - figure_data/figure6_g_offtarget_examples.tsv
 - run_manifest.json
 full_workflow:
-  availability: data_archive_pending_release
+  availability: published
   source_scripts:
   - reproducibility/workflows/agent/run_tutorial.py
   - reproducibility/workflows/agent/evaluate_outputs.py

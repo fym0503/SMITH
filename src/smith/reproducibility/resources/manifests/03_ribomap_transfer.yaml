@@ -35,7 +35,7 @@ outputs:
 - figure_data/figure4_h_pairwise_tests.tsv
 - run_manifest.json
 full_workflow:
-  availability: data_archive_pending_release
+  availability: published
   data_ids:
   - mouse_brain_ribomap_rep1
   - mouse_brain_ribomap_rep2
