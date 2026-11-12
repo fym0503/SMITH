@@ -60,8 +60,10 @@ training_backend: src/smith
 analysis_scope:
   training_method: SMITH
   training_seeds: 5
-  accuracy_points_matching_reference: 30
   expression_points_matching_reference: 30
+  accuracy_points_compared: 30
+  max_absolute_accuracy_difference: 0.0003318217011393
+  panels_matching_reference: 30
 figure_coverage:
 - Figure 6c-d
 - Figure 6f-g

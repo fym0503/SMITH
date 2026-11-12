@@ -291,7 +291,8 @@ def test_public_tutorial_copy_describes_current_workflows():
     docs = (root / "docs/source/tutorials/index.md").read_text()
     assert "five tf lineage splits" in docs.lower()
     assert "12 accuracy endpoints" in docs
-    assert "30/30 accuracy and expression points" in docs
+    assert "30/30 panels and expression points" in docs
+    assert "0.000332" in docs
     for path in (root / "docs/source/tutorials/notebooks").rglob("*_source.ipynb"):
         notebook = nbformat.read(path, as_version=4)
         markdown = "\n".join(cell.source for cell in notebook.cells if cell.cell_type == "markdown")

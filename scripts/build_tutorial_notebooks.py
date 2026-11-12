@@ -37,7 +37,7 @@ def main():
     parser.add_argument("--only", choices=sorted(TUTORIALS))
     parser.add_argument("--data-root", default="data/tutorials")
     parser.add_argument("--output-root", default="outputs/tutorials")
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--device", default=None, help="Training device; notebooks select CUDA when available, otherwise CPU.")
     parser.add_argument("--reuse-existing", action="store_true", help="Reuse completed training where supported by the tutorial.")
     args = parser.parse_args()
     selected = {args.only: TUTORIALS[args.only]} if args.only else TUTORIALS
@@ -47,9 +47,10 @@ def main():
             os.environ.update({
                 "SMITH_TUTORIAL_DATA": str(Path(args.data_root).expanduser().resolve()),
                 "SMITH_TUTORIAL_OUTPUT": str(Path(args.output_root).expanduser().resolve()),
-                "SMITH_TUTORIAL_DEVICE": args.device,
                 "SMITH_TUTORIAL_REUSE_EXISTING": "1" if args.reuse_existing else "0",
             })
+        if args.execute and args.device is not None:
+            os.environ["SMITH_TUTORIAL_DEVICE"] = args.device
         for stem in selected.values():
             source_path = NOTEBOOK_ROOT / f"{stem}_source.ipynb"
             executed_path = NOTEBOOK_ROOT / f"{stem}_executed.ipynb"

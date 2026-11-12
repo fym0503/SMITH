@@ -140,6 +140,11 @@ The script verifies the archive SHA-256, extracts the inputs into `data/tutorial
 
 If you already downloaded the archive, add `--archive /path/to/SMITH_tutorial_complete_20261110.tar.gz` to the download command. If you extracted it manually, set `SMITH_TUTORIAL_DATA` to the extracted `SMITH_tutorial_complete/` directory. Keep its `regulatory_activity/`, `ribomap_transfer/` and `agent/` subdirectories together.
 
+### Tutorial execution environment
+
+The reference results use CUDA training. For the same execution mode, use Python 3.12, install `requirements-reproducibility.txt` alongside `.[notebooks]`, and set `SMITH_TUTORIAL_DEVICE=cuda:0`. Notebooks select CUDA when available and otherwise use CPU. CPU and CUDA training can produce different rankings even with the same seed.
+
+
 ## Reproduce paper analyses
 
 List the packaged workflows and check whether their input data are available locally:
